@@ -1,0 +1,244 @@
+<div class="bg-slate-100 min-h-screen p-8">
+
+  <!-- Title -->
+  <div>
+    <h1 class="text-4xl font-bold text-slate-900">
+      Operations Dashboard
+    </h1>
+
+    <p class="text-slate-500 mt-1">
+      Sunday, June 7, 2025 · Live data
+    </p>
+  </div>
+
+  <!-- Alert Banner -->
+  <div
+    class="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex justify-between items-center"
+  >
+    <div class="text-red-600 font-medium">
+      Hurricane Alert — Category 4 approaching Florida coast.
+      12 critical cases need immediate volunteer assignment.
+    </div>
+
+    <button
+      class="bg-red-500 text-white px-6 py-2 rounded-xl"
+    >
+      Respond
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-4 gap-6 mt-6">
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm">
+      <div class="text-4xl font-bold">1,284</div>
+      <div class="text-slate-500 mt-2">
+        Emergency Requests
+      </div>
+      <div class="text-red-500 mt-2">
+        +18%
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm">
+      <div class="text-4xl font-bold">47</div>
+      <div class="text-slate-500 mt-2">
+        Active Cases
+      </div>
+      <div class="text-red-500 mt-2">
+        +3 today
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm">
+      <div class="text-4xl font-bold">2,847</div>
+      <div class="text-slate-500 mt-2">
+        Volunteers Online
+      </div>
+      <div class="text-blue-500 mt-2">
+        124 on duty
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm">
+      <div class="text-4xl font-bold">68%</div>
+      <div class="text-slate-500 mt-2">
+        Shelter Occupancy
+      </div>
+      <div class="text-green-500 mt-2">
+        4,100 / 6,020
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-3 gap-6 mt-6">
+
+    <div
+      class="col-span-2 bg-white rounded-3xl p-6 h-[400px]"
+    >
+      <h2 class="font-bold text-xl">
+        Disaster Trends
+      </h2>
+
+      <div
+        class="h-[300px] mt-8 flex items-center justify-center text-slate-400"
+      >
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div
+      class="bg-white rounded-3xl p-6 h-[400px]"
+    >
+      <h2 class="font-bold text-xl">
+        Request Status
+      </h2>
+
+      <div
+        class="h-[300px] flex items-center justify-center text-slate-400"
+      >
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Section -->
+  <div class="grid grid-cols-2 gap-6 mt-6">
+
+    <!-- Resource Usage -->
+    <div class="bg-white rounded-3xl p-6">
+
+      <div class="flex justify-between">
+        <h2 class="font-bold text-xl">
+          Resource Usage
+        </h2>
+
+        <a class="text-blue-600">
+          Manage →
+        </a>
+      </div>
+
+      <div class="mt-6">
+
+        <div class="mb-4">
+          <div class="flex justify-between">
+            <span>Food Kits</span>
+            <span>70%</span>
+          </div>
+
+          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
+            <div class="bg-orange-500 h-2 rounded-full w-[70%]"></div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div class="flex justify-between">
+            <span>Water</span>
+            <span>72%</span>
+          </div>
+
+          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
+            <div class="bg-orange-500 h-2 rounded-full w-[72%]"></div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div class="flex justify-between">
+            <span>Medicine</span>
+            <span>41%</span>
+          </div>
+
+          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
+            <div class="bg-blue-500 h-2 rounded-full w-[41%]"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-3xl p-6">
+
+      <div class="flex justify-between">
+        <h2 class="font-bold text-xl">
+          Recent Activity
+        </h2>
+
+        <a class="text-blue-600">
+          View all →
+        </a>
+      </div>
+
+      <div class="mt-6 space-y-4">
+
+        <div
+          class="flex justify-between border-b pb-3"
+        >
+          <div>
+            <div class="font-semibold">
+              Maria Santos
+            </div>
+
+            <div class="text-slate-500 text-sm">
+              Flood • Houston
+            </div>
+          </div>
+
+          <span
+            class="bg-red-100 text-red-600 px-3 py-1 rounded-full"
+          >
+            Critical
+          </span>
+        </div>
+
+        <div
+          class="flex justify-between border-b pb-3"
+        >
+          <div>
+            <div class="font-semibold">
+              Robert Kim
+            </div>
+
+            <div class="text-slate-500 text-sm">
+              Fire • Los Angeles
+            </div>
+          </div>
+
+          <span
+            class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full"
+          >
+            High
+          </span>
+        </div>
+
+        <div
+          class="flex justify-between"
+        >
+          <div>
+            <div class="font-semibold">
+              Emma Wilson
+            </div>
+
+            <div class="text-slate-500 text-sm">
+              Hurricane • Miami
+            </div>
+          </div>
+
+          <span
+            class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
+          >
+            In Progress
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
