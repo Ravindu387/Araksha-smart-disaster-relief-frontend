@@ -1,16 +1,11 @@
 import { Component } from '@angular/core';
-
-import { Sidebar } from './Admin/Componet/layouts/sidebar/sidebar';
-import { Header } from './Admin/Componet/layouts/header/header';
-import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    Sidebar,
-    Header,
-    Dashboard
+    RouterOutlet
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'
