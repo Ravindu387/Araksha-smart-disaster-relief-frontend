@@ -1,0 +1,238 @@
+<div class="bg-slate-50 min-h-screen p-8">
+
+  <!-- Header Section -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Relief Inventory</h1>
+      <p class="text-slate-500 mt-1 font-medium">
+        {{ items.length }} item categories · {{ lowStockCount }} low stock alerts
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Sync Button -->
+      <button
+        (click)="syncInventory()"
+        class="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-700 text-sm font-semibold transition cursor-pointer shadow-sm"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3 3 3m-3-3v12" />
+        </svg>
+        Sync
+      </button>
+
+      <!-- Add Stock Button -->
+      <button
+        (click)="addStock()"
+        class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Stock
+      </button>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert Banner -->
+  <div
+    *ngIf="lowStockCount > 0"
+    class="mb-8 bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex items-start gap-3 shadow-sm transition"
+  >
+    <div class="text-rose-500 mt-0.5">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div>
+      <h4 class="font-bold text-rose-800 text-sm">Low Stock Alert</h4>
+      <p class="text-sm text-rose-600 mt-0.5 font-medium">
+        Medical Kits, First Aid Supplies are below threshold. Immediate restocking required.
+      </p>
+    </div>
+  </div>
+
+  <!-- Search & Category Filters -->
+  <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+    <!-- Search Bar -->
+    <div class="relative w-full md:w-80">
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        placeholder="Search inventory..."
+        class="search-input w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl outline-none text-sm text-slate-800 placeholder-slate-400 font-medium transition"
+      />
+    </div>
+
+    <!-- Category Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 custom-scrollbar">
+      <button
+        *ngFor="let cat of categories"
+        (click)="selectCategory(cat)"
+        [class]="selectedCategory === cat
+          ? 'bg-slate-900 text-white border border-slate-900 font-semibold'
+          : 'bg-white text-slate-600 border border-slate-200/60 hover:bg-slate-50 font-medium'"
+        class="px-4 py-1.5 rounded-full text-xs transition cursor-pointer select-none whitespace-nowrap shadow-sm"
+      >
+        {{ cat }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Inventory Cards Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div
+      *ngFor="let item of filteredItems"
+      [class]="item.lowStock
+        ? 'inventory-card bg-gradient-to-b from-rose-50/10 to-white border-rose-200/80'
+        : 'inventory-card bg-white border-slate-100/50'"
+      class="border rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden"
+    >
+      <!-- Low Stock Badge (Top Right) -->
+      <div *ngIf="item.lowStock" class="absolute top-4 right-4">
+        <span class="flex items-center gap-1 text-[10px] font-bold text-rose-500 tracking-wider uppercase bg-rose-50/80 px-2 py-0.5 rounded-full border border-rose-100/50">
+          ⚠️ LOW STOCK
+        </span>
+      </div>
+
+      <!-- Card Top: Category and Item Name -->
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span
+            [class]="item.lowStock ? 'bg-rose-500' : item.progressBarColor"
+            class="w-2.5 h-2.5 rounded-full shadow-sm"
+          ></span>
+          <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+            {{ item.category }}
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 tracking-tight leading-snug">
+          {{ item.name }}
+        </h3>
+      </div>
+
+      <!-- Card Middle: Ring Chart and Details -->
+      <div class="flex items-center gap-5 my-6">
+        <!-- SVG Circular Progress Ring -->
+        <div class="relative w-14 h-14 flex items-center justify-center shrink-0">
+          <svg class="w-full h-full transform -rotate-90">
+            <!-- Background circle -->
+            <circle
+              cx="28"
+              cy="28"
+              r="22"
+              stroke="#f1f5f9"
+              stroke-width="4.5"
+              fill="transparent"
+            />
+            <!-- Progress circle -->
+            <circle
+              cx="28"
+              cy="28"
+              r="22"
+              [attr.stroke]="item.lowStock ? '#f43f5e' : 'currentColor'"
+              [attr.stroke-dasharray]="138"
+              [attr.stroke-dashoffset]="138 - (138 * item.percentage / 100)"
+              stroke-width="4.5"
+              fill="transparent"
+              [class]="item.colorClass"
+              class="transition-all duration-700 ease-out"
+            />
+          </svg>
+          <!-- Percentage Text Inside Ring -->
+          <span class="absolute text-[11px] font-extrabold text-slate-800 tracking-tighter">
+            {{ item.percentage }}%
+          </span>
+        </div>
+
+        <!-- Stock Details -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-baseline gap-1">
+            <span class="text-2xl font-extrabold text-slate-950 tracking-tight leading-none">
+              {{ item.current | number }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium mt-0.5 truncate">
+            of {{ item.total | number }} {{ item.unit }}
+          </p>
+
+          <!-- Trend Indication -->
+          <div class="flex items-center gap-1 mt-1.5 text-xs font-semibold">
+            <span
+              *ngIf="item.trendType === 'up'"
+              class="text-emerald-500 flex items-center gap-0.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
+              </svg>
+              {{ item.trend }}
+            </span>
+            <span
+              *ngIf="item.trendType === 'down'"
+              [class]="item.lowStock ? 'text-rose-500' : 'text-slate-400'"
+              class="flex items-center gap-0.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clip-rule="evenodd" />
+              </svg>
+              {{ item.trend }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Bottom: Horizontal Progress & Stats -->
+      <div>
+        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-3">
+          <div
+            [class]="item.lowStock ? 'bg-rose-500' : item.progressBarColor"
+            [style.width.%]="item.percentage"
+            class="h-1.5 rounded-full transition-all duration-700 ease-out"
+          ></div>
+        </div>
+
+        <div class="flex justify-between items-center text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <span>Allocated: {{ item.allocated | number }}</span>
+          <span>Min: {{ item.min | number }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Section: Inventory Movement Chart -->
+  <div class="bg-white rounded-3xl p-6 border border-slate-100/50 shadow-sm">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900 tracking-tight">Inventory Movement</h2>
+        <p class="text-xs text-slate-400 mt-0.5 font-medium">Last 7 days</p>
+      </div>
+
+      <!-- Custom Legends -->
+      <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>
+          <span>Dispatched</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
+          <span>Restocked</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span>
+          <span>Consumed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Wrapper -->
+    <div class="h-[250px] sm:h-[300px] w-full relative">
+      <canvas id="inventoryMovementChart"></canvas>
+    </div>
+  </div>
+
+</div>
