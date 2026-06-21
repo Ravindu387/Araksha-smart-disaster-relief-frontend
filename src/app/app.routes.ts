@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { LandingPage } from './Common/landing-page/landing-page';
+import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
 
 export const routes: Routes = [
   {
     path: '',
-    component: LandingPage
+    component: Dashboard
   }
 ];
