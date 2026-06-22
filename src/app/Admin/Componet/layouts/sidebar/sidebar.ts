@@ -53,5 +53,9 @@ export class Sidebar {
         { label: 'Reports', route: '/reports', icon: 'chart' },
       ],
     },
+    {
+      title: 'System',
+      items: [{ label: 'Settings', route: '/settings', icon: 'settings' }],
+    },
   ];
 }

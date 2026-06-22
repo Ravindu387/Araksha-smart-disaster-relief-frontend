@@ -108,19 +108,68 @@ export class Dashboard {
   readonly months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
   readonly yAxisTicks = [600, 450, 300, 150, 0];
 
-  private readonly chartWidth = 600;
-  private readonly chartHeight = 240;
-  private readonly chartMax = 600;
+  readonly chartWidth = 600;
+  readonly chartHeight = 240;
+  readonly chartMax = 600;
 
-  private readonly requestsData = [110, 175, 245, 305, 290, 330, 480];
-  private readonly resolvedData = [95, 160, 230, 295, 280, 320, 460];
+  readonly requestsData = [110, 175, 245, 305, 290, 330, 480];
+  readonly resolvedData = [95, 160, 230, 295, 280, 320, 460];
+
+  hoveredIndex: number | null = null;
+
+  onChartHover(event: MouseEvent): void {
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+    this.hoveredIndex = Math.round(ratio * (this.months.length - 1));
+  }
+
+  onChartLeave(): void {
+    this.hoveredIndex = null;
+  }
+
+  private valueToY(value: number): number {
+    return this.chartHeight - (value / this.chartMax) * this.chartHeight;
+  }
+
+  get hoveredX(): number {
+    if (this.hoveredIndex === null) return 0;
+    return this.hoveredIndex * (this.chartWidth / (this.months.length - 1));
+  }
+
+  get hoveredRequestsY(): number {
+    return this.hoveredIndex !== null ? this.valueToY(this.requestsData[this.hoveredIndex]) : 0;
+  }
+
+  get hoveredResolvedY(): number {
+    return this.hoveredIndex !== null ? this.valueToY(this.resolvedData[this.hoveredIndex]) : 0;
+  }
+
+  get hoveredMonth(): string {
+    return this.hoveredIndex !== null ? this.months[this.hoveredIndex] : '';
+  }
+
+  get hoveredRequests(): number {
+    return this.hoveredIndex !== null ? this.requestsData[this.hoveredIndex] : 0;
+  }
+
+  get hoveredResolved(): number {
+    return this.hoveredIndex !== null ? this.resolvedData[this.hoveredIndex] : 0;
+  }
+
+  /** Horizontal tooltip position as a %, clamped so the card never clips the card edges. */
+  get tooltipLeftPercent(): number {
+    if (this.hoveredIndex === null) return 0;
+    const pct = (this.hoveredIndex / (this.months.length - 1)) * 100;
+    return Math.min(88, Math.max(12, pct));
+  }
 
   private toPoints(values: number[]): string {
     const step = this.chartWidth / (values.length - 1);
     return values
       .map((v, i) => {
         const x = i * step;
-        const y = this.chartHeight - (v / this.chartMax) * this.chartHeight;
+        const y = this.valueToY(v);
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(' ');
@@ -148,6 +197,8 @@ export class Dashboard {
     { label: 'Critical', value: 35, color: 'rose-500', hex: '#f43f5e' },
     { label: 'Cancelled', value: 80, color: 'slate-300', hex: '#cbd5e1' },
   ];
+
+  hoveredSlice: StatusSlice | null = null;
 
   readonly donutRadius = 68;
   readonly donutStroke = 22;

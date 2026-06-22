@@ -99,6 +99,15 @@ import { Component, Input } from '@angular/core';
           <path d="M4.5 12h15" />
           <path d="M13.5 6l6 6-6 6" />
         }
+        @case ('activity') {
+          <path d="M3 12h3.5l2.3-6.5L13 18l2.3-6h5.7" />
+        }
+        @case ('settings') {
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M12 3.5v2.1M12 18.4v2.1M5.4 6.6l1.5 1.5M17.1 15.9l1.5 1.5M3.5 12h2.1M18.4 12h2.1M5.4 17.4l1.5-1.5M17.1 8.1l1.5-1.5"
+          />
+        }
       }
     </svg>
   `,
