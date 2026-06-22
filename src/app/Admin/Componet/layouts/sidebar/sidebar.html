@@ -7,18 +7,48 @@
     <span class="text-white font-bold text-lg tracking-wide">SDRMS</span>
   </div>
 
-  <div class="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-7">
-    <!-- Active incidents banner -->
-    <div
-      class="rounded-xl bg-linear-to-br from-rose-500/15 to-rose-500/5 border border-rose-500/25 px-3.5 py-3.5 flex items-center gap-2.5"
+  <!-- Menu -->
+  <div class="px-4 flex-1 overflow-y-auto">
+
+    <p class="text-xs text-slate-500 mb-3">OVERVIEW</p>
+
+    <a
+      routerLink="/admin/dashboard"
+      routerLinkActive="bg-blue-600"
+      [routerLinkActiveOptions]="{exact: true}"
+      class="flex items-center px-4 py-3 rounded-xl hover:bg-slate-800 mb-2 transition cursor-pointer"
     >
-      <app-icon name="radio" class="w-5 h-5 text-rose-400 shrink-0" />
-      <div class="min-w-0">
-        <p class="text-white font-semibold text-sm leading-tight">{{ activeIncidents }} Active Incidents</p>
-        <p class="text-rose-400 text-xs font-medium mt-0.5">{{ criticalPriority }} critical priority</p>
-      </div>
-      <span class="ml-auto w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
-    </div>
+      Dashboard
+    </a>
+
+    <p class="text-xs text-slate-500 mt-6 mb-3">OPERATIONS</p>
+
+    <a class="flex justify-between px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
+      <span>Emergency Requests</span>
+      <span class="bg-pink-500 px-2 rounded-full text-xs">12</span>
+    </a>
+
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
+      Volunteers
+    </a>
+
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
+      Shelters
+    </a>
+
+    <p class="text-xs text-slate-500 mt-6 mb-3">RESOURCES</p>
+
+    <a
+      routerLink="/admin/inventory"
+      routerLinkActive="bg-blue-600"
+      class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+    >
+      Inventory
+    </a>
+
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
+      Allocation
+    </a>
 
     <!-- Nav groups -->
     <nav class="flex flex-col gap-6 text-sm">
