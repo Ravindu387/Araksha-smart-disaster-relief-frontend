@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './header.html',
-  styleUrl: './header.css'
+  styleUrl: './header.css',
 })
 export class Header implements OnInit {
   currentSection: string = 'Dashboard';
