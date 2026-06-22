@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { LandingPage } from './Common/landing-page/landing-page';
 import { AdminLayout } from './Admin/Componet/layouts/admin-layout/admin-layout';
 import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
-import { Inventory } from './pages/dashboard/inventory/inventory';
+
 
 export const routes: Routes = [
   {
@@ -22,10 +22,7 @@ export const routes: Routes = [
         path: 'dashboard',
         component: Dashboard
       },
-      {
-        path: 'inventory',
-        component: Inventory
-      }
+     
     ]
   }
 ];
