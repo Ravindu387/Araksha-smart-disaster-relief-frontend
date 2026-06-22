@@ -1,5 +1,11 @@
-<app-sidebar />
-<app-header />
-<main class="ml-72 pt-20">
-  <router-outlet />
-</main>
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+
+  <div class="main-content">
+    <app-header></app-header>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
