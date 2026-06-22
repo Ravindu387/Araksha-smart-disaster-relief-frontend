@@ -14,8 +14,9 @@ import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
 //import { Settings } from './Admin/Componet/pages/settings/settings';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
 
+  {path: 'LandingPage',component: LandingPage},
   { path: 'dashboard', component: Dashboard },
   // { path: 'emergency-requests', component: EmergencyRequests },
   // { path: 'volunteers', component: Volunteers },
