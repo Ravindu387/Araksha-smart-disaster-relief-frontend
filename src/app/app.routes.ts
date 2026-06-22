@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { LandingPage } from './Common/landing-page/landing-page';
+
 import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
 //import { EmergencyRequests } from './Admin/Componet/pages/emergency-requests/emergency-requests';
 //import { Volunteers } from './Admin/Componet/pages/volunteers/volunteers';
