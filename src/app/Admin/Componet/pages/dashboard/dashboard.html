@@ -1,244 +1,284 @@
-<div class="bg-slate-100 min-h-screen p-8">
-
-  <!-- Title -->
-  <div>
-    <h1 class="text-4xl font-bold text-slate-900">
-      Operations Dashboard
-    </h1>
-
-    <p class="text-slate-500 mt-1">
-      Sunday, June 7, 2025 · Live data
-    </p>
+<div class="p-8 flex flex-col gap-6 max-w-[1500px]">
+  <!-- Page heading + time range -->
+  <div class="flex items-start justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Operations Dashboard</h1>
+      <p class="text-sm text-gray-400 mt-1">{{ today | date: 'EEEE, MMMM d, y' }} · Live data</p>
+    </div>
+    <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
+      @for (r of ranges; track r) {
+        <button
+          type="button"
+          (click)="setRange(r)"
+          class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          [class.bg-gray-900]="activeRange === r"
+          [class.text-white]="activeRange === r"
+          [class.text-gray-500]="activeRange !== r"
+        >
+          {{ r }}
+        </button>
+      }
+    </div>
   </div>
 
-  <!-- Alert Banner -->
-  <div
-    class="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex justify-between items-center"
-  >
-    <div class="text-red-600 font-medium">
-      Hurricane Alert — Category 4 approaching Florida coast.
-      12 critical cases need immediate volunteer assignment.
+  <!-- Alert banner -->
+  <div class="rounded-2xl bg-linear-to-r from-rose-50 to-rose-50/30 border border-rose-100 px-6 py-4 flex items-center gap-4 flex-wrap">
+    <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">
+      <app-icon name="alert" class="w-5 h-5" />
     </div>
-
+    <p class="flex-1 min-w-[220px] text-sm text-gray-700">
+      <span class="font-semibold text-rose-600">Hurricane Alert —</span>
+      Category 4 approaching Florida coast. 12 critical cases need immediate volunteer assignment.
+    </p>
     <button
-      class="bg-red-500 text-white px-6 py-2 rounded-xl"
+      type="button"
+      class="shrink-0 inline-flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
     >
-      Respond
+      Respond <app-icon name="arrow-right" class="w-4 h-4" />
     </button>
   </div>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-4 gap-6 mt-6">
-
-    <div class="bg-white p-6 rounded-3xl shadow-sm">
-      <div class="text-4xl font-bold">1,284</div>
-      <div class="text-slate-500 mt-2">
-        Emergency Requests
+  <!-- Stat cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    @for (stat of stats; track stat.label) {
+      <div class="relative overflow-hidden rounded-2xl bg-white border border-gray-100 p-5">
+        <div class="absolute -top-6 -right-6 w-28 h-28 rounded-full opacity-80" [class]="stat.blob"></div>
+        <div class="relative">
+          <div
+            class="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+            [class]="stat.iconBg + ' ' + stat.iconColor"
+          >
+            <app-icon [name]="stat.icon" class="w-5 h-5" />
+          </div>
+          <p class="text-2xl font-bold text-gray-900">{{ stat.value }}</p>
+          <p class="text-sm text-gray-500 mt-0.5">{{ stat.label }}</p>
+          <p class="text-xs font-semibold mt-2.5 flex items-center gap-1" [class]="stat.trendColor">
+            <app-icon [name]="stat.trendIcon" class="w-3.5 h-3.5" />
+            {{ stat.trendLabel }}
+          </p>
+        </div>
       </div>
-      <div class="text-red-500 mt-2">
-        +18%
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-3xl shadow-sm">
-      <div class="text-4xl font-bold">47</div>
-      <div class="text-slate-500 mt-2">
-        Active Cases
-      </div>
-      <div class="text-red-500 mt-2">
-        +3 today
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-3xl shadow-sm">
-      <div class="text-4xl font-bold">2,847</div>
-      <div class="text-slate-500 mt-2">
-        Volunteers Online
-      </div>
-      <div class="text-blue-500 mt-2">
-        124 on duty
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-3xl shadow-sm">
-      <div class="text-4xl font-bold">68%</div>
-      <div class="text-slate-500 mt-2">
-        Shelter Occupancy
-      </div>
-      <div class="text-green-500 mt-2">
-        4,100 / 6,020
-      </div>
-    </div>
-
+    }
   </div>
 
-  <!-- Charts -->
-  <div class="grid grid-cols-3 gap-6 mt-6">
+  <!-- Charts row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <!-- Disaster Trends -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 lg:col-span-2">
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h3 class="font-semibold text-gray-900">Disaster Trends</h3>
+          <p class="text-sm text-gray-400">Emergency requests vs resolved cases</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-medium text-gray-500">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Requests</span>
+          <span class="flex items-center gap-1.5"
+            ><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Resolved</span
+          >
+        </div>
+      </div>
 
-    <div
-      class="col-span-2 bg-white rounded-3xl p-6 h-[400px]"
-    >
-      <h2 class="font-bold text-xl">
-        Disaster Trends
-      </h2>
+      <div class="mt-6 flex gap-3">
+        <div class="flex flex-col justify-between text-xs text-gray-400 h-60 pb-5 shrink-0">
+          @for (tick of yAxisTicks; track tick) {
+            <span>{{ tick }}</span>
+          }
+        </div>
+        <div class="flex-1 min-w-0">
+          <div
+            class="relative h-60 cursor-crosshair"
+            (mousemove)="onChartHover($event)"
+            (mouseleave)="onChartLeave()"
+          >
+            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+              @for (tick of yAxisTicks; track tick) {
+                <div class="border-t border-gray-100 w-full"></div>
+              }
+            </div>
+            <svg [attr.viewBox]="chartViewBox" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
+              <defs>
+                <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.12" />
+                  <stop offset="100%" stop-color="#f43f5e" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path [attr.d]="requestsAreaPath" fill="url(#areaFill)" />
+              <polyline
+                [attr.points]="resolvedPoints"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <polyline
+                [attr.points]="requestsPoints"
+                fill="none"
+                stroke="#f43f5e"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              @if (hoveredIndex !== null) {
+                <line
+                  [attr.x1]="hoveredX"
+                  [attr.x2]="hoveredX"
+                  y1="0"
+                  [attr.y2]="chartHeight"
+                  stroke="#cbd5e1"
+                  stroke-width="1.5"
+                  stroke-dasharray="4 4"
+                />
+                <circle [attr.cx]="hoveredX" [attr.cy]="hoveredResolvedY" r="4.5" fill="#10b981" stroke="white" stroke-width="2" />
+                <circle [attr.cx]="hoveredX" [attr.cy]="hoveredRequestsY" r="4.5" fill="#f43f5e" stroke="white" stroke-width="2" />
+              }
+            </svg>
 
-      <div
-        class="h-[300px] mt-8 flex items-center justify-center text-slate-400"
-      >
-        <canvas id="trendChart"></canvas>
+            @if (hoveredIndex !== null) {
+              <div
+                class="absolute top-1.5 -translate-x-1/2 z-10 bg-white rounded-xl shadow-lg border border-gray-100 px-3.5 py-3 text-xs pointer-events-none whitespace-nowrap"
+                [style.left.%]="tooltipLeftPercent"
+              >
+                <p class="font-semibold text-gray-900 mb-1.5">{{ hoveredMonth }}</p>
+                <p class="flex items-center gap-1.5 text-gray-500">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  Requests: <span class="font-semibold text-gray-900">{{ hoveredRequests }}</span>
+                </p>
+                <p class="flex items-center gap-1.5 text-gray-500 mt-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                  Resolved: <span class="font-semibold text-gray-900">{{ hoveredResolved }}</span>
+                </p>
+              </div>
+            }
+          </div>
+          <div class="flex justify-between text-xs text-gray-400 mt-3">
+            @for (m of months; track m) {
+              <span>{{ m }}</span>
+            }
+          </div>
+        </div>
       </div>
     </div>
 
-    <div
-      class="bg-white rounded-3xl p-6 h-[400px]"
-    >
-      <h2 class="font-bold text-xl">
-        Request Status
-      </h2>
+    <!-- Request Status donut -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+      <h3 class="font-semibold text-gray-900">Request Status</h3>
+      <p class="text-sm text-gray-400">All-time distribution</p>
 
-      <div
-        class="h-[300px] flex items-center justify-center text-slate-400"
-      >
-        <canvas id="statusChart"></canvas>
+      <div class="mt-6 relative flex items-center justify-center">
+        <svg viewBox="0 0 180 180" class="w-44 h-44 -rotate-90">
+          @for (seg of donutSegments; track seg.slice.label) {
+            <circle
+              cx="90"
+              cy="90"
+              [attr.r]="donutRadius"
+              fill="none"
+              [attr.stroke]="seg.slice.hex"
+              [attr.stroke-width]="donutStroke"
+              [attr.stroke-dasharray]="seg.dashArray"
+              [attr.stroke-dashoffset]="seg.dashOffset"
+              class="cursor-pointer transition-opacity duration-150"
+              [style.opacity]="hoveredSlice && hoveredSlice !== seg.slice ? 0.35 : 1"
+              (mouseenter)="hoveredSlice = seg.slice"
+              (mouseleave)="hoveredSlice = null"
+            />
+          }
+        </svg>
+        @if (hoveredSlice) {
+          <div
+            class="absolute bg-white rounded-xl shadow-lg border border-gray-100 px-4 py-2.5 text-center pointer-events-none"
+          >
+            <p class="text-xs text-gray-500">{{ hoveredSlice.label }}</p>
+            <p class="font-bold text-gray-900 text-lg leading-tight">{{ hoveredSlice.value }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="mt-6 flex flex-col gap-2.5 text-sm">
+        @for (seg of statusSlices; track seg.label) {
+          <div class="flex items-center justify-between">
+            <span class="flex items-center gap-2 text-gray-600">
+              <span class="w-2.5 h-2.5 rounded-full" [style.background-color]="seg.hex"></span>
+              {{ seg.label }}
+            </span>
+            <span class="font-semibold text-gray-900">{{ seg.value }}</span>
+          </div>
+        }
       </div>
     </div>
-
   </div>
 
-  <!-- Bottom Section -->
-  <div class="grid grid-cols-2 gap-6 mt-6">
-
+  <!-- Bottom row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
     <!-- Resource Usage -->
-    <div class="bg-white rounded-3xl p-6">
-
-      <div class="flex justify-between">
-        <h2 class="font-bold text-xl">
-          Resource Usage
-        </h2>
-
-        <a class="text-blue-600">
-          Manage →
+    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h3 class="font-semibold text-gray-900">Resource Usage</h3>
+          <p class="text-sm text-gray-400">Allocated vs available</p>
+        </div>
+        <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+          Manage <app-icon name="arrow-right" class="w-3.5 h-3.5" />
         </a>
       </div>
-
-      <div class="mt-6">
-
-        <div class="mb-4">
-          <div class="flex justify-between">
-            <span>Food Kits</span>
-            <span>70%</span>
+      <div class="flex flex-col gap-5">
+        @for (bar of resourceBars; track bar.label) {
+          <div>
+            <div class="flex items-center justify-between text-sm mb-1.5">
+              <span class="text-gray-700 font-medium">{{ bar.label }}</span>
+              <span class="text-gray-400">{{ bar.percent }}% used</span>
+            </div>
+            <div class="h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div class="h-full rounded-full" [class]="bar.barColor" [style.width.%]="bar.percent"></div>
+            </div>
           </div>
-
-          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div class="bg-orange-500 h-2 rounded-full w-[70%]"></div>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <div class="flex justify-between">
-            <span>Water</span>
-            <span>72%</span>
-          </div>
-
-          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div class="bg-orange-500 h-2 rounded-full w-[72%]"></div>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <div class="flex justify-between">
-            <span>Medicine</span>
-            <span>41%</span>
-          </div>
-
-          <div class="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div class="bg-blue-500 h-2 rounded-full w-[41%]"></div>
-          </div>
-        </div>
-
+        }
       </div>
-
     </div>
 
     <!-- Recent Activity -->
-    <div class="bg-white rounded-3xl p-6">
-
-      <div class="flex justify-between">
-        <h2 class="font-bold text-xl">
-          Recent Activity
-        </h2>
-
-        <a class="text-blue-600">
-          View all →
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 lg:col-span-2">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h3 class="font-semibold text-gray-900">Recent Activity</h3>
+          <p class="text-sm text-gray-400">Latest emergency events</p>
+        </div>
+        <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+          View all <app-icon name="arrow-right" class="w-3.5 h-3.5" />
         </a>
       </div>
-
-      <div class="mt-6 space-y-4">
-
-        <div
-          class="flex justify-between border-b pb-3"
-        >
-          <div>
-            <div class="font-semibold">
-              Maria Santos
-            </div>
-
-            <div class="text-slate-500 text-sm">
-              Flood • Houston
-            </div>
-          </div>
-
-          <span
-            class="bg-red-100 text-red-600 px-3 py-1 rounded-full"
+      <div class="flex flex-col">
+        @for (item of activity; track item.id; let last = $last) {
+          <div
+            class="flex items-center gap-4 py-3.5 flex-wrap sm:flex-nowrap"
+            [class.border-b]="!last"
+            [class.border-gray-100]="!last"
           >
-            Critical
-          </span>
-        </div>
-
-        <div
-          class="flex justify-between border-b pb-3"
-        >
-          <div>
-            <div class="font-semibold">
-              Robert Kim
+            <div class="min-w-[90px]">
+              <a href="#" class="text-sm font-semibold text-blue-600 hover:underline">{{ item.id }}</a>
+              <p class="text-xs text-gray-400">{{ item.type }}</p>
             </div>
-
-            <div class="text-slate-500 text-sm">
-              Fire • Los Angeles
+            <div class="flex-1 min-w-[140px]">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+              <p class="text-xs text-gray-400 truncate">{{ item.location }}</p>
             </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap" [class]="item.priorityClass">
+              {{ item.priority }}
+            </span>
+            <span
+              class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex items-center gap-1.5"
+              [class]="item.statusClass"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" [class]="item.statusDot"></span>
+              {{ item.status }}
+            </span>
+            <span class="text-xs text-gray-400 whitespace-nowrap w-16 text-right">{{ item.time }}</span>
+            <button type="button" class="text-gray-400 hover:text-gray-600 shrink-0" aria-label="View details">
+              <app-icon name="eye" class="w-4 h-4" />
+            </button>
           </div>
-
-          <span
-            class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full"
-          >
-            High
-          </span>
-        </div>
-
-        <div
-          class="flex justify-between"
-        >
-          <div>
-            <div class="font-semibold">
-              Emma Wilson
-            </div>
-
-            <div class="text-slate-500 text-sm">
-              Hurricane • Miami
-            </div>
-          </div>
-
-          <span
-            class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
-          >
-            In Progress
-          </span>
-        </div>
-
+        }
       </div>
-
     </div>
-
   </div>
-
 </div>
