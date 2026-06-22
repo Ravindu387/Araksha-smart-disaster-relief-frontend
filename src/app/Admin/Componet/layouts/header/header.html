@@ -1,33 +1,68 @@
-<div class="ml-64 h-20 bg-white border-b flex items-center justify-between px-8">
+<header class="ml-72 h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8">
 
-  <div class="flex items-center gap-2">
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm font-medium">
     <span class="text-slate-400">Admin</span>
-    <span>/</span>
-    <span class="font-semibold">Dashboard</span>
+    <span class="text-slate-300">/</span>
+    <span class="font-semibold text-slate-800">{{ currentSection }}</span>
   </div>
 
-  <input
-    type="text"
-    placeholder="Search emergencies, volunteers..."
-    class="w-[450px] px-4 py-3 border rounded-xl outline-none"
-  />
+  <!-- Search -->
+  <div class="flex-1 max-w-md mx-8">
+    <div class="relative">
+      <app-icon
+        name="search"
+        class="w-[18px] h-[18px] text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+      ></app-icon>
 
-  <div class="flex items-center gap-6">
+      <input
+        type="text"
+        placeholder="Search emergencies, volunteers..."
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+      />
+    </div>
+  </div>
 
-    <button>
-      🔔
+  <!-- Right Side -->
+  <div class="flex items-center gap-5 shrink-0">
+
+    <button
+      type="button"
+      aria-label="Notifications"
+      class="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+    >
+      <app-icon
+        name="bell"
+        class="w-[20px] h-[20px]"
+      ></app-icon>
+
+      @if (notificationCount > 0) {
+        <span
+          class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white">
+        </span>
+      }
     </button>
 
-    <div class="flex items-center gap-3">
-
-      <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
+    <button
+      type="button"
+      class="flex items-center gap-2.5 group"
+    >
+      <div
+        class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0"
+      >
         A
       </div>
 
-      <span>Admin Kumar</span>
+      <span class="text-sm font-medium text-gray-800">
+        {{ adminName }}
+      </span>
 
-    </div>
+      <app-icon
+        name="chevron-down"
+        class="w-4 h-4 text-gray-400 group-hover:text-gray-600"
+      ></app-icon>
+    </button>
 
   </div>
 
-</div>
+</header>

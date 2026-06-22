@@ -1,17 +1,10 @@
-<div class="fixed left-0 top-0 h-screen w-64 bg-slate-950 text-white flex flex-col">
-
+<aside class="fixed inset-y-0 left-0 z-20 w-72 bg-[#0b1325] flex flex-col">
   <!-- Logo -->
-  <div class="flex items-center gap-3 p-6 border-b border-slate-800">
-    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-      🛡️
+  <div class="h-20 flex items-center gap-3 px-6 border-b border-white/5 shrink-0">
+    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+      <app-icon name="shield" class="w-5 h-5" />
     </div>
-    <h2 class="text-xl font-bold">SDRMS</h2>
-  </div>
-
-  <!-- Alert -->
-  <div class="m-4 p-4 rounded-2xl border border-pink-500 bg-pink-950">
-    <h3 class="font-bold text-pink-400">47 Active Incidents</h3>
-    <p class="text-sm text-pink-300">12 critical priority</p>
+    <span class="text-white font-bold text-lg tracking-wide">SDRMS</span>
   </div>
 
   <!-- Menu -->
@@ -19,47 +12,91 @@
 
     <p class="text-xs text-slate-500 mb-3">OVERVIEW</p>
 
-    <a class="flex items-center px-4 py-3 rounded-xl bg-blue-600 mb-2">
+    <a
+      routerLink="/admin/dashboard"
+      routerLinkActive="bg-blue-600"
+      [routerLinkActiveOptions]="{exact: true}"
+      class="flex items-center px-4 py-3 rounded-xl hover:bg-slate-800 mb-2 transition cursor-pointer"
+    >
       Dashboard
     </a>
 
     <p class="text-xs text-slate-500 mt-6 mb-3">OPERATIONS</p>
 
-    <a class="flex justify-between px-4 py-3 rounded-xl hover:bg-slate-800">
+    <a class="flex justify-between px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
       <span>Emergency Requests</span>
       <span class="bg-pink-500 px-2 rounded-full text-xs">12</span>
     </a>
 
-    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
       Volunteers
     </a>
 
-    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
       Shelters
     </a>
 
     <p class="text-xs text-slate-500 mt-6 mb-3">RESOURCES</p>
 
-    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+    <a
+      routerLink="/admin/inventory"
+      routerLinkActive="bg-blue-600"
+      class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+    >
       Inventory
     </a>
 
-    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+    <a class="block px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
       Allocation
     </a>
 
+    <!-- Nav groups -->
+    <nav class="flex flex-col gap-6 text-sm">
+      @for (group of navGroups; track group.title) {
+        <div>
+          <p class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+            {{ group.title }}
+          </p>
+          <div class="flex flex-col gap-0.5">
+            @for (item of group.items; track item.route) {
+              <a
+                [routerLink]="item.route"
+                routerLinkActive="bg-blue-600/15! text-white!"
+                #rla="routerLinkActive"
+                class="group flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
+              >
+                <app-icon
+                  [name]="item.icon"
+                  class="w-[18px] h-[18px] shrink-0"
+                  [class.text-blue-400]="rla.isActive"
+                />
+                <span class="flex-1 truncate font-medium">{{ item.label }}</span>
+                @if (item.badge) {
+                  <span
+                    class="text-[11px] font-semibold leading-none px-1.5 py-1 rounded-full bg-rose-500 text-white"
+                  >
+                    {{ item.badge }}
+                  </span>
+                }
+              </a>
+            }
+          </div>
+        </div>
+      }
+    </nav>
   </div>
 
-  <!-- User -->
-  <div class="p-4 border-t border-slate-800 flex items-center gap-3">
-    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+  <!-- Bottom user -->
+  <div class="border-t border-white/5 px-4 py-4 flex items-center gap-3 shrink-0">
+    <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm shrink-0">
       A
     </div>
-
-    <div>
-      <h4 class="font-semibold">Admin Kumar</h4>
-      <p class="text-xs text-slate-400">System Admin</p>
+    <div class="flex-1 min-w-0">
+      <p class="text-white text-sm font-medium truncate">Admin Kumar</p>
+      <p class="text-slate-500 text-xs">System Admin</p>
     </div>
+    <button type="button" aria-label="Log out" class="text-slate-500 hover:text-white transition-colors shrink-0">
+      <app-icon name="logout" class="w-[18px] h-[18px]" />
+    </button>
   </div>
-
-</div>
+</aside>
