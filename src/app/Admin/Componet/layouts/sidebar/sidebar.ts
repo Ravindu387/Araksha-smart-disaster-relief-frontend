@@ -1,23 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Icon } from '../../../../Common/icon/icon';
-
-interface NavItem {
-  label: string;
-  route: string;
-  badge?: number;
-  icon: string;
-}
-
-interface NavGroup {
-  title: string;
-  items: NavItem[];
-}
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, Icon],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css',
 })

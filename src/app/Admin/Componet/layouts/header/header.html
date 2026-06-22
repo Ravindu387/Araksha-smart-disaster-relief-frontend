@@ -1,12 +1,9 @@
-<header class="fixed top-0 left-72 right-0 z-10 h-20 bg-white border-b border-gray-100 flex items-center gap-6 px-8">
-  <!-- Breadcrumb -->
-  <div class="flex items-center gap-2 text-sm shrink-0">
-    @for (crumb of breadcrumb; track crumb; let last = $last) {
-      <span [class.text-gray-400]="!last" [class.font-semibold]="last" [class.text-gray-900]="last">{{ crumb }}</span>
-      @if (!last) {
-        <span class="text-gray-300">/</span>
-      }
-    }
+<div class="ml-64 h-20 bg-white border-b flex items-center justify-between px-8">
+
+  <div class="flex items-center gap-2 text-sm font-medium">
+    <span class="text-slate-400">Admin</span>
+    <span class="text-slate-300">/</span>
+    <span class="font-semibold text-slate-800">{{ currentSection }}</span>
   </div>
 
   <!-- Search -->
