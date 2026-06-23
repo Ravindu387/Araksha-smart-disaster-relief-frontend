@@ -11,7 +11,7 @@ import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
 //import { LiveTracking } from './Admin/Componet/pages/live-tracking/live-tracking';
 //import { Notifications } from './Admin/Componet/pages/notifications/notifications';
 //import { Reports } from './Admin/Componet/pages/reports/reports';
-//import { Settings } from './Admin/Componet/pages/settings/settings';
+import { Settings } from './Admin/Componet/pages/settings/settings';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
@@ -26,7 +26,7 @@ export const routes: Routes = [
   // { path: 'live-tracking', component: LiveTracking },
   // { path: 'notifications', component: Notifications },
   // { path: 'reports', component: Reports },
-  // { path: 'settings', component: Settings },
+  { path: 'settings', component: Settings },
 
   { path: '**', redirectTo: 'dashboard' }
 ];
