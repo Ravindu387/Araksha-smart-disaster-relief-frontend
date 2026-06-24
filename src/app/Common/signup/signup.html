@@ -1,0 +1,218 @@
+<div class="min-h-screen flex flex-col lg:flex-row text-[14px]">
+
+  <!-- LEFT PANEL -->
+  <div class="lg:w-1/2 bg-gradient-to-br from-slate-950 via-blue-950 to-black text-white relative overflow-hidden">
+
+    <div class="absolute inset-0 opacity-20">
+      <div class="h-full w-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:24px_24px]"></div>
+    </div>
+
+    <div class="relative z-10 flex flex-col justify-between h-full p-8 lg:p-10">
+
+      <div>
+        <button class="text-gray-400 text-sm flex items-center gap-2">
+          ← Back to home
+        </button>
+
+        <div class="flex items-center gap-3 mt-16 lg:mt-20">
+          <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+            🛡️
+          </div>
+          <h2 class="text-lg lg:text-xl font-bold">SDRMS</h2>
+        </div>
+
+        <div class="mt-12 lg:mt-16">
+          <h1 class="text-2xl lg:text-4xl font-bold leading-tight">
+            Join the relief<br>network today.
+          </h1>
+
+          <p class="text-gray-400 mt-4 max-w-md text-sm">
+            Whether citizen, volunteer, or administrator — SDRMS connects everyone when it matters most.
+          </p>
+
+          <div class="mt-8 space-y-4 text-sm">
+
+            <div class="flex items-center gap-3">
+              <span class="text-green-400">✓</span>
+              <span>Instant emergency request submission</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-green-400">✓</span>
+              <span>Real-time shelter & resource finder</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-green-400">✓</span>
+              <span>AI-powered task matching</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-green-400">✓</span>
+              <span>Secure, government-grade platform</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <p class="text-gray-500 text-xs">
+        © 2025 SDRMS · Emergency Response Platform
+      </p>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="lg:w-1/2 bg-gray-50 flex justify-center items-center p-6 lg:p-8">
+
+    <div class="w-full max-w-md lg:max-w-lg">
+
+      <!-- PROGRESS -->
+      <div class="flex items-center mb-8">
+
+        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs"
+          [ngClass]="step >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'">
+          1
+        </div>
+
+        <div class="h-0.5 w-12"
+          [ngClass]="step >= 2 ? 'bg-blue-500' : 'bg-gray-200'">
+        </div>
+
+        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs"
+          [ngClass]="step >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'">
+          2
+        </div>
+
+        <span class="ml-3 text-xs text-gray-500">
+          Step {{ step }} of 2
+        </span>
+      </div>
+
+      <!-- STEP 1 -->
+      <div *ngIf="step === 1">
+
+        <h2 class="text-xl lg:text-2xl font-bold text-slate-900">
+          Create your account
+        </h2>
+
+        <p class="text-gray-500 mt-1 text-sm">
+          Choose your role and basic information
+        </p>
+
+        <p class="mt-6 text-xs text-gray-500">
+          I am registering as a...
+        </p>
+
+        <!-- ROLES -->
+        <div class="space-y-3 mt-3 text-sm">
+
+          <!-- Citizen -->
+          <button
+            (click)="selectRole('Citizen')"
+            class="w-full rounded-xl border p-4 flex justify-between items-center"
+            [ngClass]="selectedRole==='Citizen' ? 'border-blue-500 bg-blue-50' : 'bg-white'">
+
+            <div class="text-left">
+              <h3 class="font-semibold">Citizen</h3>
+              <p class="text-xs text-gray-500">Report emergencies, find shelters.</p>
+            </div>
+
+            <span *ngIf="selectedRole==='Citizen'">✓</span>
+          </button>
+
+          <!-- Volunteer -->
+          <button
+            (click)="selectRole('Volunteer')"
+            class="w-full rounded-xl border p-4 flex justify-between items-center"
+            [ngClass]="selectedRole==='Volunteer' ? 'border-blue-500 bg-blue-50' : 'bg-white'">
+
+            <div class="text-left">
+              <h3 class="font-semibold">Volunteer</h3>
+              <p class="text-xs text-gray-500">Respond to incidents and assist relief efforts.</p>
+            </div>
+
+            <span *ngIf="selectedRole==='Volunteer'">✓</span>
+          </button>
+
+        </div>
+
+        <!-- FORM -->
+        <div class="grid grid-cols-2 gap-3 mt-5">
+          <input [value]="user.firstName" (input)="user.firstName = $any($event.target).value" placeholder="First Name"
+            class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+
+          <input [value]="user.lastName" (input)="user.lastName = $any($event.target).value" placeholder="Last Name"
+            class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <input [value]="user.email" (input)="user.email = $any($event.target).value" placeholder="Email Address"
+          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+
+        <input [value]="user.phone" (input)="user.phone = $any($event.target).value" placeholder="Phone Number"
+          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+
+        <button
+          (click)="nextStep()"
+          class="w-full mt-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-3 rounded-lg font-semibold text-sm">
+          Continue
+        </button>
+
+      </div>
+
+      <!-- STEP 2 -->
+      <div *ngIf="step === 2">
+
+        <h2 class="text-xl lg:text-2xl font-bold text-slate-900">
+          Complete your profile
+        </h2>
+
+        <p class="text-gray-500 mt-1 text-sm">
+          Add details to complete setup
+        </p>
+
+        <!-- PASSWORD -->
+        <div class="mt-6">
+          <label class="text-xs font-medium">Password</label>
+          <input [(ngModel)]="user.password" type="password"
+            class="border rounded-lg px-3 py-2 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <!-- TERMS -->
+        <div class="mt-4 flex items-center gap-2">
+          <input type="checkbox" [(ngModel)]="user.agree">
+          <span class="text-xs text-gray-600">
+            I agree to the
+            <a class="text-blue-600">Terms</a>
+            and
+            <a class="text-blue-600">Privacy Policy</a>
+          </span>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="flex gap-3 mt-6">
+
+          <button (click)="previousStep()"
+            class="px-4 py-2 border rounded-lg text-sm">
+            Back
+          </button>
+
+          <button
+            [disabled]="!user.agree"
+            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-2 rounded-lg font-semibold text-sm disabled:opacity-50">
+            Create {{ selectedRole }} Account
+          </button>
+
+        </div>
+
+        <div class="text-center mt-6 text-sm">
+          <span class="text-gray-500">Already have an account?</span>
+          <a class="text-blue-600 font-semibold ml-1" href="/login">Sign in</a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
