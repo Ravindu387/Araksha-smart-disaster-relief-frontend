@@ -5,8 +5,8 @@ import { CommonModule } from '@angular/common';
   selector: 'app-allocation',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './allocation.component.html',
-  styleUrls: ['./allocation.component.css']
+  templateUrl: './allocation.html',
+  styleUrls: ['./allocation.css']
 })
 export class AllocationComponent {
 
