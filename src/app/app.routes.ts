@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 
 import { LandingPage } from './Common/landing-page/landing-page';
 
+import { AdminLayout } from './Admin/Componet/layouts/admin-layout/admin-layout';
+
 import { Dashboard } from './Admin/Componet/pages/dashboard/dashboard';
 //import { EmergencyRequests } from './Admin/Componet/pages/emergency-requests/emergency-requests';
 //import { Volunteers } from './Admin/Componet/pages/volunteers/volunteers';
@@ -16,17 +18,24 @@ import { Settings } from './Admin/Componet/pages/settings/settings';
 export const routes: Routes = [
   { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
 
-  {path: 'LandingPage',component: LandingPage},
-  { path: 'dashboard', component: Dashboard },
-  // { path: 'emergency-requests', component: EmergencyRequests },
-  // { path: 'volunteers', component: Volunteers },
-  // { path: 'shelters', component: Shelters },
-  // { path: 'inventory', component: Inventory },
-  // { path: 'allocation', component: Allocation },
-  // { path: 'live-tracking', component: LiveTracking },
-  // { path: 'notifications', component: Notifications },
-  // { path: 'reports', component: Reports },
-  { path: 'settings', component: Settings },
+  { path: 'LandingPage', component: LandingPage },
 
-  { path: '**', redirectTo: 'dashboard' }
+  {
+    path: '',
+    component: AdminLayout,
+    children: [
+      { path: 'dashboard', component: Dashboard },
+      // { path: 'emergency-requests', component: EmergencyRequests },
+      // { path: 'volunteers', component: Volunteers },
+      // { path: 'shelters', component: Shelters },
+      // { path: 'inventory', component: Inventory },
+      // { path: 'allocation', component: Allocation },
+      // { path: 'live-tracking', component: LiveTracking },
+      // { path: 'notifications', component: Notifications },
+      // { path: 'reports', component: Reports },
+      { path: 'settings', component: Settings },
+    ],
+  },
+
+  { path: '**', redirectTo: 'dashboard' },
 ];
