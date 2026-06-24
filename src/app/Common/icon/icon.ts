@@ -108,6 +108,61 @@ import { Component, Input } from '@angular/core';
             d="M12 3.5v2.1M12 18.4v2.1M5.4 6.6l1.5 1.5M17.1 15.9l1.5 1.5M3.5 12h2.1M18.4 12h2.1M5.4 17.4l1.5-1.5M17.1 8.1l1.5-1.5"
           />
         }
+        @case ('user') {
+          <circle cx="12" cy="8.5" r="3.5" />
+          <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" />
+        }
+        @case ('globe') {
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M3.5 12h17M12 3.5c2.4 2.3 3.5 5.3 3.5 8.5s-1.1 6.2-3.5 8.5c-2.4-2.3-3.5-5.3-3.5-8.5S9.6 5.8 12 3.5Z" />
+        }
+        @case ('palette') {
+          <path
+            d="M12 3.5a8.5 8.5 0 1 0 0 17c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.2-.3-.4-.6-.4-1 0-.8.7-1.4 1.5-1.4h1.8a4.5 4.5 0 0 0 4.5-4.5c0-4-3.8-7.4-8.6-7.4Z"
+          />
+          <circle cx="7.2" cy="11" r="1" fill="currentColor" stroke="none" />
+          <circle cx="9.8" cy="7.3" r="1" fill="currentColor" stroke="none" />
+          <circle cx="14.8" cy="7.3" r="1" fill="currentColor" stroke="none" />
+          <circle cx="17" cy="11" r="1" fill="currentColor" stroke="none" />
+        }
+        @case ('database') {
+          <ellipse cx="12" cy="6" rx="7.5" ry="2.8" />
+          <path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6" />
+          <path d="M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6" />
+        }
+        @case ('key') {
+          <circle cx="7.5" cy="14.5" r="4" />
+          <path d="M10.3 11.7 19 3M16 7l2 2M13.2 9.8l2 2" />
+        }
+        @case ('mail') {
+          <rect x="2.5" y="5" width="19" height="14" rx="2" />
+          <path d="M3.5 6.5 12 13l8.5-6.5" />
+        }
+        @case ('phone') {
+          <path
+            d="M5.5 4h3l1.5 4-2 1.5a13 13 0 0 0 6.5 6.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2c-8 0-14.5-6.5-14.5-14.5a2 2 0 0 1 2-2Z"
+          />
+        }
+        @case ('camera') {
+          <path d="M3.5 8h3l1.4-2.3h8.2L17.5 8h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20.5 20h-17A1.5 1.5 0 0 1 2 18.5v-9A1.5 1.5 0 0 1 3.5 8Z" />
+          <circle cx="12" cy="13.5" r="3.5" />
+        }
+        @case ('download') {
+          <path d="M12 3.5v12M7.5 11l4.5 4.5L16.5 11" />
+          <path d="M4.5 18h15" />
+        }
+        @case ('trash') {
+          <path d="M4.5 7h15M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2" />
+          <path d="M6.5 7l1 12.5A1.5 1.5 0 0 0 9 21h6a1.5 1.5 0 0 0 1.5-1.5L17.5 7" />
+          <path d="M10 11v6M14 11v6" />
+        }
+        @case ('chevron-right') {
+          <path d="M8.5 5.5 15 12l-6.5 6.5" />
+        }
+        @case ('save') {
+          <path d="M5 3.5h11l3.5 3.5v13.5H5a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 5 3.5Z" />
+          <path d="M8 3.5v5h7v-5M8 20.5v-6h8v6" />
+        }
       }
     </svg>
   `,

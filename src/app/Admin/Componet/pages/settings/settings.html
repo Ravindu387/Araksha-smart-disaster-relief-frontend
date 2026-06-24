@@ -1,164 +1,384 @@
-<div class="p-8 flex flex-col gap-6 max-w-[1100px]">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
-    <p class="text-sm text-gray-400 mt-1">Manage your profile, notifications, and security</p>
+<div class="p-8 flex flex-col gap-6">
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+      <p class="text-sm text-gray-400 mt-1">Platform configuration</p>
+    </div>
+    <button
+      type="button"
+      (click)="onSaveChanges()"
+      [disabled]="savingProfile()"
+      class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors shrink-0"
+    >
+      <app-icon name="save" class="w-4 h-4" />
+      {{ savingProfile() ? 'Saving...' : 'Save Changes' }}
+    </button>
   </div>
 
-  <!-- Tabs -->
-  <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit">
-    @for (tab of tabs; track tab.id) {
-      <button
-        type="button"
-        (click)="setTab(tab.id)"
-        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        [class.bg-gray-900]="activeTab() === tab.id"
-        [class.text-white]="activeTab() === tab.id"
-        [class.text-gray-500]="activeTab() !== tab.id"
-      >
-        <app-icon [name]="tab.icon" class="w-4 h-4" />
-        {{ tab.label }}
-      </button>
-    }
-  </div>
+  @if (profileSaved() || genericSaved()) {
+    <p class="text-sm text-emerald-600 font-medium -mt-2">Saved ✓</p>
+  }
+  @if (profileError()) {
+    <p class="text-sm text-rose-600 font-medium -mt-2">{{ profileError() }}</p>
+  }
 
-  <!-- Profile -->
-  @if (activeTab() === 'profile') {
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 max-w-2xl">
-      <div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-        <div
-          class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-semibold shrink-0"
-        >
-          {{ currentUser()?.initials ?? 'A' }}
-        </div>
-        <div>
-          <p class="font-semibold text-gray-900">{{ currentUser()?.name ?? 'Loading...' }}</p>
-          <span class="inline-block mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
-            {{ currentUser()?.role ?? '—' }}
-          </span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="font-medium text-gray-700">Full name</span>
-          <input
-            type="text"
-            [(ngModel)]="name"
-            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-          />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="font-medium text-gray-700">Email</span>
-          <input
-            type="email"
-            [(ngModel)]="email"
-            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-          />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
-          <span class="font-medium text-gray-700">Department</span>
-          <input
-            type="text"
-            [(ngModel)]="department"
-            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-          />
-        </label>
-      </div>
-
-      <div class="flex items-center gap-3 mt-6">
+  <div class="flex gap-8 items-start">
+    <!-- Sub-nav -->
+    <nav class="w-56 shrink-0 flex flex-col gap-1">
+      @for (section of sections; track section.id) {
         <button
           type="button"
-          (click)="saveProfile()"
-          [disabled]="savingProfile()"
-          class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+          (click)="setSection(section.id)"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors"
+          [class.bg-blue-50]="activeSection() === section.id"
+          [class.text-blue-600]="activeSection() === section.id"
+          [class.text-gray-600]="activeSection() !== section.id"
+          [class.hover:bg-gray-50]="activeSection() !== section.id"
         >
-          {{ savingProfile() ? 'Saving...' : 'Save Changes' }}
+          <app-icon [name]="section.icon" class="w-[18px] h-[18px] shrink-0" />
+          <span class="flex-1">{{ section.label }}</span>
+          @if (activeSection() === section.id) {
+            <app-icon name="chevron-right" class="w-4 h-4 shrink-0" />
+          }
         </button>
-        @if (profileSaved()) {
-          <span class="text-sm text-emerald-600 font-medium">Saved ✓</span>
-        }
-        @if (profileError()) {
-          <span class="text-sm text-rose-600 font-medium">{{ profileError() }}</span>
-        }
-      </div>
-    </div>
-  }
+      }
+    </nav>
 
-  <!-- Notifications -->
-  @if (activeTab() === 'notifications') {
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 max-w-2xl">
-      <div class="flex flex-col divide-y divide-gray-100">
-        @for (pref of notificationPrefs; track pref.key) {
-          <div class="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-            <div>
-              <p class="text-sm font-medium text-gray-900">{{ pref.label }}</p>
-              <p class="text-xs text-gray-400 mt-0.5">{{ pref.description }}</p>
+    <!-- Content -->
+    <div class="flex-1 min-w-0 flex flex-col gap-6 max-w-3xl">
+      <!-- Profile -->
+      @if (activeSection() === 'profile') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Profile Photo</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Your public identity across the platform</p>
+
+          <div class="flex items-center gap-4">
+            <div class="relative shrink-0">
+              <div
+                class="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl font-semibold"
+              >
+                {{ currentUser()?.initials ?? 'A' }}
+              </div>
+              <div
+                class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500"
+              >
+                <app-icon name="camera" class="w-3.5 h-3.5" />
+              </div>
             </div>
-            <app-toggle [checked]="pref.enabled" (checkedChange)="pref.enabled = $event" />
+            <button
+              type="button"
+              class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-50 transition-colors"
+            >
+              Upload Photo
+            </button>
+            <button type="button" class="text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors">
+              Remove
+            </button>
           </div>
-        }
-      </div>
+          <p class="text-xs text-gray-400 mt-3">JPEG, PNG · Max 5MB · Recommended 256×256px</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Personal Information</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Basic account details and contact information</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">FIRST NAME</span>
+              <input
+                type="text"
+                [(ngModel)]="firstName"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">LAST NAME</span>
+              <input
+                type="text"
+                [(ngModel)]="lastName"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">EMAIL ADDRESS</span>
+              <div class="relative">
+                <app-icon name="mail" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  [(ngModel)]="email"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">PHONE NUMBER</span>
+              <div class="relative">
+                <app-icon name="phone" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  [(ngModel)]="phone"
+                  placeholder="+1 (202) 555-0100"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">JOB TITLE</span>
+              <div class="relative">
+                <app-icon name="users" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  [(ngModel)]="jobTitle"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">LOCATION</span>
+              <div class="relative">
+                <app-icon name="pin" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  [(ngModel)]="location"
+                  placeholder="Washington, D.C."
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">BIO</span>
+              <textarea
+                [(ngModel)]="bio"
+                rows="3"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition resize-none"
+              ></textarea>
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">TIMEZONE</span>
+              <select
+                [(ngModel)]="timezone"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
+              >
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Chicago">America/Chicago</option>
+                <option value="America/Denver">America/Denver</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">LANGUAGE</span>
+              <select
+                [(ngModel)]="language"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
+              >
+                <option value="English (US)">English (US)</option>
+                <option value="English (UK)">English (UK)</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-rose-50/60 rounded-2xl border border-rose-100 p-6">
+          <h3 class="font-semibold text-gray-900">Danger Zone</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Irreversible actions — proceed with caution</p>
+
+          <div class="flex flex-col gap-3">
+            <div
+              class="flex items-center justify-between gap-4 bg-white rounded-xl border border-rose-100 px-5 py-4"
+            >
+              <div>
+                <p class="text-sm font-semibold text-gray-900">Export Account Data</p>
+                <p class="text-xs text-gray-400 mt-0.5">Download all your data in JSON format</p>
+              </div>
+              <button
+                type="button"
+                (click)="exportAccountData()"
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-50 transition-colors shrink-0"
+              >
+                <app-icon name="download" class="w-4 h-4" />
+                Export
+              </button>
+            </div>
+
+            <div
+              class="flex items-center justify-between gap-4 bg-white rounded-xl border border-rose-100 px-5 py-4"
+            >
+              <div>
+                <p class="text-sm font-semibold text-rose-600">Delete Account</p>
+                <p class="text-xs text-gray-400 mt-0.5">Permanently remove account and all associated data</p>
+              </div>
+              <button
+                type="button"
+                (click)="deleteAccount()"
+                class="flex items-center gap-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-full px-4 py-2 transition-colors shrink-0"
+              >
+                <app-icon name="trash" class="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Notifications -->
+      @if (activeSection() === 'notifications') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Alert Priorities</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Control which emergency alerts you receive</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            @for (pref of alertPriorities; track pref.key) {
+              <div class="flex items-center justify-between gap-4 py-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ pref.label }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ pref.description }}</p>
+                </div>
+                <app-toggle
+                  [checked]="pref.enabled"
+                  [color]="pref.color"
+                  (checkedChange)="pref.enabled = $event"
+                />
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Delivery Channels</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">How you receive notifications</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            @for (channel of deliveryChannels; track channel.key) {
+              <div class="flex items-center justify-between gap-3 border border-gray-100 rounded-xl px-4 py-3.5">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"
+                  >
+                    <app-icon [name]="channel.icon" class="w-[18px] h-[18px]" />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-900">{{ channel.label }}</p>
+                    <p class="text-xs text-gray-400 truncate">
+                      {{ channel.key === 'email' ? (currentUser()?.email ?? '') : channel.key === 'sms' ? phone : channel.detail }}
+                    </p>
+                  </div>
+                </div>
+                <app-toggle [checked]="channel.enabled" (checkedChange)="channel.enabled = $event" />
+              </div>
+            }
+          </div>
+
+          <div class="flex items-center justify-between gap-4 border border-gray-100 rounded-xl px-4 py-3.5 mt-3">
+            <div>
+              <p class="text-sm font-semibold text-gray-900">Quiet Hours</p>
+              <p class="text-xs text-gray-400 mt-0.5">Suppress non-critical alerts during specified hours</p>
+            </div>
+            <app-toggle [checked]="quietHoursEnabled()" (checkedChange)="quietHoursEnabled.set($event)" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Reports & Digests</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Scheduled summary reports</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            @for (pref of reportsDigests; track pref.key) {
+              <div class="flex items-center justify-between gap-4 py-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ pref.label }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ pref.description }}</p>
+                </div>
+                <app-toggle
+                  [checked]="pref.enabled"
+                  [color]="pref.color"
+                  (checkedChange)="pref.enabled = $event"
+                />
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Security -->
+      @if (activeSection() === 'security') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900 mb-1">Change Password</h3>
+          <p class="text-sm text-gray-400 mb-5">Use a strong password you don't use anywhere else</p>
+
+          <div class="grid grid-cols-1 gap-4">
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="font-medium text-gray-700">Current password</span>
+              <input
+                type="password"
+                [(ngModel)]="currentPassword"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="font-medium text-gray-700">New password</span>
+              <input
+                type="password"
+                [(ngModel)]="newPassword"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm">
+              <span class="font-medium text-gray-700">Confirm new password</span>
+              <input
+                type="password"
+                [(ngModel)]="confirmPassword"
+                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+          </div>
+
+          <div class="flex items-center gap-3 mt-5">
+            <button
+              type="button"
+              (click)="changePassword()"
+              class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+            >
+              Update Password
+            </button>
+            @if (passwordChanged()) {
+              <span class="text-sm text-emerald-600 font-medium">Updated ✓</span>
+            }
+            @if (passwordError()) {
+              <span class="text-sm text-rose-600 font-medium">{{ passwordError() }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 flex items-center justify-between gap-4">
+          <div>
+            <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
+            <p class="text-sm text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
+          </div>
+          <app-toggle [checked]="twoFactorEnabled()" (checkedChange)="twoFactorEnabled.set($event)" />
+        </div>
+      }
+
+      <!-- Stub sections: not designed yet, just placeholders so nav doesn't dead-end -->
+      @if (activeSection() === 'system' || activeSection() === 'appearance' || activeSection() === 'integrations' || activeSection() === 'team' || activeSection() === 'api-keys') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-10 flex flex-col items-center text-center gap-2">
+          <div class="w-12 h-12 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center mb-2">
+            <app-icon [name]="sections.find(s => s.id === activeSection())?.icon ?? 'settings'" class="w-6 h-6" />
+          </div>
+          <h3 class="font-semibold text-gray-900">
+            {{ sections.find(s => s.id === activeSection())?.label }}
+          </h3>
+          <p class="text-sm text-gray-400 max-w-xs">This section is coming soon.</p>
+        </div>
+      }
     </div>
-  }
-
-  <!-- Security -->
-  @if (activeTab() === 'security') {
-    <div class="flex flex-col gap-5 max-w-2xl">
-      <div class="bg-white rounded-2xl border border-gray-100 p-6">
-        <h3 class="font-semibold text-gray-900 mb-1">Change Password</h3>
-        <p class="text-sm text-gray-400 mb-5">Use a strong password you don't use anywhere else</p>
-
-        <div class="grid grid-cols-1 gap-4">
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="font-medium text-gray-700">Current password</span>
-            <input
-              type="password"
-              [(ngModel)]="currentPassword"
-              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-            />
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="font-medium text-gray-700">New password</span>
-            <input
-              type="password"
-              [(ngModel)]="newPassword"
-              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-            />
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="font-medium text-gray-700">Confirm new password</span>
-            <input
-              type="password"
-              [(ngModel)]="confirmPassword"
-              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-            />
-          </label>
-        </div>
-
-        <div class="flex items-center gap-3 mt-5">
-          <button
-            type="button"
-            (click)="changePassword()"
-            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
-          >
-            Update Password
-          </button>
-          @if (passwordChanged()) {
-            <span class="text-sm text-emerald-600 font-medium">Updated ✓</span>
-          }
-          @if (passwordError()) {
-            <span class="text-sm text-rose-600 font-medium">{{ passwordError() }}</span>
-          }
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-gray-100 p-6 flex items-center justify-between gap-4">
-        <div>
-          <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
-          <p class="text-sm text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
-        </div>
-        <app-toggle [checked]="twoFactorEnabled()" (checkedChange)="twoFactorEnabled.set($event)" />
-      </div>
-    </div>
-  }
+  </div>
 </div>
