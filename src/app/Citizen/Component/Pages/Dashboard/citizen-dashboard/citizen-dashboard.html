@@ -1,1 +1,290 @@
-<p>citizen-dashboard works!</p>
+<div class="min-h-screen bg-[#F5F7FC]">
+
+  <!-- Top Header -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+
+      <div class="flex items-center gap-4">
+        <button class="text-gray-500 text-xl">←</button>
+
+        <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl">
+          🛡
+        </div>
+
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">
+            Citizen Portal
+          </h2>
+          <p class="text-gray-400 text-lg">
+            Maria Santos • Houston, TX
+          </p>
+        </div>
+      </div>
+
+      <button
+        class="bg-gradient-to-r from-pink-500 to-red-500 text-white px-10 py-4 rounded-full font-semibold text-xl shadow-lg hover:scale-105 transition">
+        ⚠ Report Emergency
+      </button>
+
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Action Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+      <div
+        class="bg-gradient-to-r from-pink-500 to-red-500 rounded-3xl text-white p-8 shadow-xl h-[150px] flex flex-col justify-center">
+        <div class="text-5xl mb-4">⚠</div>
+        <h3 class="text-3xl font-bold">
+          Report Emergency
+        </h3>
+      </div>
+
+      <div
+        class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-3xl text-white p-8 shadow-xl h-[150px] flex flex-col justify-center">
+        <div class="text-5xl mb-4">🕒</div>
+        <h3 class="text-3xl font-bold">
+          Track My Requests
+        </h3>
+      </div>
+
+      <div
+        class="bg-gradient-to-r from-green-500 to-green-600 rounded-3xl text-white p-8 shadow-xl h-[150px] flex flex-col justify-center">
+        <div class="text-5xl mb-4">📍</div>
+        <h3 class="text-3xl font-bold">
+          Find Shelters
+        </h3>
+      </div>
+
+      <div
+        class="bg-gradient-to-r from-purple-500 to-purple-700 rounded-3xl text-white p-8 shadow-xl h-[150px] flex flex-col justify-center">
+        <div class="text-5xl mb-4">☎</div>
+        <h3 class="text-3xl font-bold">
+          Emergency Contacts
+        </h3>
+      </div>
+
+    </div>
+
+    <!-- Main Cards -->
+    <div class="grid lg:grid-cols-2 gap-8 mb-8">
+
+      <!-- My Requests -->
+      <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+
+        <div class="flex justify-between items-center px-8 py-6 border-b">
+          <h2 class="text-3xl font-bold">
+            My Requests
+          </h2>
+
+          <a href="#" class="text-blue-500 text-xl font-semibold">
+            View all
+          </a>
+        </div>
+
+        <div class="p-8 space-y-8">
+
+          <div>
+            <div class="flex justify-between">
+              <h3 class="text-blue-500 text-2xl font-bold">
+                ER-2830
+              </h3>
+
+              <span
+                class="px-6 py-2 rounded-full bg-green-100 text-green-600 font-semibold text-lg">
+                ● Resolved
+              </span>
+            </div>
+
+            <h4 class="text-3xl font-semibold mt-3">
+              Flood Emergency
+            </h4>
+
+            <div class="flex justify-between mt-3 text-gray-400 text-xl">
+              <span>2025-06-05</span>
+              <span>Tom Harris</span>
+            </div>
+          </div>
+
+          <hr>
+
+          <div>
+            <div class="flex justify-between">
+              <h3 class="text-blue-500 text-2xl font-bold">
+                ER-2847
+              </h3>
+
+              <span
+                class="px-6 py-2 rounded-full bg-blue-100 text-blue-600 font-semibold text-lg">
+                ● In Progress
+              </span>
+            </div>
+
+            <h4 class="text-3xl font-semibold mt-3">
+              Flood Emergency
+            </h4>
+
+            <div class="flex justify-between mt-3 text-gray-400 text-xl">
+              <span>2025-06-07</span>
+              <span>James Wright</span>
+            </div>
+
+            <div
+              class="mt-6 bg-blue-50 border border-blue-100 rounded-full px-6 py-4 text-blue-600 font-semibold text-lg">
+              ● James Wright en route · ETA 8 min
+            </div>
+          </div>
+
+          <button
+            class="w-full border-2 border-dashed border-gray-300 rounded-full py-5 text-gray-400 text-2xl font-semibold">
+            + New Request
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Shelters -->
+      <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+
+        <div class="flex justify-between items-center px-8 py-6 border-b">
+          <h2 class="text-3xl font-bold">
+            Nearby Shelters
+          </h2>
+
+          <a href="#" class="text-blue-500 text-xl font-semibold">
+            Map view
+          </a>
+        </div>
+
+        <div class="divide-y">
+
+          <div class="flex justify-between p-8">
+            <div>
+              <h3 class="text-3xl font-semibold">
+                Houston Community Center
+              </h3>
+
+              <p class="text-gray-400 text-xl mt-2">
+                1.2 mi away
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-green-500 font-bold text-2xl">
+                Available
+              </p>
+
+              <p class="text-gray-400 text-xl">
+                68 beds free
+              </p>
+            </div>
+          </div>
+
+          <div class="flex justify-between p-8">
+            <div>
+              <h3 class="text-3xl font-semibold">
+                Riverside School Gym
+              </h3>
+
+              <p class="text-gray-400 text-xl mt-2">
+                2.8 mi away
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-orange-500 font-bold text-2xl">
+                Limited
+              </p>
+
+              <p class="text-gray-400 text-xl">
+                12 beds free
+              </p>
+            </div>
+          </div>
+
+          <div class="flex justify-between p-8">
+            <div>
+              <h3 class="text-3xl font-semibold">
+                Northside Relief Hub
+              </h3>
+
+              <p class="text-gray-400 text-xl mt-2">
+                4.1 mi away
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-red-500 font-bold text-2xl">
+                Full
+              </p>
+
+              <p class="text-gray-400 text-xl">
+                0 beds free
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Emergency Contacts -->
+    <div class="bg-white rounded-3xl shadow-sm p-8">
+
+      <h2 class="text-3xl font-bold mb-8">
+        Emergency Contacts
+      </h2>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div
+          class="bg-gradient-to-r from-pink-600 to-red-700 rounded-3xl p-8 text-white">
+          <h3 class="text-2xl font-bold">
+            Emergency Services
+          </h3>
+          <p class="text-xl mt-3">
+            911
+          </p>
+        </div>
+
+        <div
+          class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-3xl p-8 text-white">
+          <h3 class="text-2xl font-bold">
+            Relief Hotline
+          </h3>
+          <p class="text-xl mt-3">
+            1-800-RELIEF
+          </p>
+        </div>
+
+        <div
+          class="bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-8 text-white">
+          <h3 class="text-2xl font-bold">
+            Red Cross
+          </h3>
+          <p class="text-xl mt-3">
+            1-800-RED-CROSS
+          </p>
+        </div>
+
+        <div
+          class="bg-gradient-to-r from-slate-700 to-slate-800 rounded-3xl p-8 text-white">
+          <h3 class="text-2xl font-bold">
+            FEMA Helpline
+          </h3>
+          <p class="text-xl mt-3">
+            1-800-621-3362
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

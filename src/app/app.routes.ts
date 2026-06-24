@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { LandingPage } from './Common/landing-page/landing-page';
+import { CitizenDashboard } from './Citizen/Component/Pages/Dashboard/citizen-dashboard/citizen-dashboard';
 
 export const routes: Routes = [
   {
-    path: '',
-    component: LandingPage
+    path: 'citizen',
+    component: CitizenDashboard
   }
 ];
