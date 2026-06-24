@@ -1,0 +1,226 @@
+
+<div class="min-h-screen bg-slate-100 text-slate-800 antialiased p-7">
+
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+        Relief Inventory
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">{{ subtitle }}</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      
+      <button
+        type="button"
+        (click)="syncInventory()"
+        [disabled]="syncing"
+        class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium
+               text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm
+               hover:bg-slate-50 disabled:opacity-60 transition-colors cursor-pointer">
+        <svg
+          class="w-3.5 h-3.5"
+          [class.animate-spin]="syncing"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/>
+        </svg>
+        {{ syncing ? 'Syncing…' : 'Sync' }}
+      </button>
+
+      
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium
+               text-white bg-blue-600 rounded-lg shadow-sm
+               hover:bg-blue-700 transition-colors cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Stock
+      </button>
+    </div>
+  </div>
+
+ 
+  @if (lowStockItems.length) {
+    <div class="flex items-start gap-3 bg-rose-50 border border-rose-200
+                rounded-xl p-4 mb-5">
+      <svg class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
+             1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464
+             0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div>
+        <h4 class="text-xs font-bold text-rose-600">Low Stock Alert</h4>
+        <p class="text-xs text-rose-500 mt-0.5">
+          {{ lowStockNames }} are below threshold. Immediate restocking required.
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="flex flex-wrap items-center gap-3 mb-5">
+
+    <div class="relative flex-1 min-w-[200px]">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4
+                  text-slate-400 pointer-events-none"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearch()"
+        placeholder="Search inventory..."
+        class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200
+               rounded-lg placeholder-slate-400 outline-none
+               focus:border-blue-400 transition-colors" />
+    </div>
+
+    
+    <div class="flex flex-wrap gap-1.5">
+      @for (cat of categories; track cat) {
+        <button
+          type="button"
+          (click)="filterCategory(cat)"
+          [class]="selectedCategory === cat
+            ? 'px-4 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap cursor-pointer bg-slate-900 text-white border-slate-900'
+            : 'px-4 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap cursor-pointer bg-white text-slate-500 border-slate-200 hover:bg-slate-50'">
+          {{ cat }}
+        </button>
+      }
+    </div>
+  </div>
+
+  
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+
+    @for (item of filteredItems; track item.id) {
+      <div
+        [class]="item.lowStock
+          ? 'rounded-2xl border border-rose-200 bg-rose-50/30 p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow'
+          : 'rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow'">
+
+        
+        @if (item.lowStock) {
+          <div class="flex items-center gap-1.5 text-[10px] font-bold text-rose-500
+                      uppercase tracking-widest mb-3">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667
+                   1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464
+                   0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Low Stock
+          </div>
+        }
+
+        
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="item.dotColor"></span>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-800 leading-tight">
+              {{ item.name }}
+            </h3>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">
+              {{ item.category }}
+            </p>
+          </div>
+        </div>
+
+       
+        <div class="flex items-center gap-4 mb-4">
+          <div
+            class="w-12 h-12 rounded-full border-4 flex items-center justify-center
+                   text-[10px] font-extrabold bg-white shrink-0"
+            [ngClass]="item.ringColor">
+            {{ item.percentage }}%
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-900 leading-none">
+              {{ item.count }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              of {{ item.total }} {{ item.unit }}
+            </div>
+           
+            <div
+              class="flex items-center gap-1 mt-1.5 text-[10px] font-bold"
+              [ngClass]="item.trendUp ? 'text-emerald-600' : 'text-rose-500'">
+              @if (item.trendUp) {
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+              } @else {
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
+                </svg>
+              }
+              {{ item.trend }}
+            </div>
+          </div>
+        </div>
+
+       
+        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-2">
+          <div
+            class="h-full rounded-full transition-all duration-500"
+            [ngClass]="item.barColor"
+            [style.width.%]="item.percentage">
+          </div>
+        </div>
+
+       
+        <div class="flex justify-between text-[10px] font-medium text-slate-400">
+          <span>Allocated: {{ item.allocated }}</span>
+          <span [ngClass]="item.lowStock ? 'text-rose-500 font-bold' : ''">
+            Min: {{ item.min }}
+          </span>
+        </div>
+
+      </div>
+    }
+
+  </div>
+
+  
+  <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+
+    <!-- Chart header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div>
+        <h2 class="text-sm font-bold text-slate-800">Inventory Movement</h2>
+        <p class="text-[11px] text-slate-400 mt-0.5">Last 7 days</p>
+      </div>
+      <!-- Legend -->
+      <div class="flex items-center gap-5 text-xs font-medium text-slate-500">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+          Dispatched
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          Restocked
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+          Consumed
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="h-72 w-full relative">
+     
+    </div>
+
+  </div>
+
+</div>
