@@ -1,1 +1,164 @@
-<p>settings works!</p>
+<div class="p-8 flex flex-col gap-6 max-w-[1100px]">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+    <p class="text-sm text-gray-400 mt-1">Manage your profile, notifications, and security</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit">
+    @for (tab of tabs; track tab.id) {
+      <button
+        type="button"
+        (click)="setTab(tab.id)"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        [class.bg-gray-900]="activeTab() === tab.id"
+        [class.text-white]="activeTab() === tab.id"
+        [class.text-gray-500]="activeTab() !== tab.id"
+      >
+        <app-icon [name]="tab.icon" class="w-4 h-4" />
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- Profile -->
+  @if (activeTab() === 'profile') {
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 max-w-2xl">
+      <div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+        <div
+          class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-semibold shrink-0"
+        >
+          {{ currentUser()?.initials ?? 'A' }}
+        </div>
+        <div>
+          <p class="font-semibold text-gray-900">{{ currentUser()?.name ?? 'Loading...' }}</p>
+          <span class="inline-block mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+            {{ currentUser()?.role ?? '—' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <label class="flex flex-col gap-1.5 text-sm">
+          <span class="font-medium text-gray-700">Full name</span>
+          <input
+            type="text"
+            [(ngModel)]="name"
+            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5 text-sm">
+          <span class="font-medium text-gray-700">Email</span>
+          <input
+            type="email"
+            [(ngModel)]="email"
+            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
+          <span class="font-medium text-gray-700">Department</span>
+          <input
+            type="text"
+            [(ngModel)]="department"
+            class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+          />
+        </label>
+      </div>
+
+      <div class="flex items-center gap-3 mt-6">
+        <button
+          type="button"
+          (click)="saveProfile()"
+          [disabled]="savingProfile()"
+          class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+        >
+          {{ savingProfile() ? 'Saving...' : 'Save Changes' }}
+        </button>
+        @if (profileSaved()) {
+          <span class="text-sm text-emerald-600 font-medium">Saved ✓</span>
+        }
+        @if (profileError()) {
+          <span class="text-sm text-rose-600 font-medium">{{ profileError() }}</span>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Notifications -->
+  @if (activeTab() === 'notifications') {
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 max-w-2xl">
+      <div class="flex flex-col divide-y divide-gray-100">
+        @for (pref of notificationPrefs; track pref.key) {
+          <div class="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+            <div>
+              <p class="text-sm font-medium text-gray-900">{{ pref.label }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ pref.description }}</p>
+            </div>
+            <app-toggle [checked]="pref.enabled" (checkedChange)="pref.enabled = $event" />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Security -->
+  @if (activeTab() === 'security') {
+    <div class="flex flex-col gap-5 max-w-2xl">
+      <div class="bg-white rounded-2xl border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-1">Change Password</h3>
+        <p class="text-sm text-gray-400 mb-5">Use a strong password you don't use anywhere else</p>
+
+        <div class="grid grid-cols-1 gap-4">
+          <label class="flex flex-col gap-1.5 text-sm">
+            <span class="font-medium text-gray-700">Current password</span>
+            <input
+              type="password"
+              [(ngModel)]="currentPassword"
+              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+            />
+          </label>
+          <label class="flex flex-col gap-1.5 text-sm">
+            <span class="font-medium text-gray-700">New password</span>
+            <input
+              type="password"
+              [(ngModel)]="newPassword"
+              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+            />
+          </label>
+          <label class="flex flex-col gap-1.5 text-sm">
+            <span class="font-medium text-gray-700">Confirm new password</span>
+            <input
+              type="password"
+              [(ngModel)]="confirmPassword"
+              class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+            />
+          </label>
+        </div>
+
+        <div class="flex items-center gap-3 mt-5">
+          <button
+            type="button"
+            (click)="changePassword()"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+          >
+            Update Password
+          </button>
+          @if (passwordChanged()) {
+            <span class="text-sm text-emerald-600 font-medium">Updated ✓</span>
+          }
+          @if (passwordError()) {
+            <span class="text-sm text-rose-600 font-medium">{{ passwordError() }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 p-6 flex items-center justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
+          <p class="text-sm text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
+        </div>
+        <app-toggle [checked]="twoFactorEnabled()" (checkedChange)="twoFactorEnabled.set($event)" />
+      </div>
+    </div>
+  }
+</div>
