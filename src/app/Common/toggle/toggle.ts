@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
+export type ToggleColor = 'blue' | 'amber' | 'rose';
+
 @Component({
   selector: 'app-toggle',
   standalone: true,
@@ -10,7 +12,9 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
       [attr.aria-checked]="checked"
       (click)="toggle()"
       class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 shrink-0"
-      [class.bg-blue-600]="checked"
+      [class.bg-blue-600]="checked && color === 'blue'"
+      [class.bg-amber-500]="checked && color === 'amber'"
+      [class.bg-rose-500]="checked && color === 'rose'"
       [class.bg-gray-200]="!checked"
     >
       <span
@@ -22,6 +26,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 })
 export class Toggle {
   @Input() checked = false;
+  @Input() color: ToggleColor = 'blue';
   @Output() checkedChange = new EventEmitter<boolean>();
 
   toggle(): void {
