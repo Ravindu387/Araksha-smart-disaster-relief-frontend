@@ -19,37 +19,35 @@ import {
   ChartOptions,
 } from 'chart.js';
 
-
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
-export class Inventory {
+
+// ── Model class (used as the data shape for each inventory row) ──
+export class InventoryItem {
+  id: string = '';
+  name: string = '';
+  category: string = '';
+  count: string = '';
+  total: string = '';
+  unit: string = '';
+  percentage: number = 0;
+  trend: string = '';
+  trendUp: boolean = false;
+  allocated: string = '';
+  min: string = '';
+  lowStock: boolean = false;
+  ringColor: string = '';
+  dotColor: string = '';
+  barColor: string = '';
 }
 
-
-export interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  count: string;
-  total: string;
-  unit: string;
-  percentage: number;
-  trend: string;
-  trendUp: boolean;
-  allocated: string;
-  min: string;
-  lowStock: boolean;
-  ringColor: string;
-  dotColor: string;
-  barColor: string;
-}
-
+// ── Component class named "Inventory" so the spec can import { Inventory } ──
 @Component({
   selector: 'app-inventory',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './inventory.html',
 })
-export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
+export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('inventoryChart') chartCanvas!: ElementRef<HTMLCanvasElement>;
   private chart: Chart | null = null;
@@ -131,6 +129,7 @@ export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   filteredItems: InventoryItem[] = [];
 
+  /* ── Getters ── */
   get lowStockItems(): InventoryItem[] {
     return this.inventoryItems.filter(i => i.lowStock);
   }
@@ -144,8 +143,7 @@ export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.lowStockItems.map(i => i.name).join(', ');
   }
 
-  
-  
+  /* ── Chart config ── */
   private chartData: ChartData<'bar'> = {
     labels: ['Jun 1', 'Jun 2', 'Jun 3', 'Jun 4', 'Jun 5', 'Jun 6', 'Jun 7'],
     datasets: [
@@ -204,7 +202,7 @@ export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
     },
   };
 
- 
+  /* ── Lifecycle ── */
   ngOnInit(): void {
     this.filterCategory('All');
   }
@@ -214,14 +212,13 @@ export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Always destroy Chart.js instance to avoid canvas-reuse errors
     this.chart?.destroy();
   }
 
+  /* ── Chart init ── */
   private buildChart(): void {
-    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    const ctx = this.chartCanvas?.nativeElement.getContext('2d');
     if (!ctx) return;
-
     this.chart = new Chart(ctx, {
       type: 'bar',
       data: this.chartData,
@@ -229,6 +226,7 @@ export class InventoryComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /* ── Filter / search ── */
   filterCategory(category: string): void {
     this.selectedCategory = category;
     this.applyFilter();

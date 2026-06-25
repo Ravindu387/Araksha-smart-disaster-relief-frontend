@@ -19,8 +19,8 @@ export const routes: Routes = [
   { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
 
   { path: 'LandingPage', component: LandingPage },
-
-  {
+  
+{
     path: '',
     component: AdminLayout,
     children: [
