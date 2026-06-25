@@ -11,9 +11,7 @@ type SettingsSection =
   | 'security'
   | 'system'
   | 'appearance'
-  | 'integrations'
-  | 'team'
-  | 'api-keys';
+  | 'team';
 
 interface NotificationToggle {
   key: string;
@@ -49,9 +47,7 @@ export class Settings {
     { id: 'security', label: 'Security', icon: 'shield' },
     { id: 'system', label: 'System', icon: 'globe' },
     { id: 'appearance', label: 'Appearance', icon: 'palette' },
-    { id: 'integrations', label: 'Integrations', icon: 'database' },
     { id: 'team', label: 'Team & Access', icon: 'users' },
-    { id: 'api-keys', label: 'API Keys', icon: 'key' },
   ];
 
   readonly activeSection = signal<SettingsSection>('profile');
@@ -232,6 +228,7 @@ export class Settings {
   currentPassword = '';
   newPassword = '';
   confirmPassword = '';
+  readonly showCurrentPassword = signal(false);
   readonly passwordError = signal<string | null>(null);
   readonly passwordChanged = signal(false);
   readonly twoFactorEnabled = signal(false);
@@ -258,6 +255,245 @@ export class Settings {
     setTimeout(() => this.passwordChanged.set(false), 2500);
     // No backend auth system yet, so this just validates client-side for
     // now — wire it to a real endpoint once you add password auth.
+  }
+
+  /** 0–4 score used to drive the 4-bar password-strength meter. */
+  get passwordStrengthScore(): number {
+    const pw = this.newPassword;
+    if (!pw) return 0;
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return score;
+  }
+
+  get passwordStrengthLabel(): string {
+    switch (this.passwordStrengthScore) {
+      case 0:
+        return 'Too short';
+      case 1:
+        return 'Weak — try a longer password';
+      case 2:
+        return 'Fair — mix upper/lowercase and numbers';
+      case 3:
+        return 'Good — add symbols for stronger security';
+      default:
+        return 'Strong';
+    }
+  }
+
+  // ---- Security extras — 2FA, session controls, active sessions --------
+  // All local-only: there's no auth/session backend yet.
+  readonly twoFactorBackupCodes = 8;
+  readonly authenticatorConfigured = true;
+  readonly passwordLastChangedDays = 47;
+
+  viewBackupCodes(): void {
+    window.alert(`You have ${this.twoFactorBackupCodes} backup codes remaining. (Not wired to a backend yet.)`);
+  }
+
+  resetAuthenticator(): void {
+    const confirmed = window.confirm('Reset your authenticator app? You will need to re-scan a new QR code.');
+    if (confirmed) {
+      window.alert('Authenticator reset isn\'t wired to a backend yet — nothing changed.');
+    }
+  }
+
+  loginAlertsEnabled = signal(true);
+  auditLogEnabled = signal(true);
+  ipWhitelistEnabled = signal(false);
+  sessionTimeout = '8h';
+  passwordExpiry = '90d';
+
+  activeSessions = [
+    {
+      id: 'session-1',
+      device: 'MacBook Pro 16"',
+      icon: 'laptop',
+      location: 'Washington, D.C.',
+      ip: '192.168.1.105',
+      lastActive: 'Active now',
+      current: true,
+    },
+    {
+      id: 'session-2',
+      device: 'iPhone 15 Pro',
+      icon: 'smartphone',
+      location: 'Washington, D.C.',
+      ip: '192.168.1.112',
+      lastActive: '2h ago',
+      current: false,
+    },
+    {
+      id: 'session-3',
+      device: 'Chrome · Windows',
+      icon: 'laptop',
+      location: 'Arlington, VA',
+      ip: '198.51.100.42',
+      lastActive: 'Yesterday',
+      current: false,
+    },
+  ];
+
+  revokeSession(id: string): void {
+    this.activeSessions = this.activeSessions.filter((s) => s.id !== id);
+  }
+
+  signOutAllOtherSessions(): void {
+    this.activeSessions = this.activeSessions.filter((s) => s.current);
+  }
+
+  // ---- System — local-only, no backend endpoint for these yet ----------
+  autoAssignVolunteers = signal(true);
+  aiRecommendations = signal(true);
+  gpsVolunteerTracking = signal(true);
+  publicEmergencyAlerts = signal(true);
+
+  dataRetentionPeriod = '1 year';
+  automatedBackups = 'Daily';
+
+  readonly systemStats = [
+    { icon: 'clock', value: '2h ago', label: 'Last Backup', color: 'text-emerald-500' },
+    { icon: 'database', value: '4.2 GB', label: 'Storage Used', color: 'text-blue-500' },
+    { icon: 'refresh', value: '128,440', label: 'Total Records', color: 'text-violet-500' },
+  ];
+
+  maintenanceMode = signal(false);
+  debugMode = signal(false);
+  readonly cacheCleared = signal(false);
+
+  clearSystemCache(): void {
+    this.cacheCleared.set(true);
+    setTimeout(() => this.cacheCleared.set(false), 2000);
+  }
+
+  // ---- Appearance — local-only, no backend endpoint for these yet ------
+  theme = signal<'light' | 'dark' | 'system'>('light');
+
+  readonly accentColors: { name: string; hex: string }[] = [
+    { name: 'blue', hex: '#2563EB' },
+    { name: 'purple', hex: '#9333EA' },
+    { name: 'green', hex: '#16A34A' },
+    { name: 'red', hex: '#DC2626' },
+    { name: 'orange', hex: '#EA580C' },
+    { name: 'teal', hex: '#0D9488' },
+  ];
+  selectedAccentColor = signal(this.accentColors[0]);
+
+  displayDensity = signal<'compact' | 'default' | 'spacious'>('default');
+
+  sidebarCollapsedByDefault = signal(false);
+  uiAnimations = signal(true);
+
+  // ---- Team & Access — local-only, no backend endpoint for these yet ---
+  readonly roleOptions = [
+    'Super Admin',
+    'Operations Manager',
+    'Shelter Coordinator',
+    'Inventory Manager',
+    'Field Coordinator',
+  ];
+
+  teamMembers = [
+    {
+      id: 'member-1',
+      name: 'Admin Kumar',
+      email: 'a.kumar@sdrms.gov',
+      role: 'Super Admin',
+      lastActive: '2 min ago',
+      initials: 'AK',
+      color: 'bg-blue-600',
+    },
+    {
+      id: 'member-2',
+      name: 'Patricia Kim',
+      email: 'p.kim@sdrms.gov',
+      role: 'Operations Manager',
+      lastActive: '1h ago',
+      initials: 'PK',
+      color: 'bg-purple-600',
+    },
+    {
+      id: 'member-3',
+      name: 'Marcus Thompson',
+      email: 'm.thompson@sdrms.gov',
+      role: 'Shelter Coordinator',
+      lastActive: '3h ago',
+      initials: 'MT',
+      color: 'bg-emerald-600',
+    },
+    {
+      id: 'member-4',
+      name: 'Sandra Lee',
+      email: 's.lee@sdrms.gov',
+      role: 'Inventory Manager',
+      lastActive: 'Yesterday',
+      initials: 'SL',
+      color: 'bg-amber-600',
+    },
+    {
+      id: 'member-5',
+      name: 'Carlos Vega',
+      email: 'c.vega@sdrms.gov',
+      role: 'Field Coordinator',
+      lastActive: '2d ago',
+      initials: 'CV',
+      color: 'bg-rose-600',
+    },
+  ];
+
+  readonly memberColors = ['bg-blue-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-cyan-600'];
+
+  removeMember(id: string): void {
+    const member = this.teamMembers.find((m) => m.id === id);
+    if (member && window.confirm(`Remove ${member.name} from this platform?`)) {
+      this.teamMembers = this.teamMembers.filter((m) => m.id !== id);
+    }
+  }
+
+  inviteEmail = '';
+  inviteRole = this.roleOptions[0];
+  readonly inviteError = signal<string | null>(null);
+
+  inviteMember(): void {
+    const email = this.inviteEmail.trim();
+    if (!email || !email.includes('@')) {
+      this.inviteError.set('Enter a valid email address.');
+      return;
+    }
+    if (this.teamMembers.some((m) => m.email.toLowerCase() === email.toLowerCase())) {
+      this.inviteError.set('That email is already on the team.');
+      return;
+    }
+
+    this.inviteError.set(null);
+    const namePart = email.split('@')[0].replace(/[._]/g, ' ');
+    const name = namePart.replace(/\b\w/g, (c) => c.toUpperCase());
+    const initials = name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
+    this.teamMembers = [
+      ...this.teamMembers,
+      {
+        id: `member-${Date.now()}`,
+        name,
+        email,
+        role: this.inviteRole,
+        lastActive: 'Just invited',
+        initials,
+        color: this.memberColors[this.teamMembers.length % this.memberColors.length],
+      },
+    ];
+    this.inviteEmail = '';
+    // No backend endpoint yet — this just adds the member to the local list
+    // so the invite flow feels complete. Wire up an email invite + a real
+    // members table once you're ready.
   }
 
   // ---- Header "Save Changes" button -------------------------------------

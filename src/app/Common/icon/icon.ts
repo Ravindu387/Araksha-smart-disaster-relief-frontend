@@ -95,6 +95,11 @@ import { Component, Input } from '@angular/core';
           <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
           <circle cx="12" cy="12" r="2.6" />
         }
+        @case ('eye-off') {
+          <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+          <circle cx="12" cy="12" r="2.6" />
+          <path d="M3.5 3.5 20.5 20.5" />
+        }
         @case ('arrow-right') {
           <path d="M4.5 12h15" />
           <path d="M13.5 6l6 6-6 6" />
@@ -162,6 +167,28 @@ import { Component, Input } from '@angular/core';
         @case ('save') {
           <path d="M5 3.5h11l3.5 3.5v13.5H5a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 5 3.5Z" />
           <path d="M8 3.5v5h7v-5M8 20.5v-6h8v6" />
+        }
+        @case ('check-circle') {
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M8.2 12.3 11 15l4.8-6" />
+        }
+        @case ('clock') {
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7v5l3.5 2" />
+        }
+        @case ('refresh') {
+          <path d="M4 12a8 8 0 0 1 13.7-5.7L20 8" />
+          <path d="M20 4v4h-4" />
+          <path d="M20 12a8 8 0 0 1-13.7 5.7L4 16" />
+          <path d="M4 20v-4h4" />
+        }
+        @case ('laptop') {
+          <rect x="4" y="5" width="16" height="10" rx="1.2" />
+          <path d="M2 18.5h20" />
+        }
+        @case ('smartphone') {
+          <rect x="6.5" y="2.5" width="11" height="19" rx="2" />
+          <path d="M10.5 18.5h3" />
         }
       }
     </svg>

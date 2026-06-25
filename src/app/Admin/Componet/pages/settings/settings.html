@@ -311,74 +311,613 @@
       <!-- Security -->
       @if (activeSection() === 'security') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Add an extra layer of protection to your account</p>
+
+          @if (twoFactorEnabled()) {
+            <div class="flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4">
+              <div class="flex items-center gap-3">
+                <app-icon name="check-circle" class="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <p class="text-sm font-semibold text-emerald-700">2FA is enabled</p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    Authenticator app configured · {{ twoFactorBackupCodes }} backup codes remaining
+                  </p>
+                </div>
+              </div>
+              <app-toggle [checked]="twoFactorEnabled()" color="amber" (checkedChange)="twoFactorEnabled.set($event)" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <button
+                type="button"
+                (click)="viewBackupCodes()"
+                class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                View Backup Codes
+              </button>
+              <button
+                type="button"
+                (click)="resetAuthenticator()"
+                class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                Reset Authenticator
+              </button>
+            </div>
+          } @else {
+            <div class="flex items-center justify-between gap-4 border border-gray-100 rounded-xl px-5 py-4">
+              <div>
+                <p class="text-sm font-semibold text-gray-900">2FA is disabled</p>
+                <p class="text-xs text-gray-400 mt-0.5">Set up an authenticator app for extra security</p>
+              </div>
+              <app-toggle [checked]="twoFactorEnabled()" (checkedChange)="twoFactorEnabled.set($event)" />
+            </div>
+          }
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900 mb-1">Change Password</h3>
-          <p class="text-sm text-gray-400 mb-5">Use a strong password you don't use anywhere else</p>
+          <p class="text-sm text-gray-400 mb-5">Last changed {{ passwordLastChangedDays }} days ago</p>
 
           <div class="grid grid-cols-1 gap-4">
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="font-medium text-gray-700">Current password</span>
-              <input
-                type="password"
-                [(ngModel)]="currentPassword"
-                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-              />
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">CURRENT PASSWORD</span>
+              <div class="relative">
+                <app-icon name="key" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  [type]="showCurrentPassword() ? 'text' : 'password'"
+                  [(ngModel)]="currentPassword"
+                  class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+                <button
+                  type="button"
+                  (click)="showCurrentPassword.set(!showCurrentPassword())"
+                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <app-icon [name]="showCurrentPassword() ? 'eye-off' : 'eye'" class="w-4 h-4" />
+                </button>
+              </div>
             </label>
+
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="font-medium text-gray-700">New password</span>
-              <input
-                type="password"
-                [(ngModel)]="newPassword"
-                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-              />
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">NEW PASSWORD</span>
+              <div class="relative">
+                <app-icon name="key" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  [(ngModel)]="newPassword"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
             </label>
+
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="font-medium text-gray-700">Confirm new password</span>
-              <input
-                type="password"
-                [(ngModel)]="confirmPassword"
-                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-              />
+              <span class="text-xs font-semibold text-gray-500 tracking-wide">CONFIRM NEW PASSWORD</span>
+              <div class="relative">
+                <app-icon name="key" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  [(ngModel)]="confirmPassword"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
             </label>
           </div>
+
+          @if (newPassword) {
+            <div class="mt-4">
+              <div class="flex gap-1.5">
+                @for (bar of [0, 1, 2, 3]; track bar) {
+                  <div
+                    class="h-1.5 flex-1 rounded-full"
+                    [class.bg-rose-500]="bar < passwordStrengthScore && passwordStrengthScore <= 1"
+                    [class.bg-amber-500]="bar < passwordStrengthScore && passwordStrengthScore === 2"
+                    [class.bg-emerald-500]="bar < passwordStrengthScore && passwordStrengthScore >= 3"
+                    [class.bg-gray-200]="bar >= passwordStrengthScore"
+                  ></div>
+                }
+              </div>
+              <p class="text-xs text-gray-400 mt-2">Password strength: {{ passwordStrengthLabel }}</p>
+            </div>
+          }
 
           <div class="flex items-center gap-3 mt-5">
             <button
               type="button"
               (click)="changePassword()"
-              class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors"
             >
               Update Password
             </button>
-            @if (passwordChanged()) {
-              <span class="text-sm text-emerald-600 font-medium">Updated ✓</span>
+          </div>
+          @if (passwordChanged()) {
+            <p class="text-sm text-emerald-600 font-medium mt-3">Updated ✓</p>
+          }
+          @if (passwordError()) {
+            <p class="text-sm text-rose-600 font-medium mt-3">{{ passwordError() }}</p>
+          }
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Session & Access Controls</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Manage authentication and session behavior</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Login Alerts</p>
+                <p class="text-xs text-gray-400 mt-0.5">Email me when a new device signs in</p>
+              </div>
+              <app-toggle [checked]="loginAlertsEnabled()" (checkedChange)="loginAlertsEnabled.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Audit Log</p>
+                <p class="text-xs text-gray-400 mt-0.5">Record all administrative actions</p>
+              </div>
+              <app-toggle [checked]="auditLogEnabled()" (checkedChange)="auditLogEnabled.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">IP Whitelist</p>
+                <p class="text-xs text-gray-400 mt-0.5">Restrict login to approved IP addresses only</p>
+              </div>
+              <app-toggle [checked]="ipWhitelistEnabled()" (checkedChange)="ipWhitelistEnabled.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Session Timeout</p>
+                <p class="text-xs text-gray-400 mt-0.5">Automatically log out after inactivity</p>
+              </div>
+              <select
+                [(ngModel)]="sessionTimeout"
+                class="text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
+              >
+                <option value="30m">30m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+                <option value="8h">8h</option>
+                <option value="24h">24h</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Password Expiry</p>
+                <p class="text-xs text-gray-400 mt-0.5">Require password change periodically</p>
+              </div>
+              <select
+                [(ngModel)]="passwordExpiry"
+                class="text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
+              >
+                <option value="30d">30d</option>
+                <option value="60d">60d</option>
+                <option value="90d">90d</option>
+                <option value="never">Never</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Active Sessions</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Devices and locations currently signed in</p>
+
+          <div class="flex flex-col gap-3">
+            @for (session of activeSessions; track session.id) {
+              <div class="flex items-center justify-between gap-4 border border-gray-100 rounded-xl px-4 py-3.5">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center shrink-0">
+                    <app-icon [name]="session.icon" class="w-[18px] h-[18px]" />
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-semibold text-gray-900 truncate">{{ session.device }}</p>
+                      @if (session.current) {
+                        <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 shrink-0">
+                          Current
+                        </span>
+                      }
+                    </div>
+                    <p class="text-xs text-gray-400 truncate">
+                      {{ session.location }} · {{ session.ip }} · {{ session.lastActive }}
+                    </p>
+                  </div>
+                </div>
+                @if (!session.current) {
+                  <button
+                    type="button"
+                    (click)="revokeSession(session.id)"
+                    class="text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors shrink-0"
+                  >
+                    Revoke
+                  </button>
+                }
+              </div>
             }
-            @if (passwordError()) {
-              <span class="text-sm text-rose-600 font-medium">{{ passwordError() }}</span>
+          </div>
+
+          <button
+            type="button"
+            (click)="signOutAllOtherSessions()"
+            class="w-full text-sm font-semibold text-rose-600 border border-rose-200 rounded-xl px-4 py-3 hover:bg-rose-50 transition-colors mt-3"
+          >
+            Sign Out All Other Sessions
+          </button>
+        </div>
+      }
+
+      <!-- System -->
+      @if (activeSection() === 'system') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Automation</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Platform intelligence and auto-management settings</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Auto-Assign Volunteers</p>
+                <p class="text-xs text-gray-400 mt-0.5">AI automatically assigns available volunteers to new requests</p>
+              </div>
+              <app-toggle [checked]="autoAssignVolunteers()" (checkedChange)="autoAssignVolunteers.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">AI Recommendations</p>
+                <p class="text-xs text-gray-400 mt-0.5">Smart resource allocation suggestions in the allocation center</p>
+              </div>
+              <app-toggle [checked]="aiRecommendations()" (checkedChange)="aiRecommendations.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">GPS Volunteer Tracking</p>
+                <p class="text-xs text-gray-400 mt-0.5">Real-time location tracking for on-duty volunteers</p>
+              </div>
+              <app-toggle [checked]="gpsVolunteerTracking()" (checkedChange)="gpsVolunteerTracking.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Public Emergency Alerts</p>
+                <p class="text-xs text-gray-400 mt-0.5">Broadcast critical alerts to citizen mobile devices</p>
+              </div>
+              <app-toggle
+                [checked]="publicEmergencyAlerts()"
+                color="rose"
+                (checkedChange)="publicEmergencyAlerts.set($event)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Data Management</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Retention, backup, and storage settings</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Data Retention Period</p>
+                <p class="text-xs text-gray-400 mt-0.5">How long incident records are stored</p>
+              </div>
+              <select
+                [(ngModel)]="dataRetentionPeriod"
+                class="text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
+              >
+                <option value="90 days">90 days</option>
+                <option value="6 months">6 months</option>
+                <option value="1 year">1 year</option>
+                <option value="3 years">3 years</option>
+                <option value="Forever">Forever</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Automated Backups</p>
+                <p class="text-xs text-gray-400 mt-0.5">Frequency of encrypted database backups</p>
+              </div>
+              <select
+                [(ngModel)]="automatedBackups"
+                class="text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
+              >
+                <option value="Hourly">Hourly</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Off">Off</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            @for (stat of systemStats; track stat.label) {
+              <div class="border border-gray-100 rounded-xl px-4 py-5 flex flex-col items-center text-center gap-1.5">
+                <app-icon [name]="stat.icon" [class]="stat.color + ' w-6 h-6'" />
+                <p class="text-lg font-bold text-gray-900">{{ stat.value }}</p>
+                <p class="text-xs text-gray-400">{{ stat.label }}</p>
+              </div>
             }
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 flex items-center justify-between gap-4">
-          <div>
-            <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
-            <p class="text-sm text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Maintenance</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">System controls and developer options</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Maintenance Mode</p>
+                <p class="text-xs text-gray-400 mt-0.5">Only administrators can access the platform</p>
+              </div>
+              <app-toggle [checked]="maintenanceMode()" (checkedChange)="maintenanceMode.set($event)" />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Debug Mode</p>
+                <p class="text-xs text-gray-400 mt-0.5">Enable verbose logging for troubleshooting</p>
+              </div>
+              <app-toggle [checked]="debugMode()" (checkedChange)="debugMode.set($event)" />
+            </div>
           </div>
-          <app-toggle [checked]="twoFactorEnabled()" (checkedChange)="twoFactorEnabled.set($event)" />
+
+          <button
+            type="button"
+            (click)="clearSystemCache()"
+            class="w-full flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors mt-3"
+          >
+            <app-icon name="refresh" class="w-4 h-4" />
+            {{ cacheCleared() ? 'Cache Cleared ✓' : 'Clear System Cache' }}
+          </button>
         </div>
       }
 
-      <!-- Stub sections: not designed yet, just placeholders so nav doesn't dead-end -->
-      @if (activeSection() === 'system' || activeSection() === 'appearance' || activeSection() === 'integrations' || activeSection() === 'team' || activeSection() === 'api-keys') {
-        <div class="bg-white rounded-2xl border border-gray-100 p-10 flex flex-col items-center text-center gap-2">
-          <div class="w-12 h-12 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center mb-2">
-            <app-icon [name]="sections.find(s => s.id === activeSection())?.icon ?? 'settings'" class="w-6 h-6" />
+      <!-- Appearance -->
+      @if (activeSection() === 'appearance') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Theme</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Choose your preferred interface mode</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              (click)="theme.set('light')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="theme() === 'light'"
+              [class.border-gray-100]="theme() !== 'light'"
+            >
+              <div class="rounded-lg bg-gray-50 border border-gray-100 h-16 mb-3 flex items-center gap-1.5 p-2">
+                <div class="w-2 h-full rounded bg-gray-300 shrink-0"></div>
+                <div class="flex-1 flex flex-col gap-1.5">
+                  <div class="h-1.5 w-3/4 rounded bg-gray-300"></div>
+                  <div class="h-1.5 w-1/2 rounded bg-gray-200"></div>
+                </div>
+              </div>
+              <p class="text-sm font-semibold text-gray-900">Light</p>
+              @if (theme() === 'light') {
+                <p class="text-xs text-blue-600 font-medium">Active</p>
+              }
+            </button>
+
+            <button
+              type="button"
+              (click)="theme.set('dark')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="theme() === 'dark'"
+              [class.border-gray-100]="theme() !== 'dark'"
+            >
+              <div class="rounded-lg bg-[#0b1325] h-16 mb-3 flex items-center gap-1.5 p-2">
+                <div class="w-2 h-full rounded bg-white/20 shrink-0"></div>
+                <div class="flex-1 flex flex-col gap-1.5">
+                  <div class="h-1.5 w-3/4 rounded bg-white/30"></div>
+                  <div class="h-1.5 w-1/2 rounded bg-white/15"></div>
+                </div>
+              </div>
+              <p class="text-sm font-semibold text-gray-900">Dark</p>
+              @if (theme() === 'dark') {
+                <p class="text-xs text-blue-600 font-medium">Active</p>
+              }
+            </button>
+
+            <button
+              type="button"
+              (click)="theme.set('system')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="theme() === 'system'"
+              [class.border-gray-100]="theme() !== 'system'"
+            >
+              <div class="rounded-lg bg-gradient-to-r from-gray-50 to-[#0b1325] h-16 mb-3 flex items-center gap-1.5 p-2">
+                <div class="w-2 h-full rounded bg-gray-400 shrink-0"></div>
+                <div class="flex-1 flex flex-col gap-1.5">
+                  <div class="h-1.5 w-3/4 rounded bg-gray-300"></div>
+                  <div class="h-1.5 w-1/2 rounded bg-white/30"></div>
+                </div>
+              </div>
+              <p class="text-sm font-semibold text-gray-900">System</p>
+              @if (theme() === 'system') {
+                <p class="text-xs text-blue-600 font-medium">Active</p>
+              }
+            </button>
           </div>
-          <h3 class="font-semibold text-gray-900">
-            {{ sections.find(s => s.id === activeSection())?.label }}
-          </h3>
-          <p class="text-sm text-gray-400 max-w-xs">This section is coming soon.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Accent Color</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Primary color used for buttons, links, and highlights</p>
+
+          <div class="flex items-center gap-3">
+            @for (color of accentColors; track color.name) {
+              <button
+                type="button"
+                (click)="selectedAccentColor.set(color)"
+                [style.background-color]="color.hex"
+                class="w-10 h-10 rounded-full transition-all"
+                [class.ring-2]="selectedAccentColor().name === color.name"
+                [class.ring-offset-2]="selectedAccentColor().name === color.name"
+                [style.--tw-ring-color]="color.hex"
+              ></button>
+            }
+          </div>
+
+          <div class="flex items-center gap-4 mt-5">
+            <input
+              type="range"
+              min="0"
+              [max]="accentColors.length - 1"
+              [value]="accentColors.indexOf(selectedAccentColor())"
+              (input)="selectedAccentColor.set(accentColors[+($any($event.target).value)])"
+              class="flex-1 accent-blue-600"
+            />
+            <span class="text-sm font-medium text-gray-500 shrink-0">{{ selectedAccentColor().hex }}</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Display Density</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Control how compact or spacious the UI feels</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              (click)="displayDensity.set('compact')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="displayDensity() === 'compact'"
+              [class.border-gray-100]="displayDensity() !== 'compact'"
+            >
+              <p class="text-sm font-semibold text-gray-900">Compact</p>
+              <p class="text-xs text-gray-400 mt-0.5">More content, less padding</p>
+            </button>
+            <button
+              type="button"
+              (click)="displayDensity.set('default')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="displayDensity() === 'default'"
+              [class.border-gray-100]="displayDensity() !== 'default'"
+            >
+              <p class="text-sm font-semibold text-gray-900">Default</p>
+              <p class="text-xs text-gray-400 mt-0.5">Balanced and comfortable</p>
+            </button>
+            <button
+              type="button"
+              (click)="displayDensity.set('spacious')"
+              class="rounded-xl border-2 p-4 text-left transition-colors"
+              [class.border-blue-500]="displayDensity() === 'spacious'"
+              [class.border-gray-100]="displayDensity() !== 'spacious'"
+            >
+              <p class="text-sm font-semibold text-gray-900">Spacious</p>
+              <p class="text-xs text-gray-400 mt-0.5">Extra breathing room</p>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Interface Options</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">Additional display preferences</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Sidebar Collapsed by Default</p>
+                <p class="text-xs text-gray-400 mt-0.5">Start with the sidebar minimized on load</p>
+              </div>
+              <app-toggle
+                [checked]="sidebarCollapsedByDefault()"
+                (checkedChange)="sidebarCollapsedByDefault.set($event)"
+              />
+            </div>
+            <div class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="text-sm font-medium text-gray-900">UI Animations</p>
+                <p class="text-xs text-gray-400 mt-0.5">Smooth transitions and micro-interactions</p>
+              </div>
+              <app-toggle [checked]="uiAnimations()" (checkedChange)="uiAnimations.set($event)" />
+            </div>
+          </div>
         </div>
       }
+
+      <!-- Team & Access -->
+      @if (activeSection() === 'team') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Team Members</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-2">{{ teamMembers.length }} members with platform access</p>
+
+          <div class="flex flex-col divide-y divide-gray-100">
+            @for (member of teamMembers; track member.id) {
+              <div class="flex items-center justify-between gap-4 py-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    [class]="member.color"
+                    class="w-10 h-10 rounded-full text-white flex items-center justify-center font-semibold text-sm shrink-0"
+                  >
+                    {{ member.initials }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-semibold text-gray-900 truncate">{{ member.name }}</p>
+                      <span class="text-[11px] font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-0.5 shrink-0">
+                        {{ member.role }}
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-400 truncate">{{ member.email }} · Last active {{ member.lastActive }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <select
+                    [(ngModel)]="member.role"
+                    class="text-sm font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white"
+                  >
+                    @for (role of roleOptions; track role) {
+                      <option [value]="role">{{ role }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    (click)="removeMember(member.id)"
+                    class="text-gray-400 hover:text-rose-600 transition-colors p-2"
+                    aria-label="Remove member"
+                  >
+                    <app-icon name="trash" class="w-[18px] h-[18px]" />
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">Invite New Member</h3>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div class="relative flex-1">
+              <app-icon name="mail" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                [(ngModel)]="inviteEmail"
+                placeholder="colleague@agency.gov"
+                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </div>
+            <select
+              [(ngModel)]="inviteRole"
+              class="text-sm font-medium text-gray-700 border border-gray-200 rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/25 bg-white shrink-0"
+            >
+              @for (role of roleOptions; track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              (click)="inviteMember()"
+              class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shrink-0"
+            >
+              <app-icon name="user" class="w-4 h-4" />
+              Invite
+            </button>
+          </div>
+          @if (inviteError()) {
+            <p class="text-sm text-rose-600 font-medium mt-3">{{ inviteError() }}</p>
+          }
+        </div>
+      }
+
     </div>
   </div>
 </div>
