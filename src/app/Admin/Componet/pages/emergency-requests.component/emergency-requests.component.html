@@ -1,278 +1,219 @@
-<div class="bg-slate-50 min-h-screen">
-
-
-
-<div class="bg-white border-b">
-
-<div class="max-w-7xl mx-auto flex justify-between items-center p-5">
-
-<div>
-
-<span class="text-gray-400">Admin</span>
-
-<span class="mx-2">/</span>
-
-<span class="font-semibold">Emergency Requests</span>
-
-</div>
-
-<div class="flex gap-5 items-center">
-
-<input
-
-type="text"
-
-placeholder="Search emergencies..."
-
-class="border rounded-full px-4 py-2 w-96 outline-none"
-/>
-
-<div
-class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
-A
-</div>
-
-<span>Admin Kumar</span>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<div class="max-w-7xl mx-auto p-8">
-
-<div class="flex justify-between">
-
-<div>
-
-<h1 class="text-5xl font-bold">
-
-Emergency Requests
-
-</h1>
-
-<p class="text-gray-500 mt-2">
-
-2 of 8 requests
-
-</p>
-
-</div>
-
-<button
-
-class="bg-slate-900 text-white px-6 py-3 rounded-full">
-
-Export CSV
-
-</button>
-
-</div>
-
-
-
-<div class="flex gap-4 mt-8">
-
-<button class="bg-slate-900 text-white px-6 py-2 rounded-full">
-
-All 8
-
-</button>
-
-<button class="border rounded-full px-5 py-2">
-
-Critical 2
-
-</button>
-
-<button class="border rounded-full px-5 py-2">
-
-High 3
-
-</button>
-
-<button class="border rounded-full px-5 py-2">
-
-Pending 2
-
-</button>
-
-</div>
-
-
-
-<div class="flex gap-4 mt-8">
-
-<input
-
-type="text"
-
-placeholder="Search requests..."
-
-class="flex-1 border rounded-full px-5 py-3"/>
-
-<select
-
-[(ngModel)]="typeFilter"
-
-class="border rounded-full px-6 py-3">
-
-<option>All</option>
-
-<option>Flood</option>
-
-<option>Fire</option>
-
-<option>Earthquake</option>
-
-<option>Medical</option>
-
-<option>Landslide</option>
-
-</select>
-
-<select
-
-[(ngModel)]="statusFilter"
-
-class="border rounded-full px-6 py-3">
-
-<option>Pending</option>
-
-<option>Assigned</option>
-
-<option>Resolved</option>
-
-<option>In Progress</option>
-
-</select>
-
-</div>
-
-
-
-<div class="mt-8 bg-white rounded-xl shadow overflow-hidden">
-
-<table class="w-full">
-
-<thead class="bg-gray-50">
-
-<tr>
-
-<th class="p-4 text-left">Request ID</th>
-
-<th class="text-left">Citizen</th>
-
-<th class="text-left">Type</th>
-
-<th class="text-left">Priority</th>
-
-<th class="text-left">Status</th>
-
-<th class="text-left">Location</th>
-
-<th class="text-left">Volunteer</th>
-
-<th class="text-left">Time</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr
-*ngFor="let item of requests"
-class="border-t">
-
-<td class="p-4 text-blue-600">
-
-{{item.id}}
-
-</td>
-
-<td>
-
-<div class="flex items-center gap-3">
-
-<div
-
-class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-
-{{item.initials}}
-
-</div>
-
-{{item.citizen}}
-
-</div>
-
-</td>
-
-<td>
-
-<span
-class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full">
-
-{{item.type}}
-
-</span>
-
-</td>
-
-<td>
-
-<span
-
-class="bg-red-100 text-red-600 px-4 py-1 rounded-full">
-
-{{item.priority}}
-
-</span>
-
-</td>
-
-<td>
-
-<span
-
-class="bg-gray-100 text-gray-700 px-4 py-1 rounded-full">
-
-{{item.status}}
-
-</span>
-
-</td>
-
-<td>
-
-{{item.location}}
-
-</td>
-
-<td>
-
-{{item.volunteer}}
-
-</td>
-
-<td>
-
-{{item.time}}
-
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
+<div class="min-h-screen bg-slate-50 p-6 md:p-8">
+
+  <!-- Page Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Emergency Requests</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        {{ filteredRequests.length }} of {{ requests.length }} requests
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="exportCsv()"
+      class="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-slate-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Export CSV
+    </button>
+  </div>
+
+  <!-- Priority Filter Tabs -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <button
+      type="button"
+      (click)="setPriorityFilter('All')"
+      class="px-5 py-2 rounded-full text-sm font-medium transition-colors"
+      [class.bg-slate-900]="priorityFilter === 'All'"
+      [class.text-white]="priorityFilter === 'All'"
+      [class.bg-white]="priorityFilter !== 'All'"
+      [class.border]="priorityFilter !== 'All'"
+      [class.border-slate-200]="priorityFilter !== 'All'"
+      [class.text-slate-600]="priorityFilter !== 'All'"
+    >All {{ requests.length }}</button>
+
+    <button type="button" (click)="setPriorityFilter('Critical')"
+      class="px-5 py-2 rounded-full text-sm font-medium border transition-colors"
+      [class.bg-rose-600]="priorityFilter === 'Critical'"
+      [class.text-white]="priorityFilter === 'Critical'"
+      [class.border-rose-600]="priorityFilter === 'Critical'"
+      [class.bg-white]="priorityFilter !== 'Critical'"
+      [class.text-rose-600]="priorityFilter !== 'Critical'"
+      [class.border-rose-200]="priorityFilter !== 'Critical'"
+    >🔴 Critical {{ countByPriority['Critical'] }}</button>
+
+    <button type="button" (click)="setPriorityFilter('High')"
+      class="px-5 py-2 rounded-full text-sm font-medium border transition-colors"
+      [class.bg-amber-500]="priorityFilter === 'High'"
+      [class.text-white]="priorityFilter === 'High'"
+      [class.border-amber-500]="priorityFilter === 'High'"
+      [class.bg-white]="priorityFilter !== 'High'"
+      [class.text-amber-600]="priorityFilter !== 'High'"
+      [class.border-amber-200]="priorityFilter !== 'High'"
+    >🟠 High {{ countByPriority['High'] }}</button>
+
+    <button type="button" (click)="setPriorityFilter('Medium')"
+      class="px-5 py-2 rounded-full text-sm font-medium border transition-colors"
+      [class.bg-yellow-500]="priorityFilter === 'Medium'"
+      [class.text-white]="priorityFilter === 'Medium'"
+      [class.border-yellow-500]="priorityFilter === 'Medium'"
+      [class.bg-white]="priorityFilter !== 'Medium'"
+      [class.text-yellow-600]="priorityFilter !== 'Medium'"
+      [class.border-yellow-200]="priorityFilter !== 'Medium'"
+    >🟡 Medium {{ countByPriority['Medium'] }}</button>
+
+    <button type="button" (click)="setPriorityFilter('Low')"
+      class="px-5 py-2 rounded-full text-sm font-medium border transition-colors"
+      [class.bg-emerald-600]="priorityFilter === 'Low'"
+      [class.text-white]="priorityFilter === 'Low'"
+      [class.border-emerald-600]="priorityFilter === 'Low'"
+      [class.bg-white]="priorityFilter !== 'Low'"
+      [class.text-emerald-600]="priorityFilter !== 'Low'"
+      [class.border-emerald-200]="priorityFilter !== 'Low'"
+    >🟢 Low {{ countByPriority['Low'] }}</button>
+  </div>
+
+  <!-- Toolbar: search + filters -->
+  <div class="flex flex-col md:flex-row gap-3 mb-6">
+
+    <!-- Search -->
+    <div class="relative flex-1">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearch()"
+        placeholder="Search by ID, citizen, or location..."
+        aria-label="Search emergency requests"
+        class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-blue-400 transition"
+      />
+    </div>
+
+    <!-- Type filter -->
+    <select
+      [(ngModel)]="typeFilter"
+      (ngModelChange)="onSearch()"
+      aria-label="Filter by type"
+      class="border border-slate-200 rounded-xl px-4 py-2.5 bg-white text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+    >
+      @for (t of types; track t) {
+        <option [value]="t">{{ t === 'All' ? 'All Types' : t }}</option>
+      }
+    </select>
+
+    <!-- Status filter -->
+    <select
+      [(ngModel)]="statusFilter"
+      (ngModelChange)="onSearch()"
+      aria-label="Filter by status"
+      class="border border-slate-200 rounded-xl px-4 py-2.5 bg-white text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+    >
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ s === 'All' ? 'All Statuses' : s }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200">
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Request ID</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Citizen</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Volunteer</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+
+          @if (paginatedRequests.length === 0) {
+            <tr>
+              <td colspan="8" class="px-5 py-16 text-center text-slate-400">
+                <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="font-medium">No requests match your filters.</p>
+              </td>
+            </tr>
+          }
+
+          @for (item of paginatedRequests; track item.id) {
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="px-5 py-4">
+                <span class="text-blue-600 font-semibold">{{ item.id }}</span>
+              </td>
+
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
+                    {{ item.initials }}
+                  </div>
+                  <span class="font-medium text-slate-800">{{ item.citizen }}</span>
+                </div>
+              </td>
+
+              <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="getTypeClass(item.type)">
+                  {{ item.type }}
+                </span>
+              </td>
+
+              <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="getPriorityClass(item.priority)">
+                  {{ item.priority }}
+                </span>
+              </td>
+
+              <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="getStatusClass(item.status)">
+                  {{ item.status }}
+                </span>
+              </td>
+
+              <td class="px-5 py-4 text-slate-500 whitespace-nowrap">{{ item.location }}</td>
+
+              <td class="px-5 py-4 text-slate-500">{{ item.volunteer }}</td>
+
+              <td class="px-5 py-4 text-slate-400 whitespace-nowrap">{{ item.time }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages > 1) {
+      <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between">
+        <p class="text-sm text-slate-500">
+          Page {{ currentPage }} of {{ totalPages }}
+        </p>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="setPage(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+            ← Prev
+          </button>
+          <button
+            type="button"
+            (click)="setPage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+            Next →
+          </button>
+        </div>
+      </div>
+    }
+  </div>
 
 </div>
