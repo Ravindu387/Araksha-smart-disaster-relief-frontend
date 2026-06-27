@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { LandingPage } from './Common/landing-page/landing-page';
 import { Login } from './Common/login/login';
 import { SignupComponent } from './Common/signup/signup';
+import { VolunteerDashboardComponent } from './Volunteers/Component/volunteer-dashboard/volunteer-dashboard';
 
 import { AdminLayout } from './Admin/Componet/layouts/admin-layout/admin-layout';
 
@@ -25,6 +26,7 @@ export const routes: Routes = [
   { path: 'LandingPage', component: LandingPage },
   { path: 'login', component: Login },
   { path: 'signup', component: SignupComponent },
+  { path: 'volunteerhub', component: VolunteerDashboardComponent },
 
   {
     path: 'citizen',
@@ -46,7 +48,7 @@ export const routes: Routes = [
       { path: 'allocation', component: AllocationComponent },
      // { path: 'live-tracking', component: LiveTrackingComponent },
       { path: 'notifications', component: NotificationsComponent },
-      //{ path: 'reports', component: ReportsComponent },
+     // { path: 'reports', component: ReportsComponent },
       { path: 'settings', component: Settings },
     ],
   },
