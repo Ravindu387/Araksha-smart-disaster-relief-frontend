@@ -17,9 +17,7 @@ import { NotificationsComponent } from './Admin/Componet/pages/notifications/not
 import { ReportsComponent } from './Admin/Componet/pages/reports/reports';
 import { LiveTracking } from './Admin/Componet/pages/live-tracking/live-tracking';
 import { Settings } from './Admin/Componet/pages/settings/settings';
-
-import { Layout as CitizenLayout } from './Citizen/Component/Layout/layout/layout';
-import { CitizenDashboard } from './Citizen/Component/Pages/Dashboard/citizen-dashboard/citizen-dashboard';
+import { Citizen } from './citizen/citizen';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
@@ -31,9 +29,9 @@ export const routes: Routes = [
 
   {
     path: 'citizen',
-    component: CitizenLayout,
     children: [
-      { path: 'dashboard', component: CitizenDashboard },
+      { path: 'dashboard', component: Citizen },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ],
   },
 
@@ -53,6 +51,6 @@ export const routes: Routes = [
       { path: 'settings', component: Settings },
     ],
   },
-  {path:'volunteerhub', component: VolunteerDashboardComponent},
+
   { path: '**', redirectTo: 'dashboard' },
 ];
