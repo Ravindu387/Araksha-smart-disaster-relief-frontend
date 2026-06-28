@@ -1,31 +1,41 @@
 <div class="min-h-screen bg-[#F4F6F9] text-gray-800 font-sans">
 
 
-<!-- HEADER -->
+  <!-- HEADER -->
 
-<div class="w-full h-20 bg-white shadow-sm flex items-center justify-between px-10">
+  <div class="w-full h-20 bg-white shadow-sm flex items-center justify-between px-10">
 
-  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4">
 
-    <button class="text-gray-500 text-2xl">
-      ←
-    </button>
+      <button class="text-gray-500 text-2xl">
+        ←
+      </button>
 
 
-    <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl">
-      🛡
+      <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl">
+        🛡
+      </div>
+
+
+      <div>
+
+        <h1 class="font-bold text-xl">
+          Volunteer Hub
+        </h1>
+
+        <p class="text-gray-400 text-sm">
+          James Wright · V-1024
+        </p>
+
+      </div>
+
     </div>
 
 
-    <div>
 
-      <h1 class="font-bold text-xl">
-        Volunteer Hub
-      </h1>
+    <div class="px-5 py-2 rounded-full border border-emerald-300 text-emerald-600">
 
-      <p class="text-gray-400 text-sm">
-        James Wright · V-1024
-      </p>
+      🟢 Available
 
     </div>
 
@@ -33,347 +43,326 @@
 
 
 
-  <div class="px-5 py-2 rounded-full border border-emerald-300 text-emerald-600">
 
-    🟢 Available
 
-  </div>
 
-</div>
+  <div class="w-[90%] max-w-6xl mx-auto py-6">
 
 
 
 
 
+    <!-- STATS -->
 
-<div class="w-[90%] max-w-6xl mx-auto py-6">
+    <div class="grid grid-cols-4 gap-5 mb-6">
 
 
+      <div *ngFor="let item of stats" class="bg-white rounded-2xl p-5 shadow-sm">
 
 
+        <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="item.bg">
 
-<!-- STATS -->
+          {{item.icon}}
 
-<div class="grid grid-cols-4 gap-5 mb-6">
+        </div>
 
 
-<div *ngFor="let item of stats"
-class="bg-white rounded-2xl p-5 shadow-sm">
+        <h2 class="text-2xl font-bold mt-3">
 
+          {{item.value}}
 
-<div 
-class="w-10 h-10 rounded-full flex items-center justify-center"
-[ngClass]="item.bg">
+        </h2>
 
-{{item.icon}}
 
-</div>
+        <p class="text-blue-300 text-sm">
 
+          {{item.title}}
 
-<h2 class="text-2xl font-bold mt-3">
+        </p>
 
-{{item.value}}
 
-</h2>
+      </div>
 
+    </div>
 
-<p class="text-blue-300 text-sm">
 
-{{item.title}}
 
-</p>
 
 
-</div>
 
-</div>
 
 
+    <div class="grid grid-cols-12 gap-5">
 
 
 
 
 
+      <!-- LEFT -->
 
-<div class="grid grid-cols-12 gap-5">
+      <div class="col-span-5 flex flex-col gap-5">
 
 
 
 
 
-<!-- LEFT -->
+        <h2 class="text-xs font-bold tracking-widest text-gray-400">
 
-<div class="col-span-5 flex flex-col gap-5">
+          ASSIGNED TASKS
 
+        </h2>
 
 
 
 
-<h2 class="text-xs font-bold tracking-widest text-gray-400">
 
-ASSIGNED TASKS
+        <!-- TASK CARDS -->
 
-</h2>
+        <div *ngFor="let task of tasks" class="bg-white rounded-2xl p-5 shadow-sm">
 
 
 
+          <div class="flex justify-between">
 
 
-<!-- TASK CARDS -->
+            <span class="text-blue-600 font-bold">
 
-<div 
-*ngFor="let task of tasks"
-class="bg-white rounded-2xl p-5 shadow-sm">
+              {{task.id}}
 
+            </span>
 
 
-<div class="flex justify-between">
 
+            <span class="px-3 py-1 rounded-full text-xs" [ngClass]="task.priorityColor">
 
-<span class="text-blue-600 font-bold">
+              {{task.priority}}
 
-{{task.id}}
+            </span>
 
-</span>
 
+          </div>
 
 
-<span class="px-3 py-1 rounded-full text-xs"
-[ngClass]="task.priorityColor">
 
-{{task.priority}}
 
-</span>
 
+          <h3 class="text-lg font-semibold mt-3">
 
-</div>
+            {{task.name}}
 
+          </h3>
 
 
 
+          <p class="text-gray-400 text-sm">
 
-<h3 class="text-lg font-semibold mt-3">
+            📍 {{task.location}}
 
-{{task.name}}
+          </p>
 
-</h3>
 
 
+          <p class="text-gray-400 text-sm">
 
-<p class="text-gray-400 text-sm">
+            ✈ {{task.distance}}
+            ⏱ {{task.eta}}
 
-📍 {{task.location}}
+          </p>
 
-</p>
 
 
 
-<p class="text-gray-400 text-sm">
 
-✈ {{task.distance}}
-⏱ {{task.eta}}
+          <!-- MOVED BUTTONS HERE -->
 
-</p>
 
+          <div class="flex gap-3 mt-4">
 
 
+            <button class="flex-1 bg-blue-600 text-white rounded-full py-2 text-sm">
 
+              ✈ Navigate
 
-<!-- MOVED BUTTONS HERE -->
+            </button>
 
 
-<div class="flex gap-3 mt-4">
 
+            <button class="flex-1 bg-emerald-500 text-white rounded-full py-2 text-sm">
 
-<button 
-class="flex-1 bg-blue-600 text-white rounded-full py-2 text-sm">
+              ✓ Complete
 
-✈ Navigate
+            </button>
 
-</button>
 
+          </div>
 
 
-<button 
-class="flex-1 bg-emerald-500 text-white rounded-full py-2 text-sm">
 
-✓ Complete
 
-</button>
 
+        </div>
 
-</div>
 
 
 
 
 
-</div>
 
 
 
 
 
+        <h2 class="text-xs font-bold tracking-widest text-gray-400">
 
+          NEARBY OPEN REQUESTS
 
+        </h2>
 
 
 
 
-<h2 class="text-xs font-bold tracking-widest text-gray-400">
+        <div *ngFor="let req of openRequests" class="bg-white rounded-xl p-4 shadow-sm">
 
-NEARBY OPEN REQUESTS
 
-</h2>
+          <div class="flex justify-between">
 
+            <span class="text-blue-600 font-bold">
 
+              {{req.id}}
 
+            </span>
 
-<div *ngFor="let req of openRequests"
-class="bg-white rounded-xl p-4 shadow-sm">
 
+            <span class="text-xs" [ngClass]="req.priorityClass">
 
-<div class="flex justify-between">
+              {{req.priority}}
 
-<span class="text-blue-600 font-bold">
+            </span>
 
-{{req.id}}
 
-</span>
+          </div>
 
 
-<span class="text-xs"
-[ngClass]="req.priorityClass">
 
-{{req.priority}}
+          <p class="text-sm mt-2">
 
-</span>
+            {{req.description}}
 
+          </p>
 
-</div>
 
 
+          <div class="flex justify-between mt-3">
 
-<p class="text-sm mt-2">
+            <span class="text-gray-400">
 
-{{req.description}}
+              📍 {{req.distance}}
 
-</p>
+            </span>
 
 
+          </div>
 
-<div class="flex justify-between mt-3">
 
-<span class="text-gray-400">
+        </div>
 
-📍 {{req.distance}}
 
-</span>
 
 
-</div>
+      </div>
 
 
-</div>
 
 
 
 
-</div>
 
 
 
 
 
 
+      <!-- RIGHT SIDE -->
 
+      <div class="col-span-7 flex flex-col gap-5">
 
 
 
 
 
-<!-- RIGHT SIDE -->
+        <!-- MAP -->
 
-<div class="col-span-7 flex flex-col gap-5">
 
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
 
+          <div class="p-5 flex justify-between">
 
 
-<!-- MAP -->
+            <h2 class="font-bold">
 
+              Route to ER-2847
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            </h2>
 
 
-<div class="p-5 flex justify-between">
+            <span class="text-blue-500">
 
+              ⚡ AI Route
 
-<h2 class="font-bold">
+            </span>
 
-Route to ER-2847
 
-</h2>
+          </div>
 
 
-<span class="text-blue-500">
 
-⚡ AI Route
 
-</span>
+          <div class="h-56 bg-[#08182d] relative">
 
 
-</div>
-
-
-
-
-<div class="h-56 bg-[#08182d] relative">
-
-
-<div class="absolute inset-0 opacity-20"
-style="
+            <div class="absolute inset-0 opacity-20" style="
 background-image:
 linear-gradient(#4b6b8a 1px,transparent 1px),
 linear-gradient(90deg,#4b6b8a 1px,transparent 1px);
 background-size:35px 35px;
 ">
 
-</div>
+            </div>
 
 
-<div class="absolute left-1/4 bottom-8">
+            <div class="absolute left-1/4 bottom-8">
 
-🔵
+              🔵
 
-<div class="bg-white px-3 rounded">
+              <div class="bg-white px-3 rounded">
 
-You
+                You
 
-</div>
+              </div>
 
-</div>
+            </div>
 
 
 
 
-<div class="absolute right-1/4 top-12">
+            <div class="absolute right-1/4 top-12">
 
-🚨
+              🚨
 
-<div class="bg-white px-3 rounded">
+              <div class="bg-white px-3 rounded">
 
-ER-2847
+                ER-2847
 
-</div>
+              </div>
 
 
-</div>
+            </div>
 
 
-</div>
+          </div>
 
-</div>
+        </div>
 
 
 
@@ -383,348 +372,289 @@ ER-2847
 
 
 
-<!-- DETAILS -->
+        <!-- DETAILS -->
 
 
-<div class="bg-white rounded-2xl p-5 shadow-sm">
+        <div class="bg-white rounded-2xl p-5 shadow-sm">
 
 
-<div class="flex justify-between">
+          <div class="flex justify-between">
 
 
-<div>
+            <div>
 
-<p class="text-blue-500 font-bold">
-ER-2847
-</p>
+              <p class="text-blue-500 font-bold">
+                ER-2847
+              </p>
 
 
-<h1 class="text-xl font-bold">
-Flood Emergency
-</h1>
+              <h1 class="text-xl font-bold">
+                Flood Emergency
+              </h1>
 
 
-</div>
+            </div>
 
 
 
-<span class="bg-red-100 text-red-500 px-4 py-2 rounded-full">
+            <span class="bg-red-100 text-red-500 px-4 py-2 rounded-full">
 
-Critical
+              Critical
 
-</span>
+            </span>
 
 
-</div>
+          </div>
 
 
 
 
-<div class="grid grid-cols-2 gap-4 mt-5">
+          <div class="grid grid-cols-2 gap-4 mt-5">
 
 
-<div class="bg-gray-50 p-4 rounded-xl">
+            <div class="bg-gray-50 p-4 rounded-xl">
 
-<p class="text-gray-400 text-sm">
+              <p class="text-gray-400 text-sm">
 
-Citizen
+                Citizen
 
-</p>
+              </p>
 
-<b>
-Maria Santos
-</b>
+              <b>
+                Maria Santos
+              </b>
 
-</div>
+            </div>
 
 
 
-<div class="bg-gray-50 p-4 rounded-xl">
+            <div class="bg-gray-50 p-4 rounded-xl">
 
-<p class="text-gray-400 text-sm">
+              <p class="text-gray-400 text-sm">
 
-Contact
+                Contact
 
-</p>
+              </p>
 
-<b class="text-blue-600">
+              <b class="text-blue-600">
 
-+1 713 555 0192
+                +1 713 555 0192
 
-</b>
+              </b>
 
-</div>
-</div>
+            </div>
+          </div>
 
 
-<!-- NEEDS -->
+          <!-- NEEDS -->
 
-<div class="bg-gray-50 p-4 rounded-xl mt-4">
+          <div class="bg-gray-50 p-4 rounded-xl mt-4">
 
 
-<p class="text-gray-400 text-sm">
+            <p class="text-gray-400 text-sm">
 
-Address
+              Address
 
-</p>
+            </p>
 
 
-<b>
+            <b>
 
-4800 Westheimer Rd, Houston
+              4800 Westheimer Rd, Houston
 
-</b>
+            </b>
 
-</div>
+          </div>
 
 
 
-<h3 class="text-xs font-bold text-gray-400 mt-6">
+          <h3 class="text-xs font-bold text-gray-400 mt-6">
 
-NEEDS ASSESSMENT
+            NEEDS ASSESSMENT
 
-</h3>
+          </h3>
 
 
 
-<div class="flex gap-3 mt-3 flex-wrap">
+          <div class="flex gap-3 mt-3 flex-wrap">
 
 
-<span *ngFor="let need of needs"
-class="px-4 py-2 bg-blue-50 text-blue-500 rounded-full text-sm">
+            <span *ngFor="let need of needs" class="px-4 py-2 bg-blue-50 text-blue-500 rounded-full text-sm">
 
-{{need}}
+              {{need}}
 
-</span>
+            </span>
 
 
-</div>
+          </div>
 
 
-</div>
+        </div>
 
 
-<!-- CHARTS -->
+        <!-- CHARTS -->
 
-<div class="grid grid-cols-2 gap-5">
+        <div class="grid grid-cols-2 gap-5">
 
 
-  <!-- LEFT CARD -->
-  <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
+          <!-- LEFT CARD -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
 
-    <h3 class="font-bold mb-3">
-      Performance Metrics
-    </h3>
+            <h3 class="font-bold mb-3">
+              Performance Metrics
+            </h3>
 
-    <div class="h-44 flex items-center justify-center">
+            <div class="h-44 flex items-center justify-center">
 
-      <!-- your radar SVG here -->
-      <svg viewBox="0 0 120 120" class="h-36 w-36">
+              <!-- your radar SVG here -->
+              <svg viewBox="0 0 120 120" class="h-36 w-36">
 
 
-<polygon 
-points="60,15 105,48 88,100 32,100 15,48"
-fill="none"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <polygon points="60,15 105,48 88,100 32,100 15,48" fill="none" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<polygon 
-points="60,28 92,51 80,90 40,90 28,51"
-fill="none"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <polygon points="60,28 92,51 80,90 40,90 28,51" fill="none" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<line x1="60" y1="60" x2="60" y2="15"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <line x1="60" y1="60" x2="60" y2="15" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<line x1="60" y1="60" x2="105" y2="48"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <line x1="60" y1="60" x2="105" y2="48" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<line x1="60" y1="60" x2="88" y2="100"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <line x1="60" y1="60" x2="88" y2="100" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<line x1="60" y1="60" x2="32" y2="100"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <line x1="60" y1="60" x2="32" y2="100" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<line x1="60" y1="60" x2="15" y2="48"
-stroke="#f1f5f9"
-stroke-width="1.5"/>
+                <line x1="60" y1="60" x2="15" y2="48" stroke="#f1f5f9" stroke-width="1.5" />
 
 
-<polygon 
-points="60,28 92,51 84,98 36,94 20,53"
-fill="rgba(59,130,246,0.08)"
-stroke="#3b82f6"
-stroke-width="2.5"/>
+                <polygon points="60,28 92,51 84,98 36,94 20,53" fill="rgba(59,130,246,0.08)" stroke="#3b82f6"
+                  stroke-width="2.5" />
 
-<polygon 
-points="60,28 92,51 84,98 36,94 20,53"
-fill="rgba(59,130,246,0.08)"
-stroke="#3b82f6"
-stroke-width="2.5"
-stroke-linejoin="round"/>
+                <polygon points="60,28 92,51 84,98 36,94 20,53" fill="rgba(59,130,246,0.08)" stroke="#3b82f6"
+                  stroke-width="2.5" stroke-linejoin="round" />
 
 
 
- <!--Labels-->
+                <!--Labels-->
 
-<text 
-x="60" 
-y="8"
-font-size="5.5"
-font-family="sans-serif"
-text-anchor="middle"
-fill="#94a3b8">
-Response
-</text>
+                <text x="60" y="8" font-size="5.5" font-family="sans-serif" text-anchor="middle" fill="#94a3b8">
+                  Response
+                </text>
 
 
-<text 
-x="110"
-y="45"
-font-size="5.5"
-font-family="sans-serif"
-fill="#94a3b8">
-Feedback
-</text>
+                <text x="110" y="45" font-size="5.5" font-family="sans-serif" fill="#94a3b8">
+                  Feedback
+                </text>
 
 
-<text 
-x="96"
-y="108"
-font-size="5.5"
-font-family="sans-serif"
-text-anchor="middle"
-fill="#94a3b8">
-Completion
-</text>
+                <text x="96" y="108" font-size="5.5" font-family="sans-serif" text-anchor="middle" fill="#94a3b8">
+                  Completion
+                </text>
 
 
-<text 
-x="24"
-y="108"
-font-size="5.5"
-font-family="sans-serif"
-text-anchor="middle"
-fill="#94a3b8">
-Comms
-</text>
+                <text x="24" y="108" font-size="5.5" font-family="sans-serif" text-anchor="middle" fill="#94a3b8">
+                  Comms
+                </text>
 
 
-<text 
-x="10"
-y="45"
-font-size="5.5"
-font-family="sans-serif"
-text-anchor="end"
-fill="#94a3b8">
-Safety
-</text>
+                <text x="10" y="45" font-size="5.5" font-family="sans-serif" text-anchor="end" fill="#94a3b8">
+                  Safety
+                </text>
 
 
-</svg>
+              </svg>
 
-    </div>
+            </div>
 
-  </div>
+          </div>
 
 
 
 
-  <!-- RIGHT CARD -->
-  <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
+          <!-- RIGHT CARD -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
 
-    <h3 class="font-bold mb-3">
-      This Week
-    </h3>
+            <h3 class="font-bold mb-3">
+              This Week
+            </h3>
 
 
-    <div class="h-44 flex items-end justify-center gap-4">
+            <div class="h-44 flex items-end justify-center gap-4">
 
-      <div 
-        *ngFor="let val of weeklyData"
-        class="w-6 bg-emerald-500 rounded-t"
-        [style.height]="(val*12)+'%'">
+              <div *ngFor="let val of weeklyData" class="w-6 bg-emerald-500 rounded-t" [style.height]="(val*12)+'%'">
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- COMPLETED -->
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm">
+
+
+          <h3 class="font-bold mb-4">
+
+            Recently Completed
+
+          </h3>
+
+
+
+          <div *ngFor="let task of completedTasks" class="flex justify-between items-center py-3">
+
+
+            <div>
+
+              <b>
+                ✓ {{task.id}}
+              </b>
+
+
+              <span class="text-gray-400 ml-3">
+
+                {{task.type}}
+
+              </span>
+
+
+            </div>
+
+
+
+            <span class="text-yellow-400">
+
+              ★★★★★
+
+            </span>
+
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+
       </div>
 
+
     </div>
 
 
   </div>
-
-
-</div>
-
-
-
-
-
-<!-- COMPLETED -->
-
-<div class="bg-white rounded-2xl p-5 shadow-sm">
-
-
-<h3 class="font-bold mb-4">
-
-Recently Completed
-
-</h3>
-
-
-
-<div *ngFor="let task of completedTasks"
-class="flex justify-between items-center py-3">
-
-
-<div>
-
-<b>
-✓ {{task.id}}
-</b>
-
-
-<span class="text-gray-400 ml-3">
-
-{{task.type}}
-
-</span>
-
-
-</div>
-
-
-
-<span class="text-yellow-400">
-
-★★★★★
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-</div>
-
-
-</div>
