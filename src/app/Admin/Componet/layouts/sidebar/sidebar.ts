@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { Icon } from '../../../../Common/icon/icon';
 
 interface NavItem {
@@ -22,8 +22,21 @@ interface NavGroup {
   styleUrl: './sidebar.css',
 })
 export class Sidebar {
+  @Input() open = false;
+  @Output() closeSidebar = new EventEmitter<void>();
+
   readonly activeIncidents = 47;
   readonly criticalPriority = 12;
+
+  constructor(private router: Router) {}
+
+  logout(): void {
+    this.router.navigate(['/LandingPage']);
+  }
+
+  close(): void {
+    this.closeSidebar.emit();
+  }
 
   readonly navGroups: NavGroup[] = [
     {

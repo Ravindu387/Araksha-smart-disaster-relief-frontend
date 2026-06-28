@@ -1,7 +1,18 @@
-<div class="min-h-screen bg-slate-100">
-  <app-sidebar></app-sidebar>
-  <app-header></app-header>
-  <div class="ml-72">
-    <router-outlet></router-outlet>
+<div class="min-h-screen bg-slate-100 flex">
+  <app-sidebar [open]="sidebarOpen" (closeSidebar)="sidebarOpen = false"></app-sidebar>
+
+  <!-- Mobile sidebar backdrop -->
+  @if (sidebarOpen) {
+    <div
+      class="fixed inset-0 z-10 bg-black/40 lg:hidden"
+      (click)="sidebarOpen = false"
+    ></div>
+  }
+
+  <div class="flex-1 flex flex-col min-w-0 lg:ml-72">
+    <app-header (toggleSidebar)="sidebarOpen = !sidebarOpen"></app-header>
+    <main class="flex-1 overflow-auto pt-20">
+      <router-outlet></router-outlet>
+    </main>
   </div>
 </div>

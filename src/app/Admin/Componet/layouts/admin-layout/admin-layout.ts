@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { Sidebar } from '../sidebar/sidebar';
 import { Header } from '../header/header';
 
@@ -10,4 +10,8 @@ import { Header } from '../header/header';
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.css'
 })
-export class AdminLayout {}
+export class AdminLayout {
+  sidebarOpen = false;
+
+  constructor(private router: Router) {}
+}
