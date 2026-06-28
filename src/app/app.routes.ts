@@ -14,7 +14,8 @@ import { Shelters } from './Admin/Componet/pages/shelters/shelters';
 import { Inventory } from './Admin/Componet/pages/inventory/inventory';
 import { AllocationComponent } from './Admin/Componet/pages/allocation/allocation';
 import { NotificationsComponent } from './Admin/Componet/pages/notifications/notification';
-//import { ReportsComponent, LiveTrackingComponent } from './Admin/Componet/pages/reports/reports';
+import { ReportsComponent } from './Admin/Componet/pages/reports/reports';
+//import { LiveTracking } from './Admin/Componet/pages/live-tracking/live-tracking';
 import { Settings } from './Admin/Componet/pages/settings/settings';
 
 import { Layout as CitizenLayout } from './Citizen/Component/Layout/layout/layout';
@@ -46,9 +47,9 @@ export const routes: Routes = [
       { path: 'shelters', component: Shelters },
       { path: 'inventory', component: Inventory },
       { path: 'allocation', component: AllocationComponent },
-     // { path: 'live-tracking', component: LiveTrackingComponent },
+      //{ path: 'live-tracking', component: LiveTracking },
       { path: 'notifications', component: NotificationsComponent },
-     // { path: 'reports', component: ReportsComponent },
+      { path: 'reports', component: ReportsComponent },
       { path: 'settings', component: Settings },
     ],
   },
