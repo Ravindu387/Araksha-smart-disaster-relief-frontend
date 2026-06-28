@@ -56,6 +56,16 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   selectedCategory = 'All';
   syncing = false;
 
+  addModalOpen = false;
+
+  newItemName = '';
+  newItemCategory = 'Food';
+  newItemCount = '';
+  newItemTotal = '';
+  newItemUnit = 'kits';
+  newItemMin = '';
+  newItemAllocated = '0';
+
   categories: string[] = [
     'All', 'Food', 'Water', 'Medicine', 'Supplies', 'Shelter', 'Equipment', 'Hygiene',
   ];
@@ -248,5 +258,89 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   syncInventory(): void {
     this.syncing = true;
     setTimeout(() => (this.syncing = false), 1400);
+  }
+
+  openAddModal(): void {
+    this.addModalOpen = true;
+  }
+
+  closeAddModal(): void {
+    this.addModalOpen = false;
+    this.resetForm();
+  }
+
+  resetForm(): void {
+    this.newItemName = '';
+    this.newItemCategory = 'Food';
+    this.newItemCount = '';
+    this.newItemTotal = '';
+    this.newItemUnit = 'kits';
+    this.newItemMin = '';
+    this.newItemAllocated = '0';
+  }
+
+  addStockSubmit(): void {
+    const name = this.newItemName.trim();
+    if (!name) {
+      alert('Please enter a name');
+      return;
+    }
+
+    const countVal = parseInt(this.newItemCount.replace(/,/g, ''), 10) || 0;
+    const totalVal = parseInt(this.newItemTotal.replace(/,/g, ''), 10) || 0;
+    const minVal = parseInt(this.newItemMin.replace(/,/g, ''), 10) || 0;
+    const allocatedVal = parseInt(this.newItemAllocated.replace(/,/g, ''), 10) || 0;
+
+    if (totalVal <= 0) {
+      alert('Please enter a valid total capacity');
+      return;
+    }
+
+    const percentage = Math.round((countVal / totalVal) * 100);
+    const colors = this.getCategoryColors(this.newItemCategory);
+
+    const nextId = (this.inventoryItems.length + 1).toString();
+
+    this.inventoryItems.unshift({
+      id: nextId,
+      name: name,
+      category: this.newItemCategory,
+      count: countVal.toLocaleString(),
+      total: totalVal.toLocaleString(),
+      unit: this.newItemUnit,
+      percentage: percentage,
+      trend: 'New item',
+      trendUp: true,
+      allocated: allocatedVal.toLocaleString(),
+      min: minVal.toLocaleString(),
+      lowStock: countVal < minVal,
+      ringColor: colors.ring,
+      dotColor: colors.dot,
+      barColor: colors.bar
+    });
+
+    this.applyFilter();
+    this.closeAddModal();
+  }
+
+  private getCategoryColors(category: string) {
+    switch (category) {
+      case 'Food':
+        return { ring: 'border-amber-500 text-amber-500', dot: 'bg-amber-500', bar: 'bg-amber-500' };
+      case 'Water':
+        return { ring: 'border-blue-500 text-blue-500', dot: 'bg-blue-500', bar: 'bg-blue-600' };
+      case 'Medicine':
+        return { ring: 'border-rose-500 text-rose-500', dot: 'bg-rose-500', bar: 'bg-rose-500' };
+      case 'Supplies':
+        return { ring: 'border-purple-600 text-purple-600', dot: 'bg-purple-600', bar: 'bg-purple-600' };
+      case 'Shelter':
+        return { ring: 'border-emerald-500 text-emerald-500', dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
+      case 'Equipment':
+        return { ring: 'border-amber-500 text-amber-500', dot: 'bg-amber-500', bar: 'bg-amber-500' };
+      case 'Hygiene':
+        return { ring: 'border-teal-500 text-teal-500', dot: 'bg-teal-500', bar: 'bg-teal-500' };
+      default:
+        return { ring: 'border-slate-500 text-slate-500', dot: 'bg-slate-500', bar: 'bg-slate-500' };
+    }
   }
 }

@@ -31,6 +31,7 @@
       <!-- Add Stock -->
       <button
         type="button"
+        (click)="openAddModal()"
         class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium
                text-white bg-blue-600 rounded-lg shadow-sm
                hover:bg-blue-700 transition-colors cursor-pointer">
@@ -224,5 +225,122 @@
     </div>
 
   </div>
+
+  <!-- Add Stock centered modal overlay dialog -->
+  @if (addModalOpen) {
+    <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in" (click)="closeAddModal()">
+      <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 relative m-4 animate-in fade-in zoom-in duration-200" (click)="$event.stopPropagation()">
+        <!-- Close Button -->
+        <button
+          type="button"
+          (click)="closeAddModal()"
+          class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-sm bg-transparent border-0 cursor-pointer">
+          ✕
+        </button>
+
+        <h3 class="text-lg font-black text-slate-900 leading-tight mb-1">Add New Item Stock</h3>
+        <p class="text-xs text-slate-400 mb-5 font-semibold">Register new relief items and add their stock levels to the system.</p>
+
+        <!-- Form fields -->
+        <div class="flex flex-col gap-4">
+          <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+            <span>ITEM NAME</span>
+            <input
+              type="text"
+              [(ngModel)]="newItemName"
+              placeholder="e.g. Relief Blankets"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+            />
+          </label>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>CATEGORY</span>
+              <select
+                [(ngModel)]="newItemCategory"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition cursor-pointer"
+              >
+                @for (cat of categories; track cat) {
+                  @if (cat !== 'All') {
+                    <option [value]="cat">{{ cat }}</option>
+                  }
+                }
+              </select>
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>UNIT (e.g. kits, liters)</span>
+              <input
+                type="text"
+                [(ngModel)]="newItemUnit"
+                placeholder="e.g. kits"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>CURRENT COUNT</span>
+              <input
+                type="number"
+                [(ngModel)]="newItemCount"
+                placeholder="e.g. 5000"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>TOTAL CAPACITY</span>
+              <input
+                type="number"
+                [(ngModel)]="newItemTotal"
+                placeholder="e.g. 10000"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>ALLOCATED STOCK</span>
+              <input
+                type="number"
+                [(ngModel)]="newItemAllocated"
+                placeholder="e.g. 1000"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>MINIMUM THRESHOLD</span>
+              <input
+                type="number"
+                [(ngModel)]="newItemMin"
+                placeholder="e.g. 1500"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </label>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center gap-3 mt-6">
+          <button
+            type="button"
+            (click)="closeAddModal()"
+            class="flex-1 text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 py-2.5 rounded-xl cursor-pointer">
+            Cancel
+          </button>
+          <button
+            type="button"
+            (click)="addStockSubmit()"
+            class="flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors py-2.5 rounded-xl shadow-md cursor-pointer">
+            Add Stock
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
 </div>
