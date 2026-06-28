@@ -1,0 +1,4 @@
+/* Override the active state of the toggle switch inside the Two-Factor Authentication box */
+::ng-deep .two-factor-toggle button[role="switch"][aria-checked="true"] {
+  background-color: #10b981 !important; /* bg-emerald-500 */
+}

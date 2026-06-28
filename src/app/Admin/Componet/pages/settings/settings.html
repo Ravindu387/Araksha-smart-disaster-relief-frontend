@@ -25,25 +25,36 @@
 
   <div class="flex gap-8 items-start">
     <!-- Sub-nav -->
-    <nav class="w-56 shrink-0 flex flex-col gap-1">
-      @for (section of sections; track section.id) {
-        <button
-          type="button"
-          (click)="setSection(section.id)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors"
-          [class.bg-blue-50]="activeSection() === section.id"
-          [class.text-blue-600]="activeSection() === section.id"
-          [class.text-gray-600]="activeSection() !== section.id"
-          [class.hover:bg-gray-50]="activeSection() !== section.id"
-        >
-          <app-icon [name]="section.icon" class="w-[18px] h-[18px] shrink-0" />
-          <span class="flex-1">{{ section.label }}</span>
-          @if (activeSection() === section.id) {
-            <app-icon name="chevron-right" class="w-4 h-4 shrink-0" />
-          }
-        </button>
-      }
-    </nav>
+    <div class="w-56 shrink-0 flex flex-col justify-between self-stretch min-h-[480px]">
+      <nav class="flex flex-col gap-1">
+        @for (section of sections; track section.id) {
+          <button
+            type="button"
+            (click)="setSection(section.id)"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors"
+            [class.bg-blue-50]="activeSection() === section.id"
+            [class.text-blue-600]="activeSection() === section.id"
+            [class.text-gray-600]="activeSection() !== section.id"
+            [class.hover:bg-gray-50]="activeSection() !== section.id"
+          >
+            <app-icon [name]="section.icon" class="w-[18px] h-[18px] shrink-0" />
+            <span class="flex-1">{{ section.label }}</span>
+            @if (activeSection() === section.id) {
+              <app-icon name="chevron-right" class="w-4 h-4 shrink-0" />
+            }
+          </button>
+        }
+      </nav>
+
+      <!-- Version & Status -->
+      <div class="pt-6 pl-3 mt-auto border-t border-gray-100">
+        <p class="text-[11px] text-gray-400 font-bold tracking-wide">SDRMS v2.4.1</p>
+        <div class="flex items-center gap-1.5 mt-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[11px] text-emerald-600 font-bold">All systems operational</span>
+        </div>
+      </div>
+    </div>
 
     <!-- Content -->
     <div class="flex-1 min-w-0 flex flex-col gap-6 max-w-3xl">
@@ -58,7 +69,7 @@
               <div
                 class="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl font-semibold"
               >
-                {{ currentUser()?.initials ?? 'A' }}
+                AK
               </div>
               <div
                 class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500"
@@ -66,17 +77,21 @@
                 <app-icon name="camera" class="w-3.5 h-3.5" />
               </div>
             </div>
-            <button
-              type="button"
-              class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-50 transition-colors"
-            >
-              Upload Photo
-            </button>
-            <button type="button" class="text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors">
-              Remove
-            </button>
+            <div>
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-50 transition-colors"
+                >
+                  Upload Photo
+                </button>
+                <button type="button" class="text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors">
+                  Remove
+                </button>
+              </div>
+              <p class="text-xs text-gray-400 mt-2">JPEG, PNG · Max 5MB · Recommended 256×256px</p>
+            </div>
           </div>
-          <p class="text-xs text-gray-400 mt-3">JPEG, PNG · Max 5MB · Recommended 256×256px</p>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
@@ -86,19 +101,25 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <label class="flex flex-col gap-1.5 text-sm">
               <span class="text-xs font-semibold text-gray-500 tracking-wide">FIRST NAME</span>
-              <input
-                type="text"
-                [(ngModel)]="firstName"
-                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-              />
+              <div class="relative">
+                <app-icon name="user" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  [(ngModel)]="firstName"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
             </label>
             <label class="flex flex-col gap-1.5 text-sm">
               <span class="text-xs font-semibold text-gray-500 tracking-wide">LAST NAME</span>
-              <input
-                type="text"
-                [(ngModel)]="lastName"
-                class="px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-              />
+              <div class="relative">
+                <app-icon name="user" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  [(ngModel)]="lastName"
+                  class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+                />
+              </div>
             </label>
 
             <label class="flex flex-col gap-1.5 text-sm sm:col-span-2">
@@ -315,7 +336,7 @@
           <p class="text-sm text-gray-400 mt-0.5 mb-5">Add an extra layer of protection to your account</p>
 
           @if (twoFactorEnabled()) {
-            <div class="flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4">
+            <div class="flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4 two-factor-toggle">
               <div class="flex items-center gap-3">
                 <app-icon name="check-circle" class="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
@@ -325,7 +346,7 @@
                   </p>
                 </div>
               </div>
-              <app-toggle [checked]="twoFactorEnabled()" color="amber" (checkedChange)="twoFactorEnabled.set($event)" />
+              <app-toggle [checked]="twoFactorEnabled()" color="blue" (checkedChange)="twoFactorEnabled.set($event)" />
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -916,6 +937,137 @@
             <p class="text-sm text-rose-600 font-medium mt-3">{{ inviteError() }}</p>
           }
         </div>
+      }
+
+      <!-- Integrations -->
+      @if (activeSection() === 'integrations') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">Integrations</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Connect platform with third-party tools and services</p>
+
+          <div class="flex flex-col gap-4">
+            @for (integration of integrations; track integration.id) {
+              <div class="flex items-center justify-between gap-4 border border-gray-100 rounded-xl p-5">
+                <div class="flex items-start gap-4">
+                  <div class="w-12 h-12 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center p-2.5 shrink-0">
+                    <img [src]="integration.logo" [alt]="integration.name" class="max-w-full max-h-full object-contain" />
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-gray-900">{{ integration.name }}</h4>
+                    <p class="text-xs text-gray-400 mt-1">{{ integration.description }}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  (click)="toggleIntegration(integration.id)"
+                  class="text-xs font-bold px-4 py-2 rounded-full border transition-colors shrink-0"
+                  [class.text-rose-600]="integration.connected"
+                  [class.border-rose-200]="integration.connected"
+                  [class.hover:bg-rose-50]="integration.connected"
+                  [class.text-blue-600]="!integration.connected"
+                  [class.border-blue-200]="!integration.connected"
+                  [class.hover:bg-blue-50]="!integration.connected"
+                >
+                  {{ integration.connected ? 'Disconnect' : 'Connect' }}
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- API Keys -->
+      @if (activeSection() === 'api-keys') {
+        <div class="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 class="font-semibold text-gray-900">API Keys</h3>
+          <p class="text-sm text-gray-400 mt-0.5 mb-5">Authentication tokens for accessing the platform API</p>
+
+          <!-- API Keys List -->
+          <div class="flex flex-col divide-y divide-gray-100">
+            @for (key of apiKeys; track key.id) {
+              <div class="flex items-center justify-between gap-4 py-4">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-semibold text-gray-900 truncate">{{ key.name }}</p>
+                    <span class="text-[10px] font-mono text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                      {{ key.prefix }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1">
+                    Created on {{ key.createdAt }} · Last used: {{ key.lastUsed }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    (click)="copyToClipboard(key.prefix)"
+                    class="text-gray-400 hover:text-blue-600 transition-colors p-2"
+                    title="Copy API Key"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="revokeApiKey(key.id)"
+                    class="text-gray-400 hover:text-rose-600 transition-colors p-2"
+                    title="Revoke Key"
+                  >
+                    <app-icon name="trash" class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Generate New Key Section -->
+          <div class="border-t border-gray-100 pt-6 mt-6">
+            <h4 class="text-sm font-bold text-gray-800 mb-3">Generate New API Key</h4>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                [(ngModel)]="newApiKeyName"
+                placeholder="e.g. Backups Integration Service"
+                class="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+              <button
+                type="button"
+                (click)="generateApiKey(newApiKeyName)"
+                class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shrink-0"
+              >
+                Generate Key
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Created Modal (Simple simulated box inside the view) -->
+        @if (showApiKeyCreatedModal()) {
+          <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mt-4 flex flex-col gap-3 relative">
+            <button
+              type="click"
+              (click)="showApiKeyCreatedModal.set(false)"
+              class="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800 text-sm font-bold bg-transparent border-0 cursor-pointer"
+            >
+              Dismiss
+            </button>
+            <div>
+              <h4 class="text-sm font-bold text-emerald-800">New API Key Generated successfully!</h4>
+              <p class="text-xs text-emerald-600 mt-1">Copy this key now. For security reasons, it will not be shown again.</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white border border-emerald-100 rounded-xl p-3">
+              <code class="text-xs font-mono font-bold text-slate-800 break-all select-all flex-1">{{ newGeneratedKey }}</code>
+              <button
+                type="button"
+                (click)="copyToClipboard(newGeneratedKey)"
+                class="text-xs font-bold text-blue-600 hover:text-blue-800 shrink-0"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        }
       }
 
     </div>

@@ -1,15 +1,30 @@
-<header class="ml-72 h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8">
+<header class="fixed top-0 right-0 left-0 lg:left-72 h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-30 shadow-sm">
 
-  <!-- Breadcrumb -->
-  <div class="flex items-center gap-2 text-sm font-medium">
-    <span class="text-slate-400">Admin</span>
-    <span class="text-slate-300">/</span>
-    <span class="font-semibold text-slate-800">{{ currentSection }}</span>
+  <!-- Mobile hamburger + Breadcrumb -->
+  <div class="flex items-center gap-3 text-sm font-medium">
+    <!-- Hamburger (mobile only) -->
+    <button
+      type="button"
+      aria-label="Open sidebar"
+      class="lg:hidden w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+      (click)="onToggleSidebar()"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="Breadcrumb" class="flex items-center gap-2">
+      <span class="text-slate-400">Admin</span>
+      <span class="text-slate-300">/</span>
+      <span class="font-semibold text-slate-800">{{ currentSection }}</span>
+    </nav>
   </div>
 
   <!-- Search -->
-  <div class="flex-1 max-w-md mx-8">
-    <div class="relative">
+  <div class="hidden md:flex flex-1 max-w-md mx-8">
+    <div class="relative w-full">
       <app-icon
         name="search"
         class="w-[18px] h-[18px] text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -18,17 +33,19 @@
       <input
         type="text"
         placeholder="Search emergencies, volunteers..."
+        aria-label="Global search"
         class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
       />
     </div>
   </div>
 
   <!-- Right Side -->
-  <div class="flex items-center gap-5 shrink-0">
+  <div class="flex items-center gap-3 shrink-0">
 
     <button
       type="button"
       aria-label="Notifications"
+      (click)="navigateToNotifications()"
       class="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
     >
       <app-icon
@@ -43,25 +60,72 @@
       }
     </button>
 
-    <button
-      type="button"
-      class="flex items-center gap-2.5 group"
-    >
-      <div
-        class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0"
+    <!-- User profile settings dropdown wrapper -->
+    <div class="relative">
+      <!-- Click Backdrop to auto-close dropdown -->
+      <div *ngIf="showDropdown" class="fixed inset-0 z-40 cursor-default" (click)="closeDropdown()"></div>
+
+      <button
+        type="button"
+        aria-label="User settings"
+        class="flex items-center gap-2.5 group cursor-pointer relative z-50 focus:outline-none"
+        (click)="toggleDropdown()"
       >
-        A
+        <div
+          class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0"
+        >
+          A
+        </div>
+
+        <span class="hidden sm:block text-sm font-medium text-slate-700">
+          {{ adminName }}
+        </span>
+
+        <app-icon
+          name="chevron-down"
+          class="hidden sm:block w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform duration-200"
+          [style.transform]="showDropdown ? 'rotate(180deg)' : 'none'"
+        ></app-icon>
+      </button>
+
+      <!-- Dropdown Menu Panel -->
+      <div
+        *ngIf="showDropdown"
+        class="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+      >
+        <button
+          (click)="goToProfile(); $event.stopPropagation()"
+          class="w-full text-left px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          Profile
+        </button>
+        <button
+          (click)="goToSettings(); $event.stopPropagation()"
+          class="w-full text-left px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          Settings
+        </button>
+        <button
+          (click)="goToHelp(); $event.stopPropagation()"
+          class="w-full text-left px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          Help Center
+        </button>
+        
+        <div class="border-t border-slate-100 my-1.5"></div>
+        
+        <button
+          (click)="signOut(); $event.stopPropagation()"
+          class="w-full text-left px-5 py-2.5 text-sm font-semibold text-rose-500 hover:bg-rose-50/50 flex items-center gap-2 transition-colors cursor-pointer"
+        >
+          <!-- Exit bracket arrow SVG icon -->
+          <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
       </div>
-
-      <span class="text-sm font-medium text-gray-800">
-        {{ adminName }}
-      </span>
-
-      <app-icon
-        name="chevron-down"
-        class="w-4 h-4 text-gray-400 group-hover:text-gray-600"
-      ></app-icon>
-    </button>
+    </div>
 
   </div>
 

@@ -11,7 +11,9 @@ type SettingsSection =
   | 'security'
   | 'system'
   | 'appearance'
-  | 'team';
+  | 'integrations'
+  | 'team'
+  | 'api-keys';
 
 interface NotificationToggle {
   key: string;
@@ -47,7 +49,9 @@ export class Settings {
     { id: 'security', label: 'Security', icon: 'shield' },
     { id: 'system', label: 'System', icon: 'globe' },
     { id: 'appearance', label: 'Appearance', icon: 'palette' },
+    { id: 'integrations', label: 'Integrations', icon: 'box' },
     { id: 'team', label: 'Team & Access', icon: 'users' },
+    { id: 'api-keys', label: 'API Keys', icon: 'key' },
   ];
 
   readonly activeSection = signal<SettingsSection>('profile');
@@ -61,13 +65,13 @@ export class Settings {
   // location/bio/timezone/language are UI-only for now: there's no column
   // for them yet, so they reset on reload. Wire them up the same way
   // name/email are once you add the fields on the backend User entity.
-  firstName = '';
-  lastName = '';
-  email = '';
-  phone = '';
-  jobTitle = ''; // maps to the backend's `department` field
-  location = '';
-  bio = '';
+  firstName = 'Admin';
+  lastName = 'Kumar';
+  email = 'a.kumar@sdrms.gov';
+  phone = '+1 (202) 555-0100';
+  jobTitle = 'System Administrator'; // maps to the backend's `department` field
+  location = 'Washington, D.C.';
+  bio = 'Senior systems administrator overseeing national disaster relief coordination platform.';
   timezone = 'America/New_York';
   language = 'English (US)';
 
@@ -81,10 +85,10 @@ export class Settings {
       const user = this.currentUser();
       if (user) {
         const [first, ...rest] = user.name.split(' ');
-        this.firstName = first ?? '';
-        this.lastName = rest.join(' ');
-        this.email = user.email;
-        this.jobTitle = user.department ?? '';
+        this.firstName = first ?? 'Admin';
+        this.lastName = rest.join(' ') ?? 'Kumar';
+        this.email = user.email ?? 'a.kumar@sdrms.gov';
+        this.jobTitle = user.department ?? 'System Administrator';
       }
     });
   }
@@ -231,7 +235,7 @@ export class Settings {
   readonly showCurrentPassword = signal(false);
   readonly passwordError = signal<string | null>(null);
   readonly passwordChanged = signal(false);
-  readonly twoFactorEnabled = signal(false);
+  readonly twoFactorEnabled = signal(true);
 
   changePassword(): void {
     if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
@@ -387,6 +391,43 @@ export class Settings {
   sidebarCollapsedByDefault = signal(false);
   uiAnimations = signal(true);
 
+  // ---- Integrations ----------------------------------------------------
+  integrations = [
+    {
+      id: 'slack',
+      name: 'Slack',
+      description: 'Post alerts and updates to Slack channels',
+      icon: 'slack',
+      connected: true,
+      logo: 'https://cdn.brandfolder.io/5H442UZP/as/pl546j-70upn4-11t2g2/slack-octothorpe.png'
+    },
+    {
+      id: 'twilio',
+      name: 'Twilio',
+      description: 'Send SMS notifications to field workers',
+      icon: 'phone',
+      connected: false,
+      logo: 'https://www.twilio.com/marketing/assets/images/logos/twilio-logo-red.png'
+    },
+    {
+      id: 's3',
+      name: 'AWS S3 Backups',
+      description: 'Store automated database backups in Amazon S3',
+      icon: 'database',
+      connected: true,
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg'
+    }
+  ];
+
+  toggleIntegration(id: string): void {
+    const integration = this.integrations.find(i => i.id === id);
+    if (integration) {
+      integration.connected = !integration.connected;
+      this.genericSaved.set(true);
+      setTimeout(() => this.genericSaved.set(false), 2000);
+    }
+  }
+
   // ---- Team & Access — local-only, no backend endpoint for these yet ---
   readonly roleOptions = [
     'Super Admin',
@@ -491,9 +532,44 @@ export class Settings {
       },
     ];
     this.inviteEmail = '';
-    // No backend endpoint yet — this just adds the member to the local list
-    // so the invite flow feels complete. Wire up an email invite + a real
-    // members table once you're ready.
+  }
+
+  // ---- API Keys --------------------------------------------------------
+  apiKeys = [
+    { id: 'key-1', name: 'Production Read-Only', prefix: 'sdrms_live_...7x92', createdAt: '2026-03-12', lastUsed: 'Active 2m ago' },
+    { id: 'key-2', name: 'Staging API Access', prefix: 'sdrms_test_...3a8f', createdAt: '2026-05-18', lastUsed: 'Active 4h ago' }
+  ];
+
+  newApiKeyName = '';
+  showApiKeyCreatedModal = signal(false);
+  newGeneratedKey = '';
+
+  generateApiKey(name: string): void {
+    const keyName = name.trim();
+    if (!keyName) return;
+    const randomHex = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const newKey = `sdrms_live_${randomHex.slice(0, 16)}`;
+    this.newGeneratedKey = newKey;
+    this.apiKeys.unshift({
+      id: `key-${Date.now()}`,
+      name: keyName,
+      prefix: `${newKey.slice(0, 15)}...${newKey.slice(-4)}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      lastUsed: 'Never used'
+    });
+    this.newApiKeyName = '';
+    this.showApiKeyCreatedModal.set(true);
+  }
+
+  revokeApiKey(id: string): void {
+    if (window.confirm('Are you sure you want to revoke this API key? Applications using it will lose platform access.')) {
+      this.apiKeys = this.apiKeys.filter(k => k.id !== id);
+    }
+  }
+
+  copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text);
+    window.alert('API Key copied to clipboard!');
   }
 
   // ---- Header "Save Changes" button -------------------------------------
