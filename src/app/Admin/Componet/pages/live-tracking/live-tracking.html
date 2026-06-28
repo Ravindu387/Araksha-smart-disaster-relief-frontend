@@ -1,0 +1,340 @@
+<p>live-tracking works!</p>
+<div class="flex flex-col lg:flex-row h-[calc(100vh-96px)] min-h-[600px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl text-slate-100">
+  
+  <!-- Left Side Map Area -->
+  <div class="relative flex-1 bg-[#0b1220] overflow-hidden flex flex-col">
+    <!-- Cyber Map Grid Overlay -->
+    <div class="absolute inset-0 opacity-15 pointer-events-none" style="background-image: linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px); background-size: 32px 32px;"></div>
+    
+    <!-- Radar Scanning Line Effect -->
+    <div class="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent shadow-[0_0_20px_rgba(6,182,212,0.5)] animate-[pulse_3s_infinite] pointer-events-none" style="top: 30%"></div>
+    
+    <!-- Top Operations Room Header Overlay -->
+    <div class="absolute top-4 left-4 z-20 flex items-center gap-3">
+      <div class="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-800 shadow-lg flex items-center gap-3">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+        </span>
+        <span class="text-xs font-semibold tracking-wider text-slate-300 uppercase">Operations Room</span>
+      </div>
+      
+      <button (click)="toggleLive()" class="bg-slate-900/90 backdrop-blur-md hover:bg-slate-800 px-4 py-2 rounded-xl border border-slate-800 shadow-lg flex items-center gap-2 transition-all">
+        <span class="relative flex h-2 w-2" *ngIf="isLive">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="relative flex h-2 w-2 bg-rose-500 rounded-full" *ngIf="!isLive"></span>
+        <span class="text-xs font-semibold text-slate-300">{{ isLive ? 'LIVE SIMULATION' : 'PAUSED' }}</span>
+      </button>
+    </div>
+
+    <div class="absolute top-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-800 shadow-lg flex items-center gap-2">
+      <span class="text-xs font-mono text-cyan-400">{{ systemTime }}</span>
+    </div>
+
+    <!-- Interactive Map Pins Canvas -->
+    <div class="flex-1 relative">
+      <!-- Incident Markers (Red, Pulsing) -->
+      <div *ngFor="let inc of incidents" 
+           [style.left.%]="inc.x" 
+           [style.top.%]="inc.y" 
+           (click)="selectMarker(inc, 'Incident')" 
+           class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group transition-all duration-300">
+        <!-- Pulsing outer ring -->
+        <span class="absolute inline-flex h-10 w-10 -left-3 -top-3 rounded-full bg-rose-500 opacity-25 animate-ping" *ngIf="inc.status === 'Active'"></span>
+        <!-- Glowing background for focus action -->
+        <span class="absolute inline-flex h-14 w-14 -left-5 -top-5 rounded-full border-2 border-cyan-400 opacity-70 animate-pulse" *ngIf="focusedMarkerId === inc.id"></span>
+        
+        <div class="relative w-5 h-5 bg-rose-600 border-2 border-rose-300 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)] group-hover:scale-125 transition-transform">
+          <span class="text-[9px]">🚨</span>
+        </div>
+      </div>
+
+      <!-- Shelter Markers (Amber House Badge) -->
+      <div *ngFor="let sh of shelters" 
+           [style.left.%]="sh.x" 
+           [style.top.%]="sh.y" 
+           (click)="selectMarker(sh, 'Shelter')" 
+           class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group transition-all duration-300">
+        <span class="absolute inline-flex h-14 w-14 -left-5 -top-5 rounded-full border-2 border-cyan-400 opacity-70 animate-pulse" *ngIf="focusedMarkerId === sh.id"></span>
+        <div class="relative px-2 py-1 bg-amber-500 border border-amber-300 rounded-lg flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(245,158,11,0.4)] text-[10px] font-bold text-slate-950 group-hover:scale-110 transition-transform">
+          🏠 <span class="hidden sm:inline text-[9px]">{{ sh.occupancy }}/{{ sh.capacity }}</span>
+        </div>
+      </div>
+
+      <!-- Volunteer Markers (Cyan Plane Icon) -->
+      <div *ngFor="let vol of volunteers" 
+           [style.left.%]="vol.x" 
+           [style.top.%]="vol.y" 
+           (click)="selectMarker(vol, 'Volunteer')" 
+           class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group transition-all duration-1000">
+        <span class="absolute inline-flex h-14 w-14 -left-5 -top-5 rounded-full border-2 border-cyan-400 opacity-70 animate-pulse" *ngIf="focusedMarkerId === vol.id"></span>
+        <div class="relative w-8 h-8 bg-cyan-600 border border-cyan-300 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.4)] text-xs group-hover:scale-125 transition-transform">
+          🏃
+        </div>
+      </div>
+
+      <!-- Clickable popover showing entity info -->
+      <div *ngIf="selectedMarker" class="absolute bottom-6 left-6 right-6 sm:right-auto sm:w-96 z-30 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" 
+                  [ngClass]="{
+                    'bg-rose-500/20 text-rose-400': selectedMarker.markerType === 'Incident',
+                    'bg-amber-500/20 text-amber-400': selectedMarker.markerType === 'Shelter',
+                    'bg-cyan-500/20 text-cyan-400': selectedMarker.markerType === 'Volunteer'
+                  }">
+              {{ selectedMarker.markerType }}
+            </span>
+            <h3 class="text-base font-bold text-white mt-1">{{ selectedMarker.title || selectedMarker.name }}</h3>
+            <p class="text-xs text-slate-400">📍 {{ selectedMarker.location }}</p>
+          </div>
+          <button (click)="clearSelection()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">✕</button>
+        </div>
+
+        <!-- Custom Info based on selected type -->
+        <div class="text-sm text-slate-300 space-y-2 mt-2">
+          <div *ngIf="selectedMarker.markerType === 'Incident'">
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Severity:</span>
+              <span class="font-semibold text-rose-400">{{ selectedMarker.severity }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Time Reported:</span>
+              <span>{{ selectedMarker.time }}</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-2 bg-slate-950 p-2 rounded-lg leading-relaxed">{{ selectedMarker.details }}</p>
+          </div>
+
+          <div *ngIf="selectedMarker.markerType === 'Volunteer'">
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Specialty:</span>
+              <span>{{ selectedMarker.role }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Assigned Sector:</span>
+              <span>{{ selectedMarker.team }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Target Incident:</span>
+              <span class="text-cyan-400 font-medium">{{ selectedMarker.targetIncidentId ? 'Assigned' : 'Standby' }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Contact:</span>
+              <span>{{ selectedMarker.phone }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="selectedMarker.markerType === 'Shelter'">
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Manager:</span>
+              <span>{{ selectedMarker.manager }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+              <span class="text-slate-400">Occupancy rate:</span>
+              <span class="text-amber-400 font-bold">{{ ((selectedMarker.occupancy / selectedMarker.capacity) * 100) | number:'1.0-0' }}%</span>
+            </div>
+            <div class="space-y-1 mt-2">
+              <div class="flex justify-between text-xs text-slate-400">
+                <span>Occupied: {{ selectedMarker.occupancy }}</span>
+                <span>Total Capacity: {{ selectedMarker.capacity }}</span>
+              </div>
+              <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full transition-all duration-500" [style.width.%]="(selectedMarker.occupancy / selectedMarker.capacity) * 100"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend Overlay (Bottom Left) -->
+    <div class="absolute bottom-4 left-4 z-20 bg-slate-900/90 backdrop-blur-md p-3.5 rounded-xl border border-slate-800 shadow-lg text-[11px] space-y-2">
+      <p class="font-bold text-slate-300 tracking-wider uppercase mb-1.5">Map Legend</p>
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]"></span>
+        <span>Active Incidents</span>
+      </div>
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]"></span>
+        <span>Relief Shelters</span>
+      </div>
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.7)]"></span>
+        <span>Volunteers On Duty</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side Controls / Live Feed -->
+  <div class="w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-slate-800 bg-[#090f1d] flex flex-col h-full lg:h-auto overflow-hidden">
+    
+    <!-- Header search -->
+    <div class="p-4 border-b border-slate-800 space-y-3">
+      <h2 class="text-lg font-extrabold tracking-tight text-white flex items-center justify-between">
+        <span>Operations Center</span>
+        <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">04 Ops</span>
+      </h2>
+      <div class="relative">
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search incidents, shelters..." class="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors placeholder-slate-500">
+        <span class="absolute right-3.5 top-3 text-slate-500 text-sm">🔍</span>
+      </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="flex border-b border-slate-800 text-xs font-semibold bg-slate-900/50">
+      <button *ngFor="let tab of ['All', 'Emergencies', 'Volunteers', 'Shelters']" 
+              (click)="currentTab = tab" 
+              class="flex-1 py-3 text-center transition-colors border-b-2"
+              [ngClass]="{
+                'border-cyan-500 text-cyan-400 font-bold': currentTab === tab,
+                'border-transparent text-slate-400 hover:text-white': currentTab !== tab
+              }">
+        {{ tab }}
+      </button>
+    </div>
+
+    <!-- Dashboard stats quick stats cards -->
+    <div class="p-4 grid grid-cols-2 gap-3.5 border-b border-slate-800">
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-md">
+        <p class="text-[10px] font-bold text-rose-400 uppercase tracking-wide">Emergencies</p>
+        <p class="text-xl font-bold mt-1 text-white">{{ incidents.length }}</p>
+        <p class="text-[9px] text-slate-400 mt-0.5">Active Incidents</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-md">
+        <p class="text-[10px] font-bold text-cyan-400 uppercase tracking-wide">Volunteers</p>
+        <p class="text-xl font-bold mt-1 text-white">{{ volunteers.length }}</p>
+        <p class="text-[9px] text-slate-400 mt-0.5">On Duty</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-md">
+        <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wide">Shelters</p>
+        <p class="text-xl font-bold mt-1 text-white">{{ shelters.length }}</p>
+        <p class="text-[9px] text-slate-400 mt-0.5">Operated Centers</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-md">
+        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">System State</p>
+        <p class="text-xl font-bold mt-1 text-emerald-400">Secure</p>
+        <p class="text-[9px] text-slate-400 mt-0.5">All links active</p>
+      </div>
+    </div>
+
+    <!-- Scrolling Live Feed -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3.5 min-h-0">
+      <div class="flex justify-between items-center text-xs text-slate-400 mb-2 font-semibold">
+        <span>LIVE FEED LIST</span>
+        <span>{{ filteredItems.length }} items</span>
+      </div>
+
+      <div *ngIf="filteredItems.length === 0" class="text-center py-8 text-slate-500 text-sm">
+        No items match your search.
+      </div>
+
+      <div *ngFor="let item of filteredItems" 
+           class="bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-xl p-3.5 transition-all shadow-md group">
+        
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                    [ngClass]="{
+                      'bg-rose-500/20 text-rose-400 border border-rose-500/30': item.type === 'Incident',
+                      'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30': item.type === 'Volunteer',
+                      'bg-amber-500/20 text-amber-400 border border-amber-500/30': item.type === 'Shelter'
+                    }">
+                {{ item.type }}
+              </span>
+              <span class="text-xs text-slate-400 font-mono">{{ item.time || item.team || (item.occupancy + '/' + item.capacity) }}</span>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-1.5">{{ item.title || item.name }}</h4>
+            <p class="text-xs text-slate-400 mt-0.5">📍 {{ item.location }}</p>
+          </div>
+
+          <button (click)="locateMarker(item.id, item.type)" 
+                  class="text-xs bg-slate-800 hover:bg-cyan-600 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700 hover:border-cyan-500 transition-colors shadow">
+            Center Map
+          </button>
+        </div>
+
+        <!-- Occupancy bar for shelter list item -->
+        <div *ngIf="item.type === 'Shelter'" class="mt-2.5 space-y-1">
+          <div class="flex justify-between text-[10px] text-slate-400">
+            <span>Occupancy</span>
+            <span>{{ ((item.occupancy / item.capacity) * 100) | number:'1.0-0' }}%</span>
+          </div>
+          <div class="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
+            <div class="bg-amber-500 h-full rounded-full" [style.width.%]="(item.occupancy / item.capacity) * 100"></div>
+          </div>
+        </div>
+
+        <!-- Role details for volunteer list item -->
+        <div *ngIf="item.type === 'Volunteer'" class="mt-2 text-xs text-slate-400 flex justify-between bg-slate-950/40 p-1.5 rounded-lg border border-slate-800/50">
+          <span>Specialty: {{ item.role }}</span>
+          <span class="text-cyan-400 font-medium">{{ item.status }}</span>
+        </div>
+        
+        <!-- Severity tag for incident list item -->
+        <div *ngIf="item.type === 'Incident'" class="mt-2 text-xs flex justify-between items-center bg-slate-950/40 p-1.5 rounded-lg border border-slate-800/50">
+          <span class="text-slate-400">Severity:</span>
+          <span class="font-bold text-[10px] uppercase tracking-wide" 
+                [ngClass]="{
+                  'text-rose-400': item.severity === 'Critical',
+                  'text-amber-400': item.severity === 'Moderate',
+                  'text-slate-400': item.severity === 'Low',
+                  'text-emerald-400': item.severity === 'Resolved'
+                }">
+            {{ item.severity }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Action button / Form area -->
+    <div class="p-4 border-t border-slate-800 bg-slate-950">
+      <div *ngIf="!showBroadcastForm">
+        <button (click)="showBroadcastForm = true" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition-colors">
+          📢 Broadcast New Incident Alert
+        </button>
+      </div>
+
+      <!-- Alert submission form inside panel -->
+      <div *ngIf="showBroadcastForm" class="space-y-3 bg-[#0d1525] p-3.5 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-rose-400 uppercase tracking-wide">🚨 Broadcast Incident Report</span>
+          <button (click)="showBroadcastForm = false" class="text-slate-400 hover:text-white text-xs">Cancel</button>
+        </div>
+        
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase">Incident Title</label>
+          <input type="text" [(ngModel)]="newIncidentTitle" placeholder="e.g. Flash Flood Level 3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase">Severity</label>
+            <select [(ngModel)]="newIncidentSeverity" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500">
+              <option value="Critical">Critical</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase">Location</label>
+            <input type="text" [(ngModel)]="newIncidentLocation" placeholder="e.g. Colombo North" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase">Additional details</label>
+          <textarea [(ngModel)]="newIncidentDetails" rows="2" placeholder="Describe context/needs..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500 resize-none"></textarea>
+        </div>
+
+        <button (click)="submitBroadcast()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 rounded-lg transition-colors">
+          🚀 Dispatch & Publish Alert
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
