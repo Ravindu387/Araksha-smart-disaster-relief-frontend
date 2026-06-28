@@ -1,15 +1,43 @@
-<aside class="fixed inset-y-0 left-0 z-20 w-72 bg-[#0b1325] flex flex-col">
+<aside
+  class="fixed inset-y-0 left-0 z-20 w-72 bg-[#0b1325] flex flex-col transition-transform duration-300"
+  [class.-translate-x-full]="!open"
+  [class.translate-x-0]="open"
+  [class.lg:translate-x-0]="true"
+>
   <!-- Logo -->
   <div class="h-20 flex items-center gap-3 px-6 border-b border-white/5 shrink-0">
     <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white">
       <app-icon name="shield" class="w-5 h-5" />
     </div>
-    <span class="text-white font-bold text-lg tracking-wide">SDRMS</span>
+    <span class="text-white font-bold text-lg tracking-wide flex-1">SDRMS</span>
+    <!-- Close button (mobile only) -->
+    <button
+      type="button"
+      aria-label="Close sidebar"
+      class="lg:hidden text-slate-400 hover:text-white transition-colors"
+      (click)="close()"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Active Incidents Red Widget -->
+  <div class="mx-4 mt-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/15 flex items-center gap-3 shrink-0">
+    <div class="w-9 h-9 rounded-xl bg-rose-600/20 flex items-center justify-center text-rose-500 shrink-0">
+      <app-icon name="radio" class="w-5 h-5" />
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-rose-100 text-xs font-bold truncate leading-tight">{{ activeIncidents }} Active Incidents</p>
+      <p class="text-rose-400/80 text-[10px] font-semibold mt-0.5 leading-none">{{ criticalPriority }} critical priority</p>
+    </div>
+    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
   </div>
 
   <!-- Menu -->
   <div class="sidebar-nav-scroll px-4 flex-1 overflow-y-auto">
-    <nav class="flex flex-col gap-6 text-sm">
+    <nav class="flex flex-col gap-6 text-sm py-4">
       @for (group of navGroups; track group.title) {
         <div>
           <p class="px-3 mb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
@@ -21,6 +49,7 @@
                 [routerLink]="item.route"
                 routerLinkActive="bg-blue-600/15! text-white!"
                 #rla="routerLinkActive"
+                (click)="close()"
                 class="group flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
               >
                 <app-icon
@@ -53,7 +82,12 @@
       <p class="text-white text-sm font-medium truncate">Admin Kumar</p>
       <p class="text-slate-500 text-xs">System Admin</p>
     </div>
-    <button type="button" aria-label="Log out" class="text-slate-500 hover:text-white transition-colors shrink-0">
+    <button
+      type="button"
+      aria-label="Log out"
+      class="text-slate-500 hover:text-white transition-colors shrink-0"
+      (click)="logout()"
+    >
       <app-icon name="logout" class="w-[18px] h-[18px]" />
     </button>
   </div>
