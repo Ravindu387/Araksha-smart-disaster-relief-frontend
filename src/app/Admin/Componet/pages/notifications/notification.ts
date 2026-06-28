@@ -94,20 +94,10 @@ export class NotificationsComponent {
       read: false,
     },
     {
-      id: 7,
-      category: 'alerts',
-      severity: 'high',
-      title: 'Earthquake Aftershock Warning',
-      badge: 'High',
-      desc: 'USGS reports 4.2 magnitude aftershock near San Jose CA. Volunteers at ER-2844 alerted.',
-      time: '3h ago',
-      read: true,
-    },
-    {
       id: 8,
       category: 'shelters',
       severity: 'critical',
-      title: 'Shelter At Capacity: Miami-Dade',
+      title: 'Shelter At Capacity: Miami Dade',
       badge: 'Critical',
       desc: 'SH-104 Miami-Dade Evacuation Center has reached 99% occupancy (1,190/1,200). Overflow protocol activated.',
       time: '12 min ago',
@@ -123,14 +113,24 @@ export class NotificationsComponent {
       time: '1h ago',
       read: true,
     },
+    {
+      id: 7,
+      category: 'alerts',
+      severity: 'high',
+      title: 'Earthquake Aftershock Warning',
+      badge: 'High',
+      desc: 'USGS reports 4.2 magnitude aftershock near San Jose CA. Volunteers at ER-2844 alerted.',
+      time: '3h ago',
+      read: true,
+    },
   ];
 
-  // Total unread count across all notifications
+  
   get unreadCount(): number {
     return this.notifications.filter((n) => !n.read).length;
   }
 
-  // Unread count per tab (used for badge on each tab)
+
   getTabUnreadCount(tab: TabType): number {
     if (tab === 'all') return this.notifications.filter((n) => !n.read).length;
     return this.notifications.filter((n) => n.category === tab && !n.read).length;
