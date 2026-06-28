@@ -20,10 +20,10 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <button routerLink="/admin/dashboard" class="font-semibold text-slate-800">Sign In</button>
+          <button routerLink="/login" class="font-semibold text-slate-800 hover:text-blue-600 transition-colors">Sign In</button>
 
           <button
-            routerLink="/admin/dashboard"
+            routerLink="/signup"
             class="bg-slate-900 text-white px-7 py-3 rounded-full font-semibold hover:bg-slate-800 transition"
           >
             Get Started
@@ -65,11 +65,11 @@
 
    
       <div class="flex flex-wrap gap-5 mt-10">
-        <button class="bg-red-500 hover:bg-red-600 px-6 py-3 rounded-full font-semibold shadow-lg">
+        <button routerLink="/signup" class="bg-red-500 hover:bg-red-600 px-6 py-3 rounded-full font-semibold shadow-lg">
           🚨 Report Emergency
         </button>
 
-        <button routerLink="/admin/dashboard" class="bg-white/10 border border-white/20 px-6 py-3 rounded-full font-semibold">
+        <button routerLink="/login" class="bg-white/10 border border-white/20 px-6 py-3 rounded-full font-semibold hover:bg-white/20 transition">
           View Dashboard →
         </button>
       </div>
@@ -183,7 +183,7 @@
             <li>✅ Track your community impact in real time</li>
           </ul>
 
-          <button class="bg-blue-600 mt-8 px-8 py-4 rounded-full font-semibold">
+          <button routerLink="/signup" class="bg-blue-600 mt-8 px-8 py-4 rounded-full font-semibold hover:bg-blue-700 transition">
             Register Now
           </button>
         </div>
@@ -360,18 +360,15 @@
     <div class="flex flex-wrap justify-center gap-5 mt-10">
 
       <button
-        routerLink="/admin/dashboard"
+        routerLink="/login"
         class="bg-slate-900 hover:bg-slate-800 text-white px-8 py-4 rounded-full font-semibold transition">
-
         Launch Dashboard
-
       </button>
 
       <button
+        routerLink="/signup"
         class="border border-slate-300 hover:bg-slate-100 px-8 py-4 rounded-full font-semibold transition">
-
         Create Account
-
       </button>
 
     </div>
