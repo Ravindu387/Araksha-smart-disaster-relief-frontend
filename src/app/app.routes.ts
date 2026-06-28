@@ -53,6 +53,6 @@ export const routes: Routes = [
       { path: 'settings', component: Settings },
     ],
   },
-
+  {path:'volunteerhub', component: VolunteerDashboardComponent},
   { path: '**', redirectTo: 'dashboard' },
 ];
