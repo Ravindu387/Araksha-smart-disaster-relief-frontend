@@ -1,189 +1,398 @@
-<div class="min-h-screen bg-slate-100 p-6">
+<div class="min-h-screen bg-slate-50/50 p-4 md:p-8">
 
-  <div class="flex justify-between items-center mb-8">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
     <div>
-      <h1 class="text-4xl font-bold text-slate-900">
-        Resource Allocation
-      </h1>
-      <p class="text-slate-500 mt-1">
-        AI-assisted smart allocation · 3 requests awaiting assignment
+      <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Resource Allocation</h1>
+      <p class="text-sm text-slate-500 mt-1 font-medium">
+        AI-assisted smart allocation - {{ awaitingAssignmentCount }} requests awaiting assignment
       </p>
     </div>
-
-    <button
-      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg">
-      ⚡ Auto-Assign All
-    </button>
+    <div>
+      <button
+        type="button"
+        (click)="autoAssign()"
+        [disabled]="matching"
+        class="inline-flex items-center justify-center gap-2 bg-[#2563eb] text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-blue-100 disabled:opacity-50 disabled:pointer-events-none">
+        <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Auto-Assign All
+      </button>
+    </div>
   </div>
 
-  <div class="grid grid-cols-12 gap-6">
+  <!-- Success Notification Toast (Floating) -->
+  @if (assignSuccess) {
+    <div class="fixed top-6 right-6 z-50 max-w-sm bg-white border border-slate-100 shadow-2xl rounded-2xl p-4 flex items-start gap-3 animate-slide-in" role="status">
+      <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-slate-900">Allocation Action</h4>
+        <p class="text-xs text-slate-600 mt-1 font-medium leading-relaxed">{{ assignSuccess }}</p>
+      </div>
+    </div>
+  }
 
-    <div class="col-span-4">
+  <!-- Main Three-Column Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      <h2 class="text-sm font-semibold text-slate-500 uppercase mb-4">
-        Emergency Queue
-      </h2>
+    <!-- COLUMN 1: EMERGENCY QUEUE -->
+    <div class="flex flex-col gap-4">
+      <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Emergency Queue</h2>
+      <div class="flex flex-col gap-4">
+        @for (emergency of emergencies; track emergency.id) {
+          <button
+            type="button"
+            (click)="selectEmergency(emergency.id)"
+            class="w-full text-left bg-white rounded-2xl p-5 border transition-all text-slate-900 relative shadow-sm group hover:shadow-md"
+            [class.border-blue-500]="selectedEmergencyId === emergency.id"
+            [class.ring-4]="selectedEmergencyId === emergency.id"
+            [class.ring-blue-500/10]="selectedEmergencyId === emergency.id"
+            [class.border-slate-200/60]="selectedEmergencyId !== emergency.id"
+          >
+            <!-- Card Header -->
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold tracking-wide text-blue-600">{{ emergency.id }}</span>
+              <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase" [class]="getPriorityClass(emergency.priority)">
+                {{ emergency.priority }}
+              </span>
+            </div>
+            
+            <!-- Title & Location -->
+            <h3 class="font-extrabold text-slate-900 text-[15px] group-hover:text-blue-600 transition-colors">
+              {{ emergency.title }}
+            </h3>
+            <div class="flex items-center gap-1 text-slate-500 text-xs mt-1.5 font-semibold">
+              <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span>{{ emergency.location }}</span>
+            </div>
 
-      <div class="space-y-4">
+            <!-- Resource Tags -->
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              @for (r of emergency.resources; track r) {
+                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md">
+                  {{ r }}
+                </span>
+              }
+            </div>
 
-        <div
-          class="bg-white rounded-3xl p-5 border-2 border-blue-500 shadow-sm">
-
-          <div class="flex justify-between">
-            <span class="text-blue-600 font-semibold">ER-2847</span>
-
-            <span
-              class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm">
-              Critical
-            </span>
-          </div>
-
-          <h3 class="font-bold text-2xl mt-3">
-            Flood Emergency
-          </h3>
-
-          <p class="text-slate-500 mt-2">
-            📍 Houston, TX
-          </p>
-
-          <div class="flex gap-2 mt-4 flex-wrap">
-            <span class="tag">Water Rescue</span>
-            <span class="tag">Food Kits</span>
-            <span class="tag">Blankets</span>
-          </div>
-
-          <p class="text-orange-500 mt-4">
-            ⚠ Awaiting Assignment
-          </p>
-
-        </div>
-
+            <!-- Assignment Status -->
+            <div class="flex items-center gap-1.5 mt-4 pt-3 border-t border-slate-100 text-[11px] font-bold">
+              @if (emergency.status === 'Awaiting Assignment') {
+                <span class="text-amber-600 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  Awaiting Assignment
+                </span>
+              } @else {
+                <span class="text-emerald-600 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Assigned
+                </span>
+              }
+            </div>
+          </button>
+        }
       </div>
     </div>
 
-    <div class="col-span-4">
-
-      <div class="flex justify-between items-center mb-4">
-
-        <h2 class="text-sm font-semibold text-slate-500 uppercase">
-          AI Recommendations
-        </h2>
-
+    <!-- COLUMN 2: AI RECOMMENDATIONS -->
+    <div class="flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Recommendations</h2>
         <button
-          class="border border-blue-200 text-blue-600 px-4 py-2 rounded-full">
-          ⚡ Smart Match
+          type="button"
+          (click)="smartMatch()"
+          [disabled]="matching"
+          class="inline-flex items-center gap-1 bg-[#eff6ff] text-[#1d4ed8] border border-[#dbeafe] px-3.5 py-1.5 rounded-full text-xs font-bold hover:bg-[#dbeafe] transition-all disabled:opacity-50">
+          @if (matching) {
+            <svg class="w-3 h-3 animate-spin text-[#1d4ed8]" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Matching...
+          } @else {
+            <svg class="w-3 h-3 fill-[#1d4ed8]" viewBox="0 0 24 24">
+              <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 2z"/>
+            </svg>
+            Smart Match
+          }
         </button>
-
       </div>
 
-      <div
-        class="bg-gradient-to-r from-slate-950 via-slate-900 to-purple-950 rounded-3xl p-6 text-white">
+      <!-- Recommendation Display -->
+      @if (selectedEmergency) {
+        <!-- Gradient Premium AI Card -->
+        <div class="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] rounded-3xl p-6 shadow-xl relative overflow-hidden border border-slate-800">
+          <!-- Ambient Glow effects -->
+          <div class="absolute -right-16 -top-16 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute -left-16 -bottom-16 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div class="flex justify-between">
-          <span class="text-blue-400 font-semibold">
-            ER-2847
-          </span>
+          <div class="relative z-10">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 tracking-wider">{{ selectedEmergency.id }}</span>
+              <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-red-500/10 border border-red-500/20 text-red-400">
+                {{ selectedEmergency.priority }}
+              </span>
+            </div>
 
-          <span
-            class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm">
-            Critical
-          </span>
+            <h3 class="text-white text-xl font-black mt-3 leading-tight">{{ selectedEmergency.title }}</h3>
+            
+            <div class="flex items-center gap-1 text-slate-300 text-xs mt-2 font-medium">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span>{{ selectedEmergency.location }}</span>
+            </div>
+
+            <div class="mt-6">
+              <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required Resources</h4>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                @for (r of selectedEmergency.resources; track r) {
+                  <span class="px-2.5 py-1 bg-white/10 text-white border border-white/10 text-[10px] font-semibold rounded-md">
+                    {{ r }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
         </div>
 
-        <h3 class="text-3xl font-bold mt-4">
-          Flood Emergency
-        </h3>
-
-        <p class="text-slate-300 mt-2">
-          📍 Houston, TX
-        </p>
-
-        <div class="flex gap-2 mt-5 flex-wrap">
-          <span class="dark-tag">Water Rescue</span>
-          <span class="dark-tag">Food Kits</span>
-          <span class="dark-tag">Blankets</span>
-        </div>
-
-      </div>
-
-      <div class="mt-6">
-
-        <h3
-          class="text-sm font-semibold uppercase text-slate-500 mb-4">
-          Best Match Volunteers
-        </h3>
-
-        <div class="space-y-3">
-
-          <div class="bg-white rounded-2xl p-4 shadow-sm">
-            <h4 class="font-semibold">Lisa Chen</h4>
-            <p class="text-sm text-slate-500">
-              Medical · Logistics · ETA 8 min
-            </p>
+        <!-- Best Match Volunteers Section -->
+        <div class="mt-4 flex flex-col gap-3">
+          <div class="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m16-10a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span>Best Match Volunteers</span>
           </div>
 
-          <div class="bg-white rounded-2xl p-4 shadow-sm">
-            <h4 class="font-semibold">Michael Davis</h4>
-            <p class="text-sm text-slate-500">
-              Search & Rescue · ETA 12 min
-            </p>
+          <div class="flex flex-col gap-2">
+            @for (v of volunteers; track v.name) {
+              <button
+                type="button"
+                (click)="assignVolunteer(v)"
+                class="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-2xl shadow-sm transition-all hover:scale-[1.01] active:scale-100 text-left">
+                <div class="flex items-center gap-3">
+                  <!-- Avatar -->
+                  <div
+                    class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0"
+                    [class.bg-[#3b82f6]]="v.name === 'Lisa Chen'"
+                    [class.bg-[#64748b]]="v.name === 'Michael Davis'"
+                    [class.bg-[#6366f1]]="v.name === 'Sarah Connor'"
+                    [class.bg-[#0ea5e9]]="v.name === 'Diana Foster'"
+                  >
+                    {{ v.name.split(' ').map(n => n[0]).join('').slice(0, 2) }}
+                  </div>
+                  <div>
+                    <div class="flex items-center">
+                      <span class="font-bold text-slate-900 text-sm leading-none">{{ v.name }}</span>
+                      @if (v.isBest) {
+                        <span class="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold ml-2 leading-none">Best</span>
+                      }
+                    </div>
+                    <span class="text-xs text-slate-400 mt-1 block font-medium">
+                      {{ v.skill }} · {{ v.distance }} · {{ v.eta }}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </div>
+              </button>
+            }
           </div>
-
         </div>
 
-      </div>
+        <!-- Nearest Shelters Section -->
+        <div class="mt-4 flex flex-col gap-3">
+          <div class="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span>Nearest Shelters</span>
+          </div>
 
+          <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm divide-y divide-slate-100">
+            @for (s of shelters; track s.name) {
+              <div class="flex items-center justify-between p-4 text-left">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm leading-tight">{{ s.name }}</h4>
+                  <span class="text-xs text-slate-400 mt-0.5 block font-medium">
+                    {{ s.distance }} · {{ s.bedsFree }} beds free
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  (click)="assignShelter(s)"
+                  class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
+                  Assign
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
 
-    <div class="col-span-4">
+    <!-- COLUMN 3: MAP & DISPATCH & LOGS -->
+    <div class="flex flex-col gap-6">
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm">
-
-        <div class="flex justify-between mb-4">
-          <h3 class="font-semibold">
-            Live Operations Map
-          </h3>
-
-          <span class="text-green-500">
-            ● Live
-          </span>
+      <!-- Live Operations Map -->
+      <div class="flex flex-col gap-3 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
+        <div class="flex justify-between items-center">
+          <h2 class="text-sm font-extrabold text-slate-800 tracking-tight">Live Operations Map</h2>
+          <div class="flex items-center gap-1.5 text-xs text-emerald-500 font-bold">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span>Live</span>
+          </div>
         </div>
 
-        <div
-          class="h-64 rounded-2xl bg-slate-900">
-        </div>
+        <!-- SVG Map Container -->
+        <div class="relative w-full h-52 bg-[#0b1329] rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+          <!-- Grid Lines -->
+          <svg class="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="mapGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#3b82f6" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#mapGrid)" />
+          </svg>
+          
+          <!-- Map Dots -->
+          <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- Emergencies (Red with Glow pulses) -->
+            <!-- Houston ER-2847 -->
+            <g class="cursor-pointer">
+              <circle cx="120" cy="65" r="13" class="fill-rose-500/10 stroke-rose-500/30 animate-pulse-slow" stroke-width="1"/>
+              <circle cx="120" cy="65" r="6" class="fill-rose-500/40 stroke-rose-500/80" stroke-width="1.5"/>
+              <circle cx="120" cy="65" r="2.5" class="fill-white"/>
+            </g>
+            <!-- San Jose ER-2844 -->
+            <g class="cursor-pointer">
+              <circle cx="50" cy="95" r="13" class="fill-rose-500/10 stroke-rose-500/30 animate-pulse-slow" stroke-width="1"/>
+              <circle cx="50" cy="95" r="6" class="fill-rose-500/40 stroke-rose-500/80" stroke-width="1.5"/>
+              <circle cx="50" cy="95" r="2.5" class="fill-white"/>
+            </g>
+            <!-- Miami ER-2843 -->
+            <g class="cursor-pointer">
+              <circle cx="210" cy="115" r="13" class="fill-rose-500/10 stroke-rose-500/30 animate-pulse-slow" stroke-width="1"/>
+              <circle cx="210" cy="115" r="6" class="fill-rose-500/40 stroke-rose-500/80" stroke-width="1.5"/>
+              <circle cx="210" cy="115" r="2.5" class="fill-white"/>
+            </g>
 
+            <!-- Volunteers (Blue dots) -->
+            <circle cx="85" cy="40" r="4.5" class="fill-blue-400 stroke-blue-500/60" stroke-width="1"/>
+            <circle cx="165" cy="120" r="4.5" class="fill-blue-400 stroke-blue-500/60" stroke-width="1"/>
+            <circle cx="140" cy="85" r="4.5" class="fill-blue-400 stroke-blue-500/60" stroke-width="1"/>
+            <circle cx="250" cy="80" r="4.5" class="fill-blue-400 stroke-blue-500/60" stroke-width="1"/>
+
+            <!-- Shelters (Green dots to match legend) -->
+            <circle cx="110" cy="135" r="5" class="fill-emerald-400 stroke-emerald-500/60" stroke-width="1.5"/>
+            <circle cx="180" cy="125" r="5" class="fill-emerald-400 stroke-emerald-500/60" stroke-width="1.5"/>
+            <circle cx="230" cy="140" r="5" class="fill-emerald-400 stroke-emerald-500/60" stroke-width="1.5"/>
+          </svg>
+          
+          <!-- Legend -->
+          <div class="absolute bottom-3 left-3 bg-[#0f172a]/90 border border-slate-800/80 rounded-xl p-2.5 text-[9px] text-slate-300 font-semibold space-y-1 shadow-md">
+            <div class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span>Emergencies</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+              <span>Volunteers</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>Shelters</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm mt-6">
-
-        <h3 class="font-semibold mb-4">
-          Quick Resource Dispatch
-        </h3>
-
-        <div class="space-y-4">
-
-          <div class="flex justify-between">
-            <span>Food Kits</span>
-            <span class="font-semibold">8,420</span>
-          </div>
-
-          <div class="flex justify-between">
-            <span>Water (Liters)</span>
-            <span class="font-semibold">15,600</span>
-          </div>
-
-          <div class="flex justify-between">
-            <span>Medical Kits</span>
-            <span class="font-semibold">1,240</span>
-          </div>
-
+      <!-- Quick Resource Dispatch -->
+      <div class="flex flex-col gap-3 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <h2 class="text-sm font-extrabold text-slate-800 tracking-tight">Quick Resource Dispatch</h2>
         </div>
 
+        <div class="flex flex-col divide-y divide-slate-100 text-left">
+          @for (item of resources; track item.label) {
+            <div class="flex items-center justify-between py-3.5">
+              <span class="text-sm font-medium text-slate-600">{{ item.label }}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-extrabold text-slate-900">{{ item.count }}</span>
+                <button
+                  type="button"
+                  (click)="dispatchResource(item)"
+                  class="inline-flex items-center text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors py-1 px-2.5 rounded hover:bg-blue-50/50">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10h10zM13 16h4l3.5-3.5V8a1 1 0 00-1-1h-6.5V16z"/>
+                  </svg>
+                  Dispatch
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Recent Allocations Log -->
+      <div class="flex flex-col gap-4 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h2 class="text-sm font-extrabold text-slate-800 tracking-tight">Recent Allocations</h2>
+        </div>
+
+        <!-- Log List Timeline -->
+        <div class="relative pl-6 border-l border-slate-100 flex flex-col gap-4.5 text-left text-slate-800">
+          @for (log of recentAllocations; track log.id) {
+            <div class="relative">
+              <!-- Log Dot Indicator -->
+              <span
+                class="absolute -left-[30px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white"
+                [class.bg-blue-500]="log.type === 'volunteer'"
+                [class.bg-emerald-500]="log.type === 'resource'"
+                [class.bg-purple-500]="log.type === 'shelter'"
+                [class.bg-slate-400]="log.type === 'info'"
+              ></span>
+              <p class="text-xs font-bold text-slate-700 leading-tight leading-relaxed">
+                {{ log.message }}
+              </p>
+              <span class="text-[10px] text-slate-400 font-bold block mt-0.5">
+                {{ log.time }}
+              </span>
+            </div>
+          }
+        </div>
       </div>
 
     </div>
 
   </div>
-
 </div>
