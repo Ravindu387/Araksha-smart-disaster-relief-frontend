@@ -1,65 +1,70 @@
 <div class="min-h-screen bg-slate-50 p-8">
 
-  <div class="flex items-start justify-between mb-8">
+  <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
     <div>
       <h1 class="text-4xl font-bold text-slate-900">
         Shelter Management
       </h1>
       <p class="text-slate-500 mt-1">
-        6 registered shelters · 2,578 / 3,450 occupied
+        <!--6 registered shelters · 2,578 / 3,450 occupied-->
+        {{ shelters.length }} registered shelters · {{ totalOccupied | number }} / {{ totalCapacity | number }} occupied
       </p>
     </div>
 
-    <button
-      class="bg-slate-950 text-white px-6 py-3 rounded-full font-medium hover:bg-slate-800 transition">
+    <button type="button" (click)="openRegisterModal()"
+      class="bg-slate-950 text-white px-6 py-3 rounded-full font-medium hover:bg-slate-800 transition cursor-pointer">
       + Register Shelter
     </button>
   </div>
 
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-      <h2 class="text-5xl font-bold text-slate-900">3,450</h2>
+      <h2 class="text-5xl font-bold text-slate-900">{{ totalCapacity | number }}</h2>
       <p class="text-slate-500 mt-2">Total Capacity</p>
     </div>
 
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-      <h2 class="text-5xl font-bold text-blue-500">2,578</h2>
+      <h2 class="text-5xl font-bold text-blue-500">{{ totalOccupied | number }}</h2>
       <p class="text-slate-500 mt-2">Occupied</p>
     </div>
 
     <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-      <h2 class="text-5xl font-bold text-emerald-500">872</h2>
+      <h2 class="text-5xl font-bold text-emerald-500">{{ availableBeds | number }}</h2>
       <p class="text-slate-500 mt-2">Available Beds</p>
     </div>
-
   </div>
 
 
   <div class="flex flex-col lg:flex-row gap-4 mb-6">
 
     <div class="flex-1 relative">
-      <input
-        type="text"
-        placeholder="Search shelters..."
-        class="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-slate-200">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search shelters by name or location..."
+        aria-label="Search shelters"
+        class="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
 
-      <svg
-        class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"
-        fill="none"
-        stroke="currentColor"
+      <svg class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor"
         viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          stroke-width="2"
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M21 21l-6-6m2-5a7 7 0 11-14 0a7 7 0 0114 0z">
         </path>
       </svg>
     </div>
 
-    <div class="flex gap-3">
-
-      <button
+    <div class="flex gap-3 flex-wrap">
+      @for (f of ['All', 'Available', 'Limited', 'Full']; track f) {
+      <button type="button"
+        (click)="setFilter(f === 'All' ? 'All' : f === 'Available' ? 'Available' : f === 'Limited' ? 'Limited' : 'Full')"
+        class="px-6 py-3 rounded-2xl font-medium transition-colors" [class.bg-slate-950]="activeFilter === f"
+        [class.text-white]="activeFilter === f" [class.bg-white]="activeFilter !== f"
+        [class.border]="activeFilter !== f" [class.border-slate-200]="activeFilter !== f"
+        [class.text-slate-600]="activeFilter !== f" [class.hover:bg-slate-50]="activeFilter !== f">
+        {{ f }}
+      </button>
+      }
+    </div>
+  </div>
+  <!--<button
         class="px-6 py-3 bg-slate-950 text-white rounded-2xl font-medium">
         All
       </button>
@@ -77,19 +82,78 @@
       <button
         class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600">
         Full
-      </button>
+      </button>-->
 
-    </div>
-
-  </div>
 
 
   <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
     <div class="xl:col-span-3 space-y-6">
 
-    
-      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+      @if (filteredShelters.length === 0) {
+      <div class="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
+        <svg class="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        </svg>
+        <p class="text-slate-400 font-medium">No shelters found matching your criteria.</p>
+      </div>
+      }
+
+      @for (shelter of filteredShelters; track shelter.id) {
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+
+        <div class="flex justify-between items-start flex-wrap gap-3">
+          <div>
+            <div class="flex items-center gap-3 flex-wrap">
+              <h3 class="text-xl font-semibold text-slate-900">{{ shelter.name }}</h3>
+              <span class="px-3 py-1 text-sm rounded-full border font-medium" [class]="getStatusClass(shelter.status)">
+                {{ shelter.status }}
+              </span>
+            </div>
+            <p class="text-slate-500 mt-1.5 text-sm">📍 {{ shelter.address }}</p>
+          </div>
+          <span class="text-xs font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+            {{ shelter.id }}
+          </span>
+        </div>
+
+        <!-- Occupancy bar -->
+        <div class="mt-6">
+          <div class="flex justify-between mb-2 text-sm">
+            <span class="text-slate-600 font-medium">Occupancy</span>
+            <span class="font-semibold text-slate-800">
+              {{ shelter.occupied | number }} / {{ shelter.capacity | number }} beds
+            </span>
+          </div>
+          <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700" [class]="getBarColor(shelter.status)"
+              [style.width.%]="getOccupancyPercent(shelter)">
+            </div>
+          </div>
+          <div class="flex justify-between mt-2 text-sm text-slate-500">
+            <span>{{ getOccupancyPercent(shelter) }}% occupied</span>
+            <span>{{ shelter.capacity - shelter.occupied | number }} beds free</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-between items-center mt-5 flex-wrap gap-3">
+          <div class="flex gap-2 flex-wrap">
+            @for (amenity of shelter.amenities; track amenity) {
+            <span class="px-3 py-1.5 bg-slate-100 rounded-full text-slate-600 text-xs font-medium">{{ amenity }}</span>
+            }
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-emerald-600 text-xs font-medium">Updated {{ shelter.lastUpdated }}</span>
+          </div>
+        </div>
+
+      </div>
+      }
+    </div>
+    <!--<div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
 
         <div class="flex justify-between items-start">
 
@@ -172,52 +236,56 @@
 
         </div>
 
-      </div>
+      </div>-->
 
 
-    </div>
 
-  
     <div>
 
-      <div
-        class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
-
+      <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
         <div class="p-6">
-          <h3 class="text-2xl font-semibold">
+          <h3 class="text-xl font-semibold text-slate-900">
             Shelter Map
           </h3>
 
-          <p class="text-slate-500">
+          <p class="text-slate-500 text-sm mt-1">
             Live occupancy view
           </p>
         </div>
 
-        <div
-          class="h-[500px] bg-gradient-to-br from-slate-900 to-blue-950 relative">
+        <div class="h-[500px] bg-gradient-to-br from-slate-900 to-blue-950 relative">
 
-          
+
           <div
-            class="absolute top-20 left-12 w-10 h-10 rounded-full bg-amber-500 border-4 border-white">
+            class="absolute top-20 left-12 w-10 h-10 rounded-full bg-amber-500 border-4 border-white hadow-lg cursor-pointer hover:scale-110 transition-transform"
+            title="Houston Community Center"></div>
+
+          <div
+            class="absolute top-20 right-16 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white hadow-lg cursor-pointer hover:scale-110 transition-transform"
+            title="Chicago Metro Shelter">
           </div>
 
           <div
-            class="absolute top-20 right-16 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white">
+            class="absolute bottom-24 left-24 w-10 h-10 rounded-full bg-red-500 border-4 border-white hadow-lg cursor-pointer hover:scale-110 transition-transform"
+            title="Miami-Dade Evacuation Center">
           </div>
 
           <div
-            class="absolute bottom-24 left-24 w-10 h-10 rounded-full bg-red-500 border-4 border-white">
-          </div>
-
+            class="absolute top-1/2 right-12 w-10 h-10 rounded-full bg-amber-500 border-4 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
+            title="Los Angeles Relief Hub"></div>
 
           <div
-            class="absolute bottom-6 left-6 bg-slate-800 text-white rounded-2xl p-4">
+            class="absolute top-1/3 left-1/3 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform"
+            title="San Jose Emergency Shelter"></div>
 
-            <h4 class="font-semibold mb-3">
+
+          <div class="absolute bottom-6 left-6 bg-slate-800/90 backdrop-blur-sm text-white rounded-2xl p-4">
+
+            <h4 class="font-semibold mb-3 text-sm">
               Legend
             </h4>
 
-            <div class="space-y-2 text-sm">
+            <div class="space-y-2 text-xs">
 
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
@@ -230,7 +298,7 @@
               </div>
 
               <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
                 Full
               </div>
 
@@ -247,5 +315,68 @@
   </div>
 
 </div>
+@if (registerModalOpen) {
+<div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in"
+  (click)="closeRegisterModal()">
+  <div
+    class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 relative m-4 animate-in fade-in zoom-in duration-200"
+    (click)="$event.stopPropagation()">
+    <!-- Close Button -->
+    <button type="button" (click)="closeRegisterModal()"
+      class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-sm bg-transparent border-0 cursor-pointer">
+      ✕
+    </button>
 
+    <h3 class="text-lg font-black text-slate-900 leading-tight mb-1">Register New Shelter</h3>
+    <p class="text-xs text-slate-400 mb-5 font-semibold">Add a new operational shelter to the relief management system.
+    </p>
 
+    <!-- Form fields -->
+    <div class="flex flex-col gap-4">
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+        <span>SHELTER NAME</span>
+        <input type="text" [(ngModel)]="newShelterName" placeholder="e.g. Westside Relief Hall"
+          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+      </label>
+
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+        <span>STREET ADDRESS</span>
+        <input type="text" [(ngModel)]="newShelterAddress" placeholder="e.g. 1024 Broad St, Houston, TX"
+          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+      </label>
+
+      <div class="grid grid-cols-2 gap-4">
+        <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+          <span>TOTAL CAPACITY (BEDS)</span>
+          <input type="number" [(ngModel)]="newShelterCapacity" placeholder="e.g. 300"
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </label>
+
+        <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+          <span>OCCUPIED BEDS</span>
+          <input type="number" [(ngModel)]="newShelterOccupied" placeholder="e.g. 50"
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+        <span>AMENITIES (comma-separated)</span>
+        <input type="text" [(ngModel)]="newShelterAmenities" placeholder="e.g. WiFi, Power, Water, Medical"
+          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+      </label>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex items-center gap-3 mt-6">
+      <button type="button" (click)="closeRegisterModal()"
+        class="flex-1 text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 py-2.5 rounded-xl cursor-pointer">
+        Cancel
+      </button>
+      <button type="button" (click)="registerShelterSubmit()"
+        class="flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors py-2.5 rounded-xl shadow-md cursor-pointer">
+        Register
+      </button>
+    </div>
+  </div>
+</div>
+}
