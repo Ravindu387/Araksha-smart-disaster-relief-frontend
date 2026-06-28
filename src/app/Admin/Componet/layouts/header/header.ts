@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
@@ -15,10 +15,13 @@ import { Icon } from '../../../../Common/icon/icon';
   styleUrl: './header.css',
 })
 export class Header implements OnInit {
+  @Output() toggleSidebar = new EventEmitter<void>();
 
   currentSection = 'Dashboard';
   notificationCount = 5;
   adminName = 'Admin Kumar';
+
+  showDropdown = false;
 
   constructor(private router: Router) {}
 
@@ -29,7 +32,43 @@ export class Header implements OnInit {
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.updateSection(event.urlAfterRedirects);
+        this.closeDropdown(); // auto close dropdown on route changes
       });
+  }
+
+  onToggleSidebar(): void {
+    this.toggleSidebar.emit();
+  }
+
+  navigateToNotifications(): void {
+    this.router.navigate(['/notifications']);
+  }
+
+  toggleDropdown(): void {
+    this.showDropdown = !this.showDropdown;
+  }
+
+  closeDropdown(): void {
+    this.showDropdown = false;
+  }
+
+  goToProfile(): void {
+    this.closeDropdown();
+    this.router.navigate(['/settings']);
+  }
+
+  goToSettings(): void {
+    this.closeDropdown();
+    this.router.navigate(['/settings']);
+  }
+
+  goToHelp(): void {
+    this.closeDropdown();
+  }
+
+  signOut(): void {
+    this.closeDropdown();
+    this.router.navigate(['/LandingPage']);
   }
 
   private updateSection(url: string): void {
