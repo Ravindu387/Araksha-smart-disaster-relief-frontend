@@ -1,9 +1,10 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Icon } from '../../../../Common/icon/icon';
 import { Toggle, ToggleColor } from '../../../../Common/toggle/toggle';
-import { UserService } from '../../../../Common/services/user.service';
+import { SettingsService } from '../../../../Common/services/settings.service';
+import { Settings as SettingsModel } from '../../../../Common/models/settings.model';
 
 type SettingsSection =
   | 'profile'
@@ -38,9 +39,41 @@ interface DeliveryChannel {
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
-export class Settings {
-  private readonly userService = inject(UserService);
-  readonly currentUser = this.userService.currentUser;
+export class Settings implements OnInit  {
+  ngOnInit(): void {
+  this.loadSettings();
+}
+private loadSettings(): void {
+  this.settingsService.getSettings().subscribe({
+    next: (data) => {
+
+      this.settings = data;
+
+      this.firstName = data.firstName;
+      this.lastName = data.lastName;
+      this.email = data.email;
+      this.phone = data.phone;
+      this.jobTitle = data.jobTitle;
+      this.location = data.location;
+      this.bio = data.bio;
+      this.timezone = data.timezone;
+      this.language = data.language;
+
+      this.twoFactorEnabled.set(data.twoFactorEnabled);
+      this.sessionTimeout = data.sessionTimeout;
+      this.passwordExpiry = data.passwordExpiry;
+
+      this.autoAssignVolunteers.set(data.autoAssignVolunteers);
+      this.aiRecommendations.set(data.aiRecommendations);
+      this.gpsVolunteerTracking.set(data.gpsTracking);
+      this.publicEmergencyAlerts.set(data.publicAlerts);
+    },
+    error: (err) => console.error(err)
+  });
+}
+  private readonly settingsService = inject(SettingsService);
+
+settings!: SettingsModel;
 
   // ---- Sub-nav --------------------------------------------------------
   readonly sections: { id: SettingsSection; label: string; icon: string }[] = [
@@ -79,63 +112,117 @@ export class Settings {
   readonly profileSaved = signal(false);
   readonly profileError = signal<string | null>(null);
 
-  constructor() {
-    // Prefill the editable fields the moment the backend user arrives.
-    effect(() => {
-      const user = this.currentUser();
-      if (user) {
-        const [first, ...rest] = user.name.split(' ');
-        this.firstName = first ?? 'Admin';
-        this.lastName = rest.join(' ') ?? 'Kumar';
-        this.email = user.email ?? 'a.kumar@sdrms.gov';
-        this.jobTitle = user.department ?? 'System Administrator';
-      }
-    });
-  }
+  
 
   saveProfile(): void {
-    this.savingProfile.set(true);
-    this.profileSaved.set(false);
-    this.profileError.set(null);
 
-    const name = [this.firstName, this.lastName].filter(Boolean).join(' ');
+  this.savingProfile.set(true);
 
-    this.userService
-      .updateCurrentUser({ name, email: this.email, department: this.jobTitle })
-      .subscribe({
-        next: () => {
-          this.savingProfile.set(false);
-          this.profileSaved.set(true);
-          setTimeout(() => this.profileSaved.set(false), 2500);
-        },
-        error: () => {
-          this.savingProfile.set(false);
-          this.profileError.set('Could not save — is the backend running on localhost:8080?');
-        },
-      });
-  }
+  this.profileSaved.set(false);
 
-  // ---- Danger zone ------------------------------------------------------
+  this.profileError.set(null);
+
+  const dto: SettingsModel = {
+
+    id: this.settings.id,
+
+    firstName: this.firstName,
+
+    lastName: this.lastName,
+
+    email: this.email,
+
+    phone: this.phone,
+
+    jobTitle: this.jobTitle,
+
+    location: this.location,
+
+    bio: this.bio,
+
+    timezone: this.timezone,
+
+    language: this.language,
+
+    twoFactorEnabled: this.twoFactorEnabled(),
+
+    sessionTimeout: this.sessionTimeout,
+
+    passwordExpiry: this.passwordExpiry,
+
+    autoAssignVolunteers: this.autoAssignVolunteers(),
+
+    aiRecommendations: this.aiRecommendations(),
+
+    gpsTracking: this.gpsVolunteerTracking(),
+
+    publicAlerts: this.publicEmergencyAlerts()
+
+  };
+
+  this.settingsService.updateSettings(dto).subscribe({
+
+    next: (data) => {
+
+      this.settings = data;
+
+      this.savingProfile.set(false);
+
+      this.profileSaved.set(true);
+
+      setTimeout(() => this.profileSaved.set(false), 2500);
+
+    },
+
+    error: (err) => {
+
+      console.error(err);
+
+      this.savingProfile.set(false);
+
+      this.profileError.set('Failed to save settings.');
+
+    }
+
+  });
+
+}
+
   exportAccountData(): void {
-    const user = this.currentUser();
-    const payload = {
-      ...user,
-      phone: this.phone,
-      jobTitle: this.jobTitle,
-      location: this.location,
-      bio: this.bio,
-      timezone: this.timezone,
-      language: this.language,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'sdrms-account-data.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
+
+  const payload = {
+
+    firstName: this.firstName,
+    lastName: this.lastName,
+    email: this.email,
+    phone: this.phone,
+    jobTitle: this.jobTitle,
+    location: this.location,
+    bio: this.bio,
+    timezone: this.timezone,
+    language: this.language,
+    exportedAt: new Date().toISOString()
+
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(payload, null, 2)],
+    { type: 'application/json' }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+
+  a.href = url;
+
+  a.download = 'settings.json';
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+}
 
   deleteAccount(): void {
     // No backend delete endpoint yet — this just confirms the intent for now.
