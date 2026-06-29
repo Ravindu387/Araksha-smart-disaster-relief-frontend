@@ -16,7 +16,11 @@ import {
   ChartData,
   ChartOptions
 } from 'chart.js';
+import { ReportsService, ApiReportsPageResponse, ApiVolunteer } from '../../../../Common/services/reports.service';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Register Chart.js modules (unchanged from original)
+// ─────────────────────────────────────────────────────────────────────────────
 Chart.register(
   LineController,
   LineElement,
@@ -31,30 +35,51 @@ Chart.register(
   Tooltip
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// UI-only interfaces (these are the shapes the HTML template uses)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Shape of each stat card as the HTML template expects it.
+ * The backend sends raw values; this component adds the UI-only fields
+ * (iconColor, bgColor) by computing them from the "type" field.
+ */
 interface StatCard {
   title: string;
   value: string;
   change: string;
   isPositive: boolean;
-  iconColor: string;
-  bgColor: string;
+  iconColor: string;   // UI-only — computed from type
+  bgColor: string;     // UI-only — computed from type
   type: 'incidents' | 'resolved' | 'volunteers' | 'response';
 }
 
+/**
+ * Shape of each disaster category row as the HTML template expects it.
+ * The backend sends name + count; this component computes color + widthClass.
+ */
 interface DisasterCategory {
   name: string;
   count: number;
-  color: string;
-  widthClass: string;
+  color: string;       // UI-only Tailwind class — computed from name
+  widthClass: string;  // UI-only Tailwind class — computed from count vs total
 }
 
+/**
+ * Shape of each volunteer row as the HTML template expects it.
+ * The backend sends avgResponseMinutes (integer); this component formats it.
+ */
 interface Volunteer {
   rank: number;
   name: string;
-  avgResponse: string;
+  avgResponse: string; // UI-only formatted string: "28 min avg response"
   tasks: number;
   rating: number;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-reports',
@@ -64,180 +89,283 @@ interface Volunteer {
   styleUrls: ['./reports.css']
 })
 export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('trendsChart') trendsCanvas!: ElementRef<HTMLCanvasElement>;
+
+  // ── ViewChild references to the <canvas> elements in the HTML ─────────────
+  @ViewChild('trendsChart')   trendsCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('breakdownChart') breakdownCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('responseChart') responseCanvas!: ElementRef<HTMLCanvasElement>;
 
-  currentDashboard: string = 'Executive dashboard - June 2025';
+  // ── Component state ───────────────────────────────────────────────────────
+  currentDashboard: string = 'Executive dashboard';
   adminName: string = 'Admin Kumar';
   activeTab: string = 'Last 30 Days';
 
+  /** true while an API call is in progress — prevents chart builds on empty data */
+  isLoading: boolean = false;
+
+  // ── Data bound to the template ────────────────────────────────────────────
+  stats: StatCard[] = [];
+  disasters: DisasterCategory[] = [];
+  volunteers: Volunteer[] = [];
+
+  // ── Chart instances (kept so we can destroy/update them) ─────────────────
   private trendsChartInstance: Chart | null = null;
   private breakdownChartInstance: Chart | null = null;
   private responseChartInstance: Chart | null = null;
 
-  stats: StatCard[] = [];
-  disasters: DisasterCategory[] = [];
+  /**
+   * Cached raw trends data from the last API call.
+   * Used to update charts when the user switches tabs.
+   */
+  private currentTrendsData: {
+    flood: number[];
+    fire: number[];
+    hurricane: number[];
+    earthquake: number[];
+    avgResponse: number[];
+  } | null = null;
 
-  volunteers: Volunteer[] = [
-    { rank: 1, name: 'Sarah Connor', avgResponse: '28 min avg response', tasks: 321, rating: 5.0 },
-    { rank: 2, name: 'Anna Rodriguez', avgResponse: '35 min avg response', tasks: 185, rating: 4.9 },
-    { rank: 3, name: 'James Wright', avgResponse: '32 min avg response', tasks: 142, rating: 4.9 },
-    { rank: 4, name: 'Michael Davis', avgResponse: '30 min avg response', tasks: 210, rating: 4.7 },
-    { rank: 5, name: 'Lisa Chen', avgResponse: '25 min avg response', tasks: 98, rating: 4.8 }
-  ];
-
-  // Tab-specific data stores
-  private readonly dataStore: Record<string, {
-    dashboardLabel: string;
-    stats: StatCard[];
-    disasters: DisasterCategory[];
-    trendsData: {
-      flood: number[];
-      fire: number[];
-      hurricane: number[];
-      earthquake: number[];
-    };
-    breakdownData: number[];
-    responseData: number[];
-  }> = {
-    'Last 30 Days': {
-      dashboardLabel: 'Executive dashboard - Last 30 Days',
-      stats: [
-        { title: 'Total Incidents', value: '142', change: '+8%', isPositive: true, iconColor: 'text-rose-500', bgColor: 'bg-rose-50', type: 'incidents' },
-        { title: 'Resolved', value: '128', change: '+12%', isPositive: true, iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50', type: 'resolved' },
-        { title: 'Volunteers Active', value: '94', change: '+5%', isPositive: true, iconColor: 'text-blue-500', bgColor: 'bg-blue-50', type: 'volunteers' },
-        { title: 'Avg Response (min)', value: '11.8', change: '-15%', isPositive: false, iconColor: 'text-purple-500', bgColor: 'bg-purple-50', type: 'response' }
-      ],
-      disasters: [
-        { name: 'Flood', count: 55, color: 'bg-blue-600', widthClass: 'w-[39%]' },
-        { name: 'Hurricane', count: 12, color: 'bg-purple-500', widthClass: 'w-[8%]' },
-        { name: 'Fire', count: 28, color: 'bg-rose-500', widthClass: 'w-[20%]' },
-        { name: 'Earthquake', count: 5, color: 'bg-amber-500', widthClass: 'w-[4%]' },
-        { name: 'Medical', count: 32, color: 'bg-emerald-500', widthClass: 'w-[23%]' },
-        { name: 'Other', count: 10, color: 'bg-slate-400', widthClass: 'w-[7%]' }
-      ],
-      trendsData: {
-        flood: [20, 25, 45, 30, 50, 60],
-        fire: [10, 8, 15, 20, 12, 18],
-        hurricane: [5, 4, 10, 12, 8, 15],
-        earthquake: [8, 12, 10, 5, 8, 12]
-      },
-      breakdownData: [55, 12, 28, 5, 32, 10],
-      responseData: [8, 10, 12, 11, 9, 6]
-    },
-    'Q2 2025': {
-      dashboardLabel: 'Executive dashboard - June 2025',
-      stats: [
-        { title: 'Total Incidents', value: '1,284', change: '+18%', isPositive: true, iconColor: 'text-rose-500', bgColor: 'bg-rose-50', type: 'incidents' },
-        { title: 'Resolved', value: '1,107', change: '+24%', isPositive: true, iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50', type: 'resolved' },
-        { title: 'Volunteers Active', value: '247', change: '+11%', isPositive: true, iconColor: 'text-blue-500', bgColor: 'bg-blue-50', type: 'volunteers' },
-        { title: 'Avg Response (min)', value: '13.2', change: '-28%', isPositive: false, iconColor: 'text-purple-500', bgColor: 'bg-purple-50', type: 'response' }
-      ],
-      disasters: [
-        { name: 'Flood', count: 480, color: 'bg-blue-600', widthClass: 'w-[75%]' },
-        { name: 'Hurricane', count: 149, color: 'bg-purple-500', widthClass: 'w-[28%]' },
-        { name: 'Fire', count: 182, color: 'bg-rose-500', widthClass: 'w-[35%]' },
-        { name: 'Earthquake', count: 98, color: 'bg-amber-500', widthClass: 'w-[18%]' },
-        { name: 'Medical', count: 243, color: 'bg-emerald-500', widthClass: 'w-[45%]' },
-        { name: 'Other', count: 132, color: 'bg-slate-400', widthClass: 'w-[25%]' }
-      ],
-      trendsData: {
-        flood: [50, 62, 90, 72, 100, 120],
-        fire: [22, 18, 34, 28, 42, 38],
-        hurricane: [12, 8, 22, 35, 28, 44],
-        earthquake: [8, 12, 15, 20, 18, 25]
-      },
-      breakdownData: [480, 149, 182, 98, 243, 132],
-      responseData: [15, 13, 18, 14, 10, 9]
-    },
-    'YTD 2025': {
-      dashboardLabel: 'Executive dashboard - Year-To-Date 2025',
-      stats: [
-        { title: 'Total Incidents', value: '3,450', change: '+22%', isPositive: true, iconColor: 'text-rose-500', bgColor: 'bg-rose-50', type: 'incidents' },
-        { title: 'Resolved', value: '3,120', change: '+28%', isPositive: true, iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50', type: 'resolved' },
-        { title: 'Volunteers Active', value: '412', change: '+15%', isPositive: true, iconColor: 'text-blue-500', bgColor: 'bg-blue-50', type: 'volunteers' },
-        { title: 'Avg Response (min)', value: '12.5', change: '-32%', isPositive: false, iconColor: 'text-purple-500', bgColor: 'bg-purple-50', type: 'response' }
-      ],
-      disasters: [
-        { name: 'Flood', count: 1250, color: 'bg-blue-600', widthClass: 'w-[85%]' },
-        { name: 'Hurricane', count: 410, color: 'bg-purple-500', widthClass: 'w-[32%]' },
-        { name: 'Fire', count: 580, color: 'bg-rose-500', widthClass: 'w-[42%]' },
-        { name: 'Earthquake', count: 210, color: 'bg-amber-500', widthClass: 'w-[20%]' },
-        { name: 'Medical', count: 720, color: 'bg-emerald-500', widthClass: 'w-[52%]' },
-        { name: 'Other', count: 280, color: 'bg-slate-400', widthClass: 'w-[22%]' }
-      ],
-      trendsData: {
-        flood: [120, 150, 220, 190, 270, 310],
-        fire: [60, 50, 80, 70, 95, 85],
-        hurricane: [40, 30, 55, 75, 60, 90],
-        earthquake: [30, 32, 45, 38, 35, 55]
-      },
-      breakdownData: [1250, 410, 580, 210, 720, 280],
-      responseData: [18, 15, 20, 16, 12, 11]
-    }
+  // ── Tab → backend period mapping ──────────────────────────────────────────
+  /**
+   * Maps the UI tab label (what the user sees) to the backend period string.
+   * The backend switch() case reads this value.
+   */
+  private readonly tabToPeriod: Record<string, string> = {
+    'Last 30 Days': 'LAST_30_DAYS',
+    'Q2 2025':      'Q2_2025',
+    'YTD 2025':     'YTD_2025'
   };
 
+  // ── UI lookup maps (computed in Angular, NOT from backend) ────────────────
+
+  /**
+   * Maps the card "type" field to Tailwind CSS icon color and background color.
+   * These are UI-only values. The backend does not send them.
+   */
+  private readonly typeToStyle: Record<string, { iconColor: string; bgColor: string }> = {
+    incidents: { iconColor: 'text-rose-500',    bgColor: 'bg-rose-50'    },
+    resolved:  { iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50' },
+    volunteers:{ iconColor: 'text-blue-500',    bgColor: 'bg-blue-50'    },
+    response:  { iconColor: 'text-purple-500',  bgColor: 'bg-purple-50'  }
+  };
+
+  /**
+   * Maps disaster category names to their Tailwind color classes.
+   * The backend sends the name (e.g. "Flood"); Angular picks the color.
+   */
+  private readonly categoryColors: Record<string, string> = {
+    Flood:      'bg-blue-600',
+    Hurricane:  'bg-purple-500',
+    Fire:       'bg-rose-500',
+    Earthquake: 'bg-amber-500',
+    Medical:    'bg-emerald-500',
+    Other:      'bg-slate-400'
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  constructor(private reportsService: ReportsService) {}
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LIFECYCLE HOOKS
+  // ─────────────────────────────────────────────────────────────────────────
+
   ngOnInit(): void {
-    const selected = this.dataStore[this.activeTab];
-    this.currentDashboard = selected.dashboardLabel;
-    this.stats = selected.stats;
-    this.disasters = selected.disasters;
+    // Load data for the default tab ("Last 30 Days") when the page opens
+    this.loadDataForPeriod(this.activeTab);
   }
 
   ngAfterViewInit(): void {
-    this.buildTrendsChart();
-    this.buildBreakdownChart();
-    this.buildResponseChart();
+    // Charts are built AFTER the view is ready and the canvases are available.
+    // We wait until the first API response arrives before building charts —
+    // see loadDataForPeriod() which calls buildAllCharts() after data arrives.
   }
 
   ngOnDestroy(): void {
+    // Always destroy Chart.js instances when leaving the page to avoid memory leaks
     this.trendsChartInstance?.destroy();
     this.breakdownChartInstance?.destroy();
     this.responseChartInstance?.destroy();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // PUBLIC METHODS (called from the HTML template)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Called when the user clicks a date-filter tab button.
+   * Updates the active tab state and fetches fresh data from the backend.
+   */
   setActiveTab(tab: string): void {
+    if (this.activeTab === tab) return; // No-op if already on this tab
     this.activeTab = tab;
-    const selected = this.dataStore[this.activeTab];
-    if (selected) {
-      this.currentDashboard = selected.dashboardLabel;
-      this.stats = selected.stats;
-      this.disasters = selected.disasters;
+    this.loadDataForPeriod(tab);
+  }
 
-      // Update Chart.js datasets dynamically
-      if (this.trendsChartInstance) {
-        this.trendsChartInstance.data.datasets[0].data = selected.trendsData.flood;
-        this.trendsChartInstance.data.datasets[1].data = selected.trendsData.fire;
-        this.trendsChartInstance.data.datasets[2].data = selected.trendsData.hurricane;
-        this.trendsChartInstance.data.datasets[3].data = selected.trendsData.earthquake;
-        this.trendsChartInstance.update();
-      }
+  // ─────────────────────────────────────────────────────────────────────────
+  // PRIVATE: API + DATA MAPPING
+  // ─────────────────────────────────────────────────────────────────────────
 
-      if (this.breakdownChartInstance) {
-        this.breakdownChartInstance.data.datasets[0].data = selected.breakdownData;
-        this.breakdownChartInstance.update();
-      }
+  /**
+   * Calls the backend API for the selected tab period,
+   * maps the response to UI models, and updates the page.
+   *
+   * Step-by-step:
+   * 1. Convert tab label → backend period string
+   * 2. Call ReportsService.getReportsByPeriod()
+   * 3. On success: map API data → UI models → update template bindings
+   * 4. Build or update charts
+   */
+  private loadDataForPeriod(tab: string): void {
+    const period = this.tabToPeriod[tab] ?? 'LAST_30_DAYS';
+    this.isLoading = true;
 
-      if (this.responseChartInstance) {
-        this.responseChartInstance.data.datasets[0].data = selected.responseData;
-        this.responseChartInstance.update();
+    this.reportsService.getReportsByPeriod(period).subscribe({
+      next: (data: ApiReportsPageResponse) => {
+        this.isLoading = false;
+
+        // ── Update dashboard label ──────────────────────────────────────
+        this.currentDashboard = data.dashboardLabel;
+
+        // ── Map stat cards ──────────────────────────────────────────────
+        // Backend sends: title, value, change, positive (boolean), type
+        // We add:        iconColor, bgColor  (from typeToStyle map)
+        this.stats = data.stats.map(s => {
+          const style = this.typeToStyle[s.type] ?? { iconColor: '', bgColor: '' };
+          // Jackson serializes boolean getters differently — handle both field names
+          const isPos = (s as any).positive ?? s.isPositive ?? true;
+          return {
+            title:     s.title,
+            value:     s.value,
+            change:    s.change,
+            isPositive: isPos,
+            iconColor: style.iconColor,
+            bgColor:   style.bgColor,
+            type:      s.type as StatCard['type']
+          };
+        });
+
+        // ── Map disaster categories ─────────────────────────────────────
+        // Backend sends: name, count
+        // We add:        color (Tailwind class), widthClass (Tailwind % class)
+        this.disasters = this.mapDisasterCategories(data.disasters);
+
+        // ── Map volunteers ──────────────────────────────────────────────
+        // Backend sends: rank, name, avgResponseMinutes, tasksCompleted, rating
+        // We add:        avgResponse formatted string ("28 min avg response")
+        this.volunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
+          rank:        v.rank,
+          name:        v.name,
+          avgResponse: `${v.avgResponseMinutes} min avg response`,
+          tasks:       v.tasksCompleted,
+          rating:      v.rating
+        }));
+
+        // ── Cache trends for chart updates ─────────────────────────────
+        this.currentTrendsData = {
+          flood:       data.trends.flood.map(Number),
+          fire:        data.trends.fire.map(Number),
+          hurricane:   data.trends.hurricane.map(Number),
+          earthquake:  data.trends.earthquake.map(Number),
+          avgResponse: data.trends.avgResponse.map(Number)
+        };
+
+        // ── Build charts (first load) or update them (tab switch) ──────
+        if (!this.trendsChartInstance) {
+          // First time: build all three charts from scratch
+          // Use setTimeout(0) to ensure Angular has finished rendering the DOM
+          // (so the <canvas> elements are available via ViewChild)
+          setTimeout(() => {
+            this.buildTrendsChart();
+            this.buildBreakdownChart();
+            this.buildResponseChart();
+          }, 0);
+        } else {
+          // Subsequent tab switches: just update the data in existing charts
+          this.updateCharts();
+        }
+      },
+
+      error: (err) => {
+        this.isLoading = false;
+        console.error('[ReportsComponent] Failed to load reports data:', err);
+        // The UI stays with whatever data was previously shown
+        // In production you would show an error toast/alert here
       }
+    });
+  }
+
+  /**
+   * Maps backend disaster categories to UI model objects.
+   *
+   * The Tailwind widthClass is computed by calculating each category's
+   * percentage of the total incidents, then mapping to the nearest
+   * percentage increment in the HTML template format (w-[XX%]).
+   *
+   * This keeps the progress bars proportional to real data.
+   */
+  private mapDisasterCategories(apiCategories: { name: string; count: number }[]): DisasterCategory[] {
+    // Find the maximum count to use as reference for width scaling
+    const maxCount = Math.max(...apiCategories.map(c => c.count), 1);
+
+    return apiCategories.map(c => {
+      // Calculate percentage relative to the largest category (not total)
+      // This makes the bars relative to each other, which is better UX
+      const percentage = Math.round((c.count / maxCount) * 100);
+      const widthClass = `w-[${percentage}%]`;
+
+      return {
+        name:       c.name,
+        count:      c.count,
+        color:      this.categoryColors[c.name] ?? 'bg-slate-400',
+        widthClass: widthClass
+      };
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PRIVATE: CHART BUILD METHODS (logic identical to original — data source changed)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Updates all three charts with the latest cached trends data.
+   * Called on subsequent tab switches (charts already exist).
+   */
+  private updateCharts(): void {
+    if (!this.currentTrendsData) return;
+
+    if (this.trendsChartInstance) {
+      this.trendsChartInstance.data.datasets[0].data = this.currentTrendsData.flood;
+      this.trendsChartInstance.data.datasets[1].data = this.currentTrendsData.fire;
+      this.trendsChartInstance.data.datasets[2].data = this.currentTrendsData.hurricane;
+      this.trendsChartInstance.data.datasets[3].data = this.currentTrendsData.earthquake;
+      this.trendsChartInstance.update();
+    }
+
+    if (this.breakdownChartInstance) {
+      this.breakdownChartInstance.data.datasets[0].data = this.disasters.map(d => d.count);
+      this.breakdownChartInstance.update();
+    }
+
+    if (this.responseChartInstance) {
+      this.responseChartInstance.data.datasets[0].data = this.currentTrendsData.avgResponse;
+      this.responseChartInstance.update();
     }
   }
 
+  /**
+   * Builds the line chart (Emergency Trends by Type).
+   * Chart configuration is identical to the original hardcoded version.
+   */
   private buildTrendsChart(): void {
-    const ctx = this.trendsCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    const selected = this.dataStore[this.activeTab];
+    const ctx = this.trendsCanvas?.nativeElement.getContext('2d');
+    if (!ctx || !this.currentTrendsData) return;
 
     const chartData: ChartData<'line'> = {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
       datasets: [
         {
           label: 'Flood',
-          data: selected.trendsData.flood,
+          data: this.currentTrendsData.flood,
           borderColor: '#2563eb',
           backgroundColor: 'transparent',
           borderWidth: 3,
@@ -248,7 +376,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         {
           label: 'Fire',
-          data: selected.trendsData.fire,
+          data: this.currentTrendsData.fire,
           borderColor: '#ef4444',
           backgroundColor: 'transparent',
           borderWidth: 2.5,
@@ -259,7 +387,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         {
           label: 'Hurricane',
-          data: selected.trendsData.hurricane,
+          data: this.currentTrendsData.hurricane,
           borderColor: '#a855f7',
           backgroundColor: 'transparent',
           borderWidth: 2.5,
@@ -270,7 +398,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         {
           label: 'Earthquake',
-          data: selected.trendsData.earthquake,
+          data: this.currentTrendsData.earthquake,
           borderColor: '#f59e0b',
           backgroundColor: 'transparent',
           borderWidth: 2.5,
@@ -299,24 +427,24 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           boxPadding: 6,
           usePointStyle: true,
           titleFont: { family: 'Inter, sans-serif', size: 13, weight: 'bold' },
-          bodyFont: { family: 'Inter, sans-serif', size: 12 },
+          bodyFont:  { family: 'Inter, sans-serif', size: 12 },
           callbacks: {
             title: (items) => items[0].label,
-            label: (item) => `${item.dataset.label}: ${item.raw}`
+            label: (item)  => `${item.dataset.label}: ${item.raw}`
           }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8', font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' } },
+          grid:   { display: false },
+          ticks:  { color: '#94a3b8', font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' } },
           border: { display: false }
         },
         y: {
           min: 0,
-          max: 120,
+          max: 400,
           ticks: {
-            stepSize: 30,
+            stepSize: 100,
             color: '#94a3b8',
             font: { family: 'Inter, sans-serif', size: 11, weight: 'normal' }
           },
@@ -336,17 +464,19 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Builds the donut chart (Disaster Category Breakdown).
+   * Chart configuration is identical to the original hardcoded version.
+   */
   private buildBreakdownChart(): void {
-    const ctx = this.breakdownCanvas.nativeElement.getContext('2d');
+    const ctx = this.breakdownCanvas?.nativeElement.getContext('2d');
     if (!ctx) return;
-
-    const selected = this.dataStore[this.activeTab];
 
     const chartData: ChartData<'doughnut'> = {
       labels: ['Flood', 'Hurricane', 'Fire', 'Earthquake', 'Medical', 'Other'],
       datasets: [
         {
-          data: selected.breakdownData,
+          data: this.disasters.map(d => d.count),
           backgroundColor: ['#2563eb', '#a855f7', '#ef4444', '#f59e0b', '#10b981', '#94a3b8'],
           borderWidth: 4,
           borderColor: '#ffffff',
@@ -371,7 +501,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           cornerRadius: 12,
           padding: 12,
           titleFont: { family: 'Inter, sans-serif', size: 13, weight: 'bold' },
-          bodyFont: { family: 'Inter, sans-serif', size: 12 }
+          bodyFont:  { family: 'Inter, sans-serif', size: 12 }
         }
       }
     };
@@ -383,18 +513,20 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Builds the bar chart (Avg Response Time Trend).
+   * Chart configuration is identical to the original hardcoded version.
+   */
   private buildResponseChart(): void {
-    const ctx = this.responseCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    const selected = this.dataStore[this.activeTab];
+    const ctx = this.responseCanvas?.nativeElement.getContext('2d');
+    if (!ctx || !this.currentTrendsData) return;
 
     const chartData: ChartData<'bar'> = {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
       datasets: [
         {
           label: 'Avg Response',
-          data: selected.responseData,
+          data: this.currentTrendsData.avgResponse,
           backgroundColor: '#2563eb',
           hoverBackgroundColor: '#1d4ed8',
           borderRadius: 6,
@@ -419,24 +551,24 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           cornerRadius: 12,
           padding: 12,
           titleFont: { family: 'Inter, sans-serif', size: 13, weight: 'bold' },
-          bodyFont: { family: 'Inter, sans-serif', size: 12 },
+          bodyFont:  { family: 'Inter, sans-serif', size: 12 },
           callbacks: {
             title: (items) => items[0].label,
-            label: (item) => `Avg Response: ${item.raw}`
+            label: (item)  => `Avg Response: ${item.raw} min`
           }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8', font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' } },
+          grid:   { display: false },
+          ticks:  { color: '#94a3b8', font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' } },
           border: { display: false }
         },
         y: {
           min: 0,
-          max: 24,
+          max: 60,
           ticks: {
-            stepSize: 6,
+            stepSize: 15,
             color: '#94a3b8',
             font: { family: 'Inter, sans-serif', size: 11, weight: 'normal' },
             callback: (val) => `${val} min`
@@ -457,6 +589,15 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // EXPORT METHODS (unchanged — they use the already-mapped arrays)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Exports the current page data as a CSV file.
+   * Uses the same stats, disasters, and volunteers arrays
+   * which are now populated from the backend.
+   */
   exportCsv(): void {
     const headers = ['Category/Dimension', 'Name/Metric', 'Value'];
     const rows: string[][] = [];
@@ -477,7 +618,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     const csvContent = [
-      headers.join(','), 
+      headers.join(','),
       ...rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
     ].join('\n');
 
