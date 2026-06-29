@@ -1,8 +1,5 @@
 <div class="min-h-screen bg-[#F4F6F9] text-gray-800 font-sans">
 
-
-  <!-- HEADER -->
-
   <div class="w-full h-20 bg-white shadow-sm flex items-center justify-between px-10">
 
     <div class="flex items-center gap-4">
@@ -11,14 +8,11 @@
         ←
       </button>
 
-
       <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl">
         🛡
       </div>
 
-
       <div>
-
         <h1 class="font-bold text-xl">
           Volunteer Hub
         </h1>
@@ -26,16 +20,19 @@
         <p class="text-gray-400 text-sm">
           James Wright · V-1024
         </p>
-
       </div>
 
     </div>
 
+    <div class="flex items-center gap-4">
 
+      <div class="px-5 py-2 rounded-full border border-emerald-300 text-emerald-600">
+        🟢 Available
+      </div>
 
-    <div class="px-5 py-2 rounded-full border border-emerald-300 text-emerald-600">
-
-      🟢 Available
+      <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500 shadow-sm">
+        <img src="src/assets/images/profile.png" alt="Volunteer Profile" class="w-full h-full object-cover" />
+      </div>
 
     </div>
 
@@ -43,16 +40,10 @@
 
 
 
-
-
-
   <div class="w-[90%] max-w-6xl mx-auto py-6">
 
 
 
-
-
-    <!-- STATS -->
 
     <div class="grid grid-cols-4 gap-5 mb-6">
 
@@ -86,24 +77,10 @@
     </div>
 
 
-
-
-
-
-
-
     <div class="grid grid-cols-12 gap-5">
 
 
-
-
-
-      <!-- LEFT -->
-
       <div class="col-span-5 flex flex-col gap-5">
-
-
-
 
 
         <h2 class="text-xs font-bold tracking-widest text-gray-400">
@@ -112,11 +89,6 @@
 
         </h2>
 
-
-
-
-
-        <!-- TASK CARDS -->
 
         <div *ngFor="let task of tasks" class="bg-white rounded-2xl p-5 shadow-sm">
 
@@ -171,11 +143,6 @@
 
 
 
-
-
-          <!-- MOVED BUTTONS HERE -->
-
-
           <div class="flex gap-3 mt-4">
 
 
@@ -201,15 +168,6 @@
 
 
         </div>
-
-
-
-
-
-
-
-
-
 
 
         <h2 class="text-xs font-bold tracking-widest text-gray-400">
@@ -273,24 +231,8 @@
 
 
 
-
-
-
-
-
-
-
-
-
-      <!-- RIGHT SIDE -->
-
       <div class="col-span-7 flex flex-col gap-5">
 
-
-
-
-
-        <!-- MAP -->
 
 
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -314,8 +256,6 @@
 
 
           </div>
-
-
 
 
           <div class="h-56 bg-[#08182d] relative">
@@ -363,16 +303,6 @@ background-size:35px 35px;
           </div>
 
         </div>
-
-
-
-
-
-
-
-
-
-        <!-- DETAILS -->
 
 
         <div class="bg-white rounded-2xl p-5 shadow-sm">
@@ -446,8 +376,6 @@ background-size:35px 35px;
           </div>
 
 
-          <!-- NEEDS -->
-
           <div class="bg-gray-50 p-4 rounded-xl mt-4">
 
 
@@ -492,12 +420,9 @@ background-size:35px 35px;
         </div>
 
 
-        <!-- CHARTS -->
-
         <div class="grid grid-cols-2 gap-5">
 
 
-          <!-- LEFT CARD -->
           <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
 
             <h3 class="font-bold mb-3">
@@ -506,7 +431,6 @@ background-size:35px 35px;
 
             <div class="h-44 flex items-center justify-center">
 
-              <!-- your radar SVG here -->
               <svg viewBox="0 0 120 120" class="h-36 w-36">
 
 
@@ -537,9 +461,6 @@ background-size:35px 35px;
                 <polygon points="60,28 92,51 84,98 36,94 20,53" fill="rgba(59,130,246,0.08)" stroke="#3b82f6"
                   stroke-width="2.5" stroke-linejoin="round" />
 
-
-
-                <!--Labels-->
 
                 <text x="60" y="8" font-size="5.5" font-family="sans-serif" text-anchor="middle" fill="#94a3b8">
                   Response
@@ -573,9 +494,6 @@ background-size:35px 35px;
           </div>
 
 
-
-
-          <!-- RIGHT CARD -->
           <div class="bg-white rounded-2xl p-5 shadow-sm h-64">
 
             <h3 class="font-bold mb-3">
@@ -595,12 +513,6 @@ background-size:35px 35px;
 
 
         </div>
-
-
-
-
-
-        <!-- COMPLETED -->
 
         <div class="bg-white rounded-2xl p-5 shadow-sm">
 
@@ -645,10 +557,6 @@ background-size:35px 35px;
 
 
         </div>
-
-
-
-
 
 
       </div>
