@@ -1,19 +1,32 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-interface EmergencyRequest {
-  id: string;
-  initials: string;
-  citizen: string;
-  type: string;
-  priority: 'Critical' | 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'Assigned' | 'In Progress' | 'Resolved';
-  location: string;
-  volunteer: string;
-  time: string;
-}
 
+import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
+import { EmergencyRequest as EmergencyRequestDto } from '../../../../Common/models/emergency-request.model';
+
+interface EmergencyRequest {
+
+  id: string;
+
+  initials: string;
+
+  citizen: string;
+
+  type: string;
+
+  priority: 'Critical' | 'High' | 'Medium' | 'Low';
+
+  status: 'Pending' | 'Assigned' | 'In Progress' | 'Resolved';
+
+  location: string;
+
+  volunteer: string;
+
+  time: string;
+
+}
 @Component({
   selector: 'app-emergency-requests',
   standalone: true,
@@ -21,18 +34,70 @@ interface EmergencyRequest {
   templateUrl: './emergency-requests.component.html',
   styleUrls: ['./emergency-requests.component.css']
 })
-export class EmergencyRequestsComponent {
+export class EmergencyRequestsComponent implements OnInit {
 
-  requests: EmergencyRequest[] = [
-    { id: 'ER-2847', initials: 'MS', citizen: 'Maria Santos',   type: 'Flood',     priority: 'Critical', status: 'In Progress', location: 'Houston, TX',       volunteer: 'James Wright',    time: '14:10' },
-    { id: 'ER-2846', initials: 'RK', citizen: 'Robert Kim',     type: 'Fire',      priority: 'High',     status: 'Assigned',   location: 'Los Angeles, CA',   volunteer: 'Lisa Chen',       time: '13:52' },
-    { id: 'ER-2845', initials: 'AP', citizen: 'Aisha Patel',    type: 'Medical',   priority: 'Medium',   status: 'Resolved',   location: 'Chicago, IL',       volunteer: 'Anna Rodriguez',  time: '13:05' },
-    { id: 'ER-2844', initials: 'DB', citizen: 'David Brown',    type: 'Earthquake',priority: 'Critical', status: 'Pending',    location: 'San Jose, CA',      volunteer: '—',               time: '13:22' },
-    { id: 'ER-2843', initials: 'EW', citizen: 'Emma Wilson',    type: 'Hurricane', priority: 'High',     status: 'In Progress',location: 'Miami, FL',         volunteer: 'Michael Davis',   time: '12:45' },
-    { id: 'ER-2842', initials: 'TL', citizen: 'Tom Lee',        type: 'Flood',     priority: 'Medium',   status: 'Assigned',   location: 'New Orleans, LA',   volunteer: 'Sarah Connor',    time: '12:10' },
-    { id: 'ER-2841', initials: 'PS', citizen: 'Priya Sharma',   type: 'Flood',     priority: 'Low',      status: 'Pending',    location: 'Phoenix, AZ',       volunteer: '—',               time: '11:30' },
-    { id: 'ER-2840', initials: 'JD', citizen: 'James Doe',      type: 'Medical',   priority: 'High',     status: 'Resolved',   location: 'Dallas, TX',        volunteer: 'Tom Harris',      time: '10:55' },
-  ];
+  requests: EmergencyRequest[] = [];
+
+  constructor(
+  private emergencyRequestService: EmergencyRequestService,
+  private cdr: ChangeDetectorRef
+) {}
+ngOnInit(): void {
+    this.loadRequests();
+}
+private loadRequests(): void {
+
+  this.emergencyRequestService.getAllRequests().subscribe({
+
+    next: (data: any[]) => {
+
+      this.requests = data.map(r => ({
+
+        id: `ER-${r.id.toString().padStart(4,'0')}`,
+
+        initials: this.generateInitials(r.citizenName),
+
+        citizen: r.citizenName,
+
+        type: r.emergencyType,
+
+        priority: r.priority,
+
+        status: r.status,
+
+        location: r.location,
+
+        volunteer: r.assignedVolunteer || '—',
+
+        time: new Date(r.requestTime).toLocaleTimeString([],{
+
+          hour:'2-digit',
+
+          minute:'2-digit'
+
+        })
+
+      }));
+
+      this.cdr.detectChanges();
+
+    },
+
+    error: err => console.error(err)
+
+  });
+
+}
+private generateInitials(name: string): string {
+
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0,2)
+      .toUpperCase();
+
+}
 
   searchQuery = '';
   typeFilter = 'All';
@@ -47,48 +112,115 @@ export class EmergencyRequestsComponent {
   readonly priorities = ['All', 'Critical', 'High', 'Medium', 'Low'];
 
   get filteredRequests(): EmergencyRequest[] {
-    const q = this.searchQuery.toLowerCase();
-    return this.requests.filter(r => {
-      const matchesSearch = !q || r.citizen.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || r.location.toLowerCase().includes(q);
-      const matchesType = this.typeFilter === 'All' || r.type === this.typeFilter;
-      const matchesStatus = this.statusFilter === 'All' || r.status === this.statusFilter;
-      const matchesPriority = this.priorityFilter === 'All' || r.priority === this.priorityFilter;
-      return matchesSearch && matchesType && matchesStatus && matchesPriority;
-    });
-  }
+
+  const q = this.searchQuery.toLowerCase();
+
+  return this.requests.filter(r => {
+
+    const matchesSearch =
+      !q ||
+      r.citizen.toLowerCase().includes(q) ||
+      r.id.toLowerCase().includes(q) ||
+      r.location.toLowerCase().includes(q);
+
+    const matchesType =
+      this.typeFilter === 'All' ||
+      r.type === this.typeFilter;
+
+    const matchesStatus =
+      this.statusFilter === 'All' ||
+      r.status === this.statusFilter;
+
+    const matchesPriority =
+      this.priorityFilter === 'All' ||
+      r.priority === this.priorityFilter;
+
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesStatus &&
+      matchesPriority
+    );
+
+  });
+
+}
 
   get paginatedRequests(): EmergencyRequest[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRequests.slice(start, start + this.pageSize);
-  }
+
+  const start =
+    (this.currentPage - 1) * this.pageSize;
+
+  return this.filteredRequests.slice(
+    start,
+    start + this.pageSize
+  );
+
+}
 
   get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize);
-  }
+
+  return Math.ceil(
+    this.filteredRequests.length /
+    this.pageSize
+  );
+
+}
 
   get countByPriority(): Record<string, number> {
-    return {
-      Critical: this.requests.filter(r => r.priority === 'Critical').length,
-      High:     this.requests.filter(r => r.priority === 'High').length,
-      Medium:   this.requests.filter(r => r.priority === 'Medium').length,
-      Low:      this.requests.filter(r => r.priority === 'Low').length,
-    };
-  }
 
-  setPriorityFilter(p: string): void {
-    this.priorityFilter = p;
-    this.currentPage = 1;
-  }
+  return {
+
+    Critical:
+      this.requests.filter(r =>
+        r.priority === 'Critical'
+      ).length,
+
+    High:
+      this.requests.filter(r =>
+        r.priority === 'High'
+      ).length,
+
+    Medium:
+      this.requests.filter(r =>
+        r.priority === 'Medium'
+      ).length,
+
+    Low:
+      this.requests.filter(r =>
+        r.priority === 'Low'
+      ).length
+
+  };
+
+}
+
+  setPriorityFilter(priority: string): void {
+
+  this.priorityFilter = priority;
+
+  this.currentPage = 1;
+
+}
 
   setPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
+
+  if (
+    page >= 1 &&
+    page <= this.totalPages
+  ) {
+
+    this.currentPage = page;
+
   }
 
+}
+
   onSearch(): void {
-    this.currentPage = 1;
-  }
+
+  this.currentPage = 1;
+
+}
 
   exportCsv(): void {
     const headers = ['ID', 'Citizen', 'Type', 'Priority', 'Status', 'Location', 'Volunteer', 'Time'];
