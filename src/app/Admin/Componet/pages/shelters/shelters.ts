@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { ShelterService } from '../../../../services/shelter';
 
 interface Shelter {
   id: string;
@@ -16,11 +18,28 @@ interface Shelter {
 @Component({
   selector: 'app-shelters',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,HttpClientModule],
   templateUrl: './shelters.html',
   styleUrl: './shelters.css',
 })
-export class Shelters {
+export class Shelters implements OnInit{
+
+
+  shelters: any[] = [];
+
+  constructor(private shelterService: ShelterService) {}
+
+  ngOnInit(): void {
+    this.loadShelters();
+  }
+
+  loadShelters() {
+    this.shelterService.getShelters().subscribe(data => {
+      this.shelters = data;
+    });
+  }
+
+
   searchQuery = '';
   activeFilter: 'All' | 'Available' | 'Limited' | 'Full' = 'All';
 
@@ -31,7 +50,7 @@ export class Shelters {
   newShelterOccupied = '';
   newShelterAmenities = '';
 
-  shelters: Shelter[] = [
+  shedlters: Shelter[] = [
     {
       id: 'SH-101',
       name: 'Houston Community Center',
