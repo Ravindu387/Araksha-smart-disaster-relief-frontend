@@ -46,27 +46,26 @@ export class Settings implements OnInit  {
 private loadSettings(): void {
   this.settingsService.getSettings().subscribe({
     next: (data) => {
-
       this.settings = data;
 
-      this.firstName = data.firstName;
-      this.lastName = data.lastName;
-      this.email = data.email;
-      this.phone = data.phone;
-      this.jobTitle = data.jobTitle;
-      this.location = data.location;
-      this.bio = data.bio;
-      this.timezone = data.timezone;
-      this.language = data.language;
+      this.firstName = data.firstName || 'Admin';
+      this.lastName = data.lastName || 'Kumar';
+      this.email = data.email || 'a.kumar@sdrms.gov';
+      this.phone = data.phone || '+1 (202) 555-0100';
+      this.jobTitle = data.jobTitle || 'System Administrator';
+      this.location = data.location || 'Washington, D.C.';
+      this.bio = data.bio || 'Senior systems administrator overseeing national disaster relief coordination platform.';
+      this.timezone = data.timezone || 'America/New_York';
+      this.language = data.language || 'English (US)';
 
-      this.twoFactorEnabled.set(data.twoFactorEnabled);
-      this.sessionTimeout = data.sessionTimeout;
-      this.passwordExpiry = data.passwordExpiry;
+      this.twoFactorEnabled.set(data.twoFactorEnabled !== null && data.twoFactorEnabled !== undefined ? data.twoFactorEnabled : true);
+      this.sessionTimeout = data.sessionTimeout || '8h';
+      this.passwordExpiry = data.passwordExpiry || '90d';
 
-      this.autoAssignVolunteers.set(data.autoAssignVolunteers);
-      this.aiRecommendations.set(data.aiRecommendations);
-      this.gpsVolunteerTracking.set(data.gpsTracking);
-      this.publicEmergencyAlerts.set(data.publicAlerts);
+      this.autoAssignVolunteers.set(data.autoAssignVolunteers !== null && data.autoAssignVolunteers !== undefined ? data.autoAssignVolunteers : true);
+      this.aiRecommendations.set(data.aiRecommendations !== null && data.aiRecommendations !== undefined ? data.aiRecommendations : true);
+      this.gpsVolunteerTracking.set(data.gpsTracking !== null && data.gpsTracking !== undefined ? data.gpsTracking : true);
+      this.publicEmergencyAlerts.set(data.publicAlerts !== null && data.publicAlerts !== undefined ? data.publicAlerts : true);
     },
     error: (err) => console.error(err)
   });
@@ -108,84 +107,48 @@ settings!: SettingsModel;
   timezone = 'America/New_York';
   language = 'English (US)';
 
-  readonly savingProfile = signal(false);
-  readonly profileSaved = signal(false);
-  readonly profileError = signal<string | null>(null);
+  readonly savingSettings = signal(false);
+  readonly settingsSaved = signal(false);
+  readonly settingsError = signal<string | null>(null);
 
-  
-
-  saveProfile(): void {
-
-  this.savingProfile.set(true);
-
-  this.profileSaved.set(false);
-
-  this.profileError.set(null);
+  saveSettings(): void {
+  this.savingSettings.set(true);
+  this.settingsSaved.set(false);
+  this.settingsError.set(null);
 
   const dto: SettingsModel = {
-
     id: this.settings.id,
-
     firstName: this.firstName,
-
     lastName: this.lastName,
-
     email: this.email,
-
     phone: this.phone,
-
     jobTitle: this.jobTitle,
-
     location: this.location,
-
     bio: this.bio,
-
     timezone: this.timezone,
-
     language: this.language,
-
     twoFactorEnabled: this.twoFactorEnabled(),
-
     sessionTimeout: this.sessionTimeout,
-
     passwordExpiry: this.passwordExpiry,
-
     autoAssignVolunteers: this.autoAssignVolunteers(),
-
     aiRecommendations: this.aiRecommendations(),
-
     gpsTracking: this.gpsVolunteerTracking(),
-
     publicAlerts: this.publicEmergencyAlerts()
-
   };
 
   this.settingsService.updateSettings(dto).subscribe({
-
     next: (data) => {
-
       this.settings = data;
-
-      this.savingProfile.set(false);
-
-      this.profileSaved.set(true);
-
-      setTimeout(() => this.profileSaved.set(false), 2500);
-
+      this.savingSettings.set(false);
+      this.settingsSaved.set(true);
+      setTimeout(() => this.settingsSaved.set(false), 2500);
     },
-
     error: (err) => {
-
       console.error(err);
-
-      this.savingProfile.set(false);
-
-      this.profileError.set('Failed to save settings.');
-
+      this.savingSettings.set(false);
+      this.settingsError.set('Failed to save settings.');
     }
-
   });
-
 }
 
   exportAccountData(): void {
@@ -665,8 +628,8 @@ settings!: SettingsModel;
   readonly genericSaved = signal(false);
 
   onSaveChanges(): void {
-    if (this.activeSection() === 'profile') {
-      this.saveProfile();
+    if (this.activeSection() === 'profile' || this.activeSection() === 'security' || this.activeSection() === 'system') {
+      this.saveSettings();
       return;
     }
     this.genericSaved.set(true);

@@ -413,13 +413,39 @@
             />
           </label>
           <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
-            <span>LOCATION</span>
-            <input
-              type="text"
+            <span>LOCATION (SRI LANKA)</span>
+            <select
               [(ngModel)]="newVolunteerLocation"
-              placeholder="e.g. Denver, CO"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-            />
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
+            >
+              <option value="" disabled selected>Select location in Sri Lanka...</option>
+              <option value="Colombo">Colombo</option>
+              <option value="Kandy">Kandy</option>
+              <option value="Galle">Galle</option>
+              <option value="Jaffna">Jaffna</option>
+              <option value="Gampaha">Gampaha</option>
+              <option value="Kalutara">Kalutara</option>
+              <option value="Matara">Matara</option>
+              <option value="Hambantota">Hambantota</option>
+              <option value="Negombo">Negombo</option>
+              <option value="Batticaloa">Batticaloa</option>
+              <option value="Trincomalee">Trincomalee</option>
+              <option value="Anuradhapura">Anuradhapura</option>
+              <option value="Polonnaruwa">Polonnaruwa</option>
+              <option value="Kurunegala">Kurunegala</option>
+              <option value="Puttalam">Puttalam</option>
+              <option value="Ratnapura">Ratnapura</option>
+              <option value="Kegalle">Kegalle</option>
+              <option value="Badulla">Badulla</option>
+              <option value="Moneragala">Moneragala</option>
+              <option value="Nuwara Eliya">Nuwara Eliya</option>
+              <option value="Matale">Matale</option>
+              <option value="Vavuniya">Vavuniya</option>
+              <option value="Mannar">Mannar</option>
+              <option value="Mullaitivu">Mullaitivu</option>
+              <option value="Kilinochchi">Kilinochchi</option>
+              <option value="Ampara">Ampara</option>
+            </select>
           </label>
           <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
             <span>PHONE NUMBER</span>

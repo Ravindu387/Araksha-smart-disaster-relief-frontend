@@ -1,6 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { VolunteerService } from '../../../../Common/services/volunteer.service';
+import { ShelterService } from '../../../../services/shelter';
+import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
+import { forkJoin } from 'rxjs';
+
+declare const L: any;
 
 @Component({
   selector: 'app-live-tracking',
@@ -9,7 +15,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './live-tracking.html',
   styleUrl: './live-tracking.css',
 })
-export class LiveTracking implements OnInit, OnDestroy {
+export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   isLive = true;
   systemTime = '';
   searchQuery = '';
@@ -25,37 +31,36 @@ export class LiveTracking implements OnInit, OnDestroy {
 
   private timerId: any;
   private simIntervalId: any;
+  private dataIntervalId: any;
 
-  incidents = [
-    { id: 'inc-1', title: 'Flash Flood', location: 'Colombo District', severity: 'Critical', x: 25, y: 35, time: '10 mins ago', status: 'Active', details: 'Heavy rain has caused street flooding. 50+ residents stranded. Dispatching relief packs.' },
-    { id: 'inc-2', title: 'Landslide Blockage', location: 'Kandy - Kadugannawa', severity: 'Critical', x: 60, y: 30, time: '30 mins ago', status: 'Active', details: 'Main road blocked by landslide debris. Local teams working on clearing paths.' },
-    { id: 'inc-3', title: 'Medical Support Needed', location: 'Galle Fort Area', severity: 'Moderate', x: 30, y: 70, time: '1 hr ago', status: 'Active', details: 'Elderly patients require urgent oxygen supply due to local power substation breakdown.' },
-    { id: 'inc-4', title: 'Water Crisis', location: 'Jaffna Town', severity: 'Low', x: 75, y: 15, time: '2 hrs ago', status: 'Resolved', details: 'Water distribution trucks deployed to local centers. Issue now under control.' },
-  ];
+  incidents: any[] = [];
+  volunteers: any[] = [];
+  shelters: any[] = [];
 
-  volunteers = [
-    { id: 'vol-1', name: 'John Doe', role: 'Rescue Lead', x: 28, y: 40, status: 'Active', targetIncidentId: 'inc-1', phone: '+94 77 123 4567', team: 'Sector A' },
-    { id: 'vol-2', name: 'Sarah Connor', role: 'Medical Specialist', x: 55, y: 32, status: 'Active', targetIncidentId: 'inc-2', phone: '+94 77 987 6543', team: 'Sector B' },
-    { id: 'vol-3', name: 'Michael Davis', role: 'Logistics Coord.', x: 68, y: 55, status: 'Standby', targetIncidentId: '', phone: '+94 76 555 4321', team: 'HQ' },
-    { id: 'vol-4', name: 'Elena Rostova', role: 'First Responder', x: 34, y: 68, status: 'Active', targetIncidentId: 'inc-3', phone: '+94 72 444 8888', team: 'Sector C' },
-    { id: 'vol-5', name: 'David Kim', role: 'Communications', x: 80, y: 22, status: 'Standby', targetIncidentId: '', phone: '+94 71 333 9999', team: 'Sector D' },
-  ];
+  private map: any;
+  private markersGroup: any;
 
-  shelters = [
-    { id: 'she-1', name: 'Central Hall Shelter', location: 'Colombo 03', occupancy: 200, capacity: 250, x: 22, y: 45, status: 'Active', manager: 'Mr. Silva' },
-    { id: 'she-2', name: 'Hillside Rescue Center', location: 'Kandy Town', occupancy: 90, capacity: 200, x: 50, y: 28, status: 'Active', manager: 'Mrs. Perera' },
-    { id: 'she-3', name: 'Coastal Refuge', location: 'Galle Fort', occupancy: 120, capacity: 200, x: 35, y: 75, status: 'Active', manager: 'Mr. Fernando' },
-    { id: 'she-4', name: 'North Relief Center', location: 'Jaffna District', occupancy: 40, capacity: 150, x: 82, y: 18, status: 'Active', manager: 'Mr. Kumar' },
-  ];
+  private readonly volunteerService = inject(VolunteerService);
+  private readonly shelterService = inject(ShelterService);
+  private readonly emergencyRequestService = inject(EmergencyRequestService);
+
+  private coordsMap = new Map<string, { lat: number, lng: number }>();
 
   ngOnInit() {
     this.updateTime();
     this.timerId = setInterval(() => this.updateTime(), 1000);
+    this.loadAllData();
+    this.dataIntervalId = setInterval(() => this.loadAllData(), 5000);
     this.startSimulation();
+  }
+
+  ngAfterViewInit() {
+    this.initMap();
   }
 
   ngOnDestroy() {
     if (this.timerId) clearInterval(this.timerId);
+    if (this.dataIntervalId) clearInterval(this.dataIntervalId);
     this.stopSimulation();
   }
 
@@ -87,23 +92,258 @@ export class LiveTracking implements OnInit, OnDestroy {
   }
 
   private updateSimulation() {
-    // Simulate volunteer movements towards their targets or drift randomly
     this.volunteers = this.volunteers.map(v => {
-      let dx = (Math.random() - 0.5) * 1.5;
-      let dy = (Math.random() - 0.5) * 1.5;
+      let dLat = (Math.random() - 0.5) * 0.002;
+      let dLng = (Math.random() - 0.5) * 0.002;
 
       if (v.targetIncidentId) {
         const target = this.incidents.find(i => i.id === v.targetIncidentId);
         if (target && target.status === 'Active') {
-          // Calculate step towards the incident coordinates
-          dx = (target.x - v.x) * 0.15 + (Math.random() - 0.5) * 0.5;
-          dy = (target.y - v.y) * 0.15 + (Math.random() - 0.5) * 0.5;
+          dLat = (target.lat - v.lat) * 0.1 + (Math.random() - 0.5) * 0.0005;
+          dLng = (target.lng - v.lng) * 0.1 + (Math.random() - 0.5) * 0.0005;
         }
       }
 
-      const newX = Math.max(10, Math.min(90, v.x + dx));
-      const newY = Math.max(10, Math.min(90, v.y + dy));
-      return { ...v, x: newX, y: newY };
+      const newLat = Math.max(5.9, Math.min(9.9, v.lat + dLat));
+      const newLng = Math.max(79.5, Math.min(82.0, v.lng + dLng));
+
+      this.coordsMap.set(v.id, { lat: newLat, lng: newLng });
+
+      return { ...v, lat: newLat, lng: newLng };
+    });
+
+    this.renderMapMarkers();
+  }
+
+  loadAllData() {
+    forkJoin({
+      requests: this.emergencyRequestService.getAllRequests(),
+      vols: this.volunteerService.getAllVolunteers(),
+      shelters: this.shelterService.getShelters()
+    }).subscribe({
+      next: (res) => {
+        this.incidents = res.requests.map((req: any) => {
+          const id = 'inc-' + req.id;
+          const coords = this.getOrCreateCoords(id, req.emergencyType + ' ' + (req.location || ''));
+          return {
+            id: id,
+            title: req.emergencyType || 'Incident',
+            location: req.location || 'Unknown location',
+            severity: req.priority || 'Critical',
+            lat: coords.lat,
+            lng: coords.lng,
+            time: 'Just now',
+            status: req.status === 'Completed' ? 'Resolved' : 'Active',
+            details: 'Citizen: ' + req.citizenName + '. Assigned Volunteer: ' + (req.assignedVolunteer || 'None')
+          };
+        });
+
+        this.volunteers = res.vols.map((v: any) => {
+          const id = 'vol-' + v.id;
+          const coords = this.getOrCreateCoords(id, v.name + ' ' + (v.location || ''));
+          return {
+            id: id,
+            name: v.name,
+            role: v.skills && v.skills.length ? v.skills[0] : 'General Responder',
+            lat: coords.lat,
+            lng: coords.lng,
+            status: v.status || 'Active',
+            targetIncidentId: '', 
+            phone: v.phone || '+94 77 000 0000',
+            team: v.location || 'Sector A'
+          };
+        });
+
+        this.shelters = res.shelters.map((s: any) => {
+          const id = 'she-' + s.shelterId;
+          
+          let lat = s.latitude;
+          let lng = s.longitude;
+          
+          if (!lat || !lng || lat < 5.0 || lat > 10.0 || lng < 79.0 || lng > 83.0) {
+            const coords = this.getOrCreateCoords(id, s.name + ' ' + (s.address || ''));
+            lat = coords.lat;
+            lng = coords.lng;
+          } else {
+            this.coordsMap.set(id, { lat, lng });
+          }
+
+          return {
+            id: id,
+            name: s.name,
+            location: s.address || s.city || 'Relief Center',
+            occupancy: s.occupiedBeds || 0,
+            capacity: s.totalCapacity || 100,
+            lat: lat,
+            lng: lng,
+            status: s.status || 'Active',
+            manager: 'Staff'
+          };
+        });
+
+        this.renderMapMarkers();
+
+        if (this.selectedMarker) {
+          const updated = this.findMarkerById(this.selectedMarker.id.replace(/^[a-z]+-/, ''), this.selectedMarker.markerType);
+          if (updated) {
+            this.selectedMarker = { ...updated, markerType: this.selectedMarker.markerType };
+          }
+        }
+      },
+      error: (err) => console.error('Failed to load tracking data from backend:', err)
+    });
+  }
+
+  private getOrCreateCoords(id: string, name: string = ''): { lat: number, lng: number } {
+    if (this.coordsMap.has(id)) {
+      return this.coordsMap.get(id)!;
+    }
+
+    const n = name.toLowerCase();
+    let coords = { lat: 0, lng: 0 };
+
+    const regions: { [key: string]: { lat: number, lng: number } } = {
+      'colombo': { lat: 6.9271, lng: 79.8612 },
+      'kandy': { lat: 7.2906, lng: 80.6337 },
+      'galle': { lat: 6.0367, lng: 80.2170 },
+      'jaffna': { lat: 9.6615, lng: 80.0144 },
+      'gampaha': { lat: 7.0873, lng: 80.0144 },
+      'kalutara': { lat: 6.5854, lng: 79.9607 },
+      'matara': { lat: 5.9549, lng: 80.5550 },
+      'hambantota': { lat: 6.1249, lng: 81.1185 },
+      'negombo': { lat: 7.2089, lng: 79.8373 },
+      'batticaloa': { lat: 7.7170, lng: 81.7000 },
+      'trincomalee': { lat: 8.5873, lng: 81.2152 },
+      'anuradhapura': { lat: 8.3114, lng: 80.4037 },
+      'polonnaruwa': { lat: 7.9403, lng: 81.0188 },
+      'kurunegala': { lat: 7.4863, lng: 80.3623 },
+      'puttalam': { lat: 8.0333, lng: 79.8333 },
+      'ratnapura': { lat: 6.6828, lng: 80.3992 },
+      'kegalle': { lat: 7.2513, lng: 80.3464 },
+      'badulla': { lat: 6.9934, lng: 81.0550 },
+      'moneragala': { lat: 6.8724, lng: 81.3507 },
+      'nuwara eliya': { lat: 6.9497, lng: 80.7891 },
+      'matale': { lat: 7.4675, lng: 80.6234 },
+      'vavuniya': { lat: 8.7542, lng: 80.4982 },
+      'mannar': { lat: 8.9810, lng: 79.9044 },
+      'mullaitivu': { lat: 9.2671, lng: 80.8142 },
+      'kilinochchi': { lat: 9.3803, lng: 80.3992 },
+      'ampara': { lat: 7.2833, lng: 81.6667 }
+    };
+
+    const foundRegion = Object.keys(regions).find(region => n.includes(region));
+
+    if (foundRegion) {
+      const base = regions[foundRegion];
+      coords = {
+        lat: base.lat + (Math.random() - 0.5) * 0.05,
+        lng: base.lng + (Math.random() - 0.5) * 0.05
+      };
+    } else {
+      coords = {
+        lat: 6.0 + Math.random() * 3.5, 
+        lng: 79.8 + Math.random() * 1.8 
+      };
+    }
+
+    this.coordsMap.set(id, coords);
+    return coords;
+  }
+
+  private initMap() {
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet is not loaded yet');
+      return;
+    }
+
+    this.map = L.map('map', {
+      center: [7.8731, 80.7718], 
+      zoom: 8,
+      zoomControl: false 
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(this.map);
+
+    L.control.zoom({
+      position: 'topright'
+    }).addTo(this.map);
+
+    this.markersGroup = L.layerGroup().addTo(this.map);
+
+    this.renderMapMarkers();
+  }
+
+  private renderMapMarkers() {
+    if (!this.map || !this.markersGroup) return;
+
+    this.markersGroup.clearLayers();
+
+    // 1. Render Incident markers (Red Circles)
+    this.incidents.forEach(inc => {
+      if (inc.status !== 'Active') return; 
+
+      const pulseClass = this.focusedMarkerId === inc.id ? 'border-2 border-cyan-500 animate-pulse' : '';
+      const incidentIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="relative w-8 h-8 flex items-center justify-center ${pulseClass}">
+            <span class="absolute inline-flex h-8 w-8 rounded-full bg-rose-500 opacity-30 animate-ping"></span>
+            <div class="relative w-5 h-5 bg-rose-600 border-2 border-rose-200 rounded-full flex items-center justify-center shadow">
+              <span class="text-[9px]">🚨</span>
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const marker = L.marker([inc.lat, inc.lng], { icon: incidentIcon });
+      marker.on('click', () => this.selectMarker(inc, 'Incident'));
+      this.markersGroup.addLayer(marker);
+    });
+
+    // 2. Render Volunteer markers (Cyan Circles)
+    this.volunteers.forEach(vol => {
+      const pulseClass = this.focusedMarkerId === vol.id ? 'border-2 border-cyan-500 animate-pulse' : '';
+      const volunteerIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="relative w-8 h-8 flex items-center justify-center ${pulseClass}">
+            <div class="relative w-7 h-7 bg-cyan-600 border-2 border-cyan-200 rounded-full flex items-center justify-center shadow text-xs">
+              🏃
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const marker = L.marker([vol.lat, vol.lng], { icon: volunteerIcon });
+      marker.on('click', () => this.selectMarker(vol, 'Volunteer'));
+      this.markersGroup.addLayer(marker);
+    });
+
+    // 3. Render Shelter markers (Amber Badges)
+    this.shelters.forEach(sh => {
+      const pulseClass = this.focusedMarkerId === sh.id ? 'border-2 border-cyan-500 animate-pulse' : '';
+      const shelterIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="px-2 py-1 bg-amber-500 border border-amber-300 rounded-lg flex items-center justify-center gap-1 shadow text-[9px] font-bold text-white whitespace-nowrap ${pulseClass}">
+            🏠 <span>${sh.occupancy}/${sh.capacity}</span>
+          </div>
+        `,
+        iconSize: [60, 24],
+        iconAnchor: [30, 12]
+      });
+
+      const marker = L.marker([sh.lat, sh.lng], { icon: shelterIcon });
+      marker.on('click', () => this.selectMarker(sh, 'Shelter'));
+      this.markersGroup.addLayer(marker);
     });
   }
 
@@ -120,6 +360,9 @@ export class LiveTracking implements OnInit, OnDestroy {
     const found = this.findMarkerById(id, type);
     if (found) {
       this.selectedMarker = { ...found, markerType: type };
+      if (this.map && found.lat && found.lng) {
+        this.map.setView([found.lat, found.lng], 12, { animate: true });
+      }
     }
     setTimeout(() => {
       this.focusedMarkerId = null;
@@ -127,9 +370,9 @@ export class LiveTracking implements OnInit, OnDestroy {
   }
 
   private findMarkerById(id: string, type: string) {
-    if (type === 'Incident') return this.incidents.find(i => i.id === id);
-    if (type === 'Volunteer') return this.volunteers.find(v => v.id === id);
-    if (type === 'Shelter') return this.shelters.find(s => s.id === id);
+    if (type === 'Incident') return this.incidents.find(i => i.id === id || i.id === 'inc-' + id);
+    if (type === 'Volunteer') return this.volunteers.find(v => v.id === id || v.id === 'vol-' + id);
+    if (type === 'Shelter') return this.shelters.find(s => s.id === id || s.id === 'she-' + id);
     return null;
   }
 
@@ -169,32 +412,39 @@ export class LiveTracking implements OnInit, OnDestroy {
       alert('Please fill out Title and Location');
       return;
     }
-    const newId = 'inc-' + (this.incidents.length + 1);
-    const newInc = {
-      id: newId,
-      title: this.newIncidentTitle,
-      location: this.newIncidentLocation,
-      severity: this.newIncidentSeverity,
-      x: 20 + Math.random() * 60,
-      y: 20 + Math.random() * 60,
-      time: 'Just now',
+
+    const body: any = {
+      requestId: 'REQ' + Math.floor(100000 + Math.random() * 900000),
+      citizenName: 'Operations Center',
+      emergencyType: this.newIncidentTitle,
+      priority: this.newIncidentSeverity,
       status: 'Active',
-      details: this.newIncidentDetails || 'Dispatch units requested immediately. Monitoring live feed.'
+      location: this.newIncidentLocation
     };
-    this.incidents.unshift(newInc);
 
-    // Auto-assign first Standby volunteer to the new incident
-    const standbyVol = this.volunteers.find(v => !v.targetIncidentId);
-    if (standbyVol) {
-      standbyVol.targetIncidentId = newId;
-    }
+    this.emergencyRequestService.addRequest(body).subscribe({
+      next: (savedReq) => {
+        const markerId = 'inc-' + savedReq.id;
+        this.getOrCreateCoords(markerId, savedReq.emergencyType + ' ' + savedReq.location);
+        this.loadAllData();
 
-    this.newIncidentTitle = '';
-    this.newIncidentLocation = '';
-    this.newIncidentDetails = '';
-    this.showBroadcastForm = false;
+        this.newIncidentTitle = '';
+        this.newIncidentLocation = '';
+        this.newIncidentDetails = '';
+        this.showBroadcastForm = false;
 
-    this.locateMarker(newId, 'Incident');
+        setTimeout(() => {
+          const standbyVol = this.volunteers.find(v => !v.targetIncidentId);
+          if (standbyVol) {
+            standbyVol.targetIncidentId = markerId;
+          }
+          this.locateMarker(markerId, 'Incident');
+        }, 300);
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Failed to publish incident to the backend.');
+      }
+    });
   }
 }
-
