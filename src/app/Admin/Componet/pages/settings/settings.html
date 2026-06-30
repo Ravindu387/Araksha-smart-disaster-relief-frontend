@@ -289,7 +289,11 @@
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-900">{{ channel.label }}</p>
                     <p class="text-xs text-gray-400 truncate">
-                      {{ channel.key === 'email' ? (currentUser()?.email ?? '') : channel.key === 'sms' ? phone : channel.detail }}
+                      {{ channel.key === 'email'
+    ? email
+    : channel.key === 'sms'
+      ? phone
+      : channel.detail }}
                     </p>
                   </div>
                 </div>
