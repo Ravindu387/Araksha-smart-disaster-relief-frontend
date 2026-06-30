@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { Shelter } from './shelter';
+import { ShelterService } from './shelter';
 
-describe('Shelter', () => {
-  let service: Shelter;
+describe('ShelterService', () => {
+  let service: ShelterService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(Shelter);
+    service = TestBed.inject(ShelterService);
   });
 
   it('should be created', () => {

@@ -1,31 +1,30 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { Shelter } from '../../../../Common/models/shelter.model';
 import { ShelterService } from '../../../../services/shelter';
 
-interface Shelter {
-  id: string;
-  name: string;
-  address: string;
-  capacity: number;
-  occupied: number;
-  amenities: string[];
-  lastUpdated: string;
-  status: 'Available' | 'Limited' | 'Full';
-}
+type FilterType = 'All' | 'Available' | 'Limited' | 'Full';
 
 @Component({
   selector: 'app-shelters',
   standalone: true,
-  imports: [CommonModule, FormsModule,HttpClientModule],
-  templateUrl: './shelters.html',
-  styleUrl: './shelters.css',
+  imports: [CommonModule, FormsModule],
+  templateUrl: './shelters.html'
 })
-export class Shelters implements OnInit{
+export class SheltersComponent implements OnInit {
 
+  shelters: Shelter[] = [];
 
-  shelters: any[] = [];
+  searchQuery = '';
+  activeFilter: FilterType = 'All';
+
+  registerModalOpen = false;
+  newShelterName = '';
+  newShelterAddress = '';
+  newShelterCapacity: number | null = null;
+  newShelterOccupied: number | null = null;
+  newShelterAmenities = '';
 
   constructor(private shelterService: ShelterService) {}
 
@@ -33,92 +32,19 @@ export class Shelters implements OnInit{
     this.loadShelters();
   }
 
-  loadShelters() {
-    this.shelterService.getShelters().subscribe(data => {
-      this.shelters = data;
+  loadShelters(): void {
+    this.shelterService.getAll().subscribe({
+      next: (data) => this.shelters = data,
+      error: (err) => console.error('Failed to load shelters', err)
     });
   }
 
-
-  searchQuery = '';
-  activeFilter: 'All' | 'Available' | 'Limited' | 'Full' = 'All';
-
-  registerModalOpen = false;
-  newShelterName = '';
-  newShelterAddress = '';
-  newShelterCapacity = '';
-  newShelterOccupied = '';
-  newShelterAmenities = '';
-
-  shedlters: Shelter[] = [
-    {
-      id: 'SH-101',
-      name: 'Houston Community Center',
-      address: '4800 Main St, Houston, TX 77002',
-      capacity: 500,
-      occupied: 432,
-      amenities: ['WiFi', 'Power', 'Water', 'Medical'],
-      lastUpdated: '10 min ago',
-      status: 'Limited',
-    },
-    {
-      id: 'SH-102',
-      name: 'Miami-Dade Evacuation Center',
-      address: '3350 NW 27th Ave, Miami, FL 33142',
-      capacity: 1200,
-      occupied: 1190,
-      amenities: ['Power', 'Water', 'Food'],
-      lastUpdated: '5 min ago',
-      status: 'Full',
-    },
-    {
-      id: 'SH-103',
-      name: 'Chicago Metro Shelter',
-      address: '100 W Randolph St, Chicago, IL 60601',
-      capacity: 350,
-      occupied: 89,
-      amenities: ['WiFi', 'Power', 'Water', 'Medical', 'Childcare'],
-      lastUpdated: '1h ago',
-      status: 'Available',
-    },
-    {
-      id: 'SH-104',
-      name: 'Los Angeles Relief Hub',
-      address: '200 N Spring St, Los Angeles, CA 90012',
-      capacity: 800,
-      occupied: 620,
-      amenities: ['WiFi', 'Power', 'Water'],
-      lastUpdated: '22 min ago',
-      status: 'Limited',
-    },
-    {
-      id: 'SH-105',
-      name: 'San Jose Emergency Shelter',
-      address: '200 E Santa Clara St, San Jose, CA 95113',
-      capacity: 300,
-      occupied: 55,
-      amenities: ['Power', 'Water', 'Medical'],
-      lastUpdated: '45 min ago',
-      status: 'Available',
-    },
-    {
-      id: 'SH-106',
-      name: 'Phoenix Desert Relief Center',
-      address: '200 W Washington St, Phoenix, AZ 85003',
-      capacity: 400,
-      occupied: 192,
-      amenities: ['WiFi', 'Power', 'Water', 'Food'],
-      lastUpdated: '2h ago',
-      status: 'Available',
-    },
-  ];
-
   get totalCapacity(): number {
-    return this.shelters.reduce((sum, s) => sum + s.capacity, 0);
+    return this.shelters.reduce((sum, s) => sum + (s.capacity ?? 0), 0);
   }
 
   get totalOccupied(): number {
-    return this.shelters.reduce((sum, s) => sum + s.occupied, 0);
+    return this.shelters.reduce((sum, s) => sum + (s.occupied ?? 0), 0);
   }
 
   get availableBeds(): number {
@@ -126,47 +52,41 @@ export class Shelters implements OnInit{
   }
 
   get filteredShelters(): Shelter[] {
-    const q = this.searchQuery.toLowerCase();
     return this.shelters.filter(s => {
-      const matchesSearch = !q || s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q);
       const matchesFilter = this.activeFilter === 'All' || s.status === this.activeFilter;
-      return matchesSearch && matchesFilter;
+      const q = this.searchQuery.trim().toLowerCase();
+      const matchesSearch = !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.address.toLowerCase().includes(q);
+      return matchesFilter && matchesSearch;
     });
   }
 
-  setFilter(filter: 'All' | 'Available' | 'Limited' | 'Full'): void {
+  setFilter(filter: FilterType): void {
     this.activeFilter = filter;
   }
 
   getOccupancyPercent(shelter: Shelter): number {
-    return Math.round((shelter.occupied / shelter.capacity) * 100);
+    if (!shelter.capacity) return 0;
+    return Math.min(100, Math.round((shelter.occupied / shelter.capacity) * 100));
   }
 
   getStatusClass(status: string): string {
-    const map: Record<string, string> = {
-      'Available': 'border-emerald-300 text-emerald-600 bg-emerald-50',
-      'Limited': 'border-amber-300 text-amber-600 bg-amber-50',
-      'Full': 'border-rose-300 text-rose-600 bg-rose-50',
-    };
-    return map[status] ?? 'border-gray-200 text-gray-600 bg-gray-50';
+    switch (status) {
+      case 'Available': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      case 'Limited': return 'bg-amber-50 text-amber-600 border-amber-200';
+      case 'Full': return 'bg-rose-50 text-rose-600 border-rose-200';
+      default: return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
   }
 
   getBarColor(status: string): string {
-    const map: Record<string, string> = {
-      'Available': 'bg-emerald-500',
-      'Limited': 'bg-amber-500',
-      'Full': 'bg-rose-500',
-    };
-    return map[status] ?? 'bg-gray-400';
-  }
-
-  getMapDot(status: string): string {
-    const map: Record<string, string> = {
-      'Available': 'bg-emerald-500',
-      'Limited': 'bg-amber-500',
-      'Full': 'bg-rose-500',
-    };
-    return map[status] ?? 'bg-gray-400';
+    switch (status) {
+      case 'Available': return 'bg-emerald-500';
+      case 'Limited': return 'bg-amber-500';
+      case 'Full': return 'bg-rose-500';
+      default: return 'bg-slate-400';
+    }
   }
 
   openRegisterModal(): void {
@@ -178,56 +98,38 @@ export class Shelters implements OnInit{
     this.resetForm();
   }
 
-  resetForm(): void {
-    this.newShelterName = '';
-    this.newShelterAddress = '';
-    this.newShelterCapacity = '';
-    this.newShelterOccupied = '';
-    this.newShelterAmenities = '';
-  }
-
   registerShelterSubmit(): void {
-    const name = this.newShelterName.trim();
-    const address = this.newShelterAddress.trim();
-    if (!name || !address) {
-      alert('Please fill out Name and Address');
+    if (!this.newShelterName || !this.newShelterAddress || !this.newShelterCapacity) {
       return;
     }
 
-    const capacityVal = parseInt(this.newShelterCapacity, 10) || 0;
-    const occupiedVal = parseInt(this.newShelterOccupied, 10) || 0;
-
-    if (capacityVal <= 0) {
-      alert('Please enter a valid capacity');
-      return;
-    }
-
-    const amenitiesList = this.newShelterAmenities
+    const amenitiesArray = this.newShelterAmenities
       .split(',')
       .map(a => a.trim())
-      .filter(Boolean);
+      .filter(a => a.length > 0);
 
-    const occupancyRate = (occupiedVal / capacityVal) * 100;
-    let status: 'Available' | 'Limited' | 'Full' = 'Available';
-    if (occupancyRate >= 100) {
-      status = 'Full';
-    } else if (occupancyRate >= 80) {
-      status = 'Limited';
-    }
+    const payload: Partial<Shelter> = {
+      name: this.newShelterName,
+      address: this.newShelterAddress,
+      capacity: this.newShelterCapacity,
+      occupied: this.newShelterOccupied ?? 0,
+      amenities: amenitiesArray
+    };
 
-    const nextId = `SH-${101 + this.shelters.length}`;
-
-    this.shelters.unshift({
-      id: nextId,
-      name,
-      address,
-      capacity: capacityVal,
-      occupied: occupiedVal,
-      amenities: amenitiesList.length ? amenitiesList : ['Power', 'Water'],
-      lastUpdated: 'Just now',
-      status
+    this.shelterService.create(payload).subscribe({
+      next: (created) => {
+        this.shelters = [...this.shelters, created];
+        this.closeRegisterModal();
+      },
+      error: (err) => console.error('Failed to register shelter', err)
     });
+  }
 
-    this.closeRegisterModal();
+  private resetForm(): void {
+    this.newShelterName = '';
+    this.newShelterAddress = '';
+    this.newShelterCapacity = null;
+    this.newShelterOccupied = null;
+    this.newShelterAmenities = '';
   }
 }

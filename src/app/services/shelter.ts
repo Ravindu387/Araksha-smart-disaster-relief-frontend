@@ -1,33 +1,59 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { Shelter, ShelterDTO } from '../Common/models/shelter.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ShelterService {
 
-  private api = 'http://localhost:8080/api/shelters';
+  private baseUrl = 'http://localhost:8080/api/shelters';
 
   constructor(private http: HttpClient) {}
 
-  getShelters(): Observable<any> {
-    return this.http.get(this.api);
+  private toShelter(dto: ShelterDTO): Shelter {
+    return {
+      ...dto,
+      status: dto.status as Shelter['status'] ?? 'Available',
+      amenities: dto.amenities
+        ? dto.amenities.split(',').map(a => a.trim()).filter(a => a.length > 0)
+        : []
+    };
   }
 
-  registerShelter(data: any): Observable<any> {
-    return this.http.post(this.api, data);
+  private toDTO(shelter: Partial<Shelter>): ShelterDTO {
+    return {
+      ...shelter,
+      amenities: (shelter.amenities ?? []).join(', ')
+    } as ShelterDTO;
   }
 
-  deleteShelter(id: number): Observable<any> {
-    return this.http.delete(`${this.api}/${id}`);
+  getAll(): Observable<Shelter[]> {
+    return this.http.get<ShelterDTO[]>(this.baseUrl)
+      .pipe(map(list => list.map(dto => this.toShelter(dto))));
   }
 
-  searchShelters(keyword: string): Observable<any> {
-    return this.http.get(`${this.api}/search?keyword=${keyword}`);
+  getShelters(): Observable<Shelter[]> {
+    return this.getAll();
   }
 
-  getByStatus(status: string): Observable<any> {
-    return this.http.get(`${this.api}/status/${status}`);
+  getById(id: number): Observable<Shelter> {
+    return this.http.get<ShelterDTO>(`${this.baseUrl}/${id}`)
+      .pipe(map(dto => this.toShelter(dto)));
+  }
+
+  create(shelter: Partial<Shelter>): Observable<Shelter> {
+    return this.http.post<ShelterDTO>(this.baseUrl, this.toDTO(shelter))
+      .pipe(map(dto => this.toShelter(dto)));
+  }
+
+  update(id: number, shelter: Partial<Shelter>): Observable<Shelter> {
+    return this.http.put<ShelterDTO>(`${this.baseUrl}/${id}`, this.toDTO(shelter))
+      .pipe(map(dto => this.toShelter(dto)));
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }
