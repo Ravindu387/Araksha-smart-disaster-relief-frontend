@@ -8,6 +8,9 @@ import { OnInit } from '@angular/core';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { EmergencyRequestService } from '../Common/services/emergency-request.service';
+import { EmergencyRequest as EmergencyRequestDto } from '../Common/models/emergency-request.model';
+
 interface EmergencyRequest {
   id: string;
   type: string;
@@ -36,7 +39,10 @@ interface ShelterInfo {
 })
 export class Citizen implements OnInit {
   citizen: CitizenModel | null = null;
-  constructor(private citizenService: CitizenService) {}
+  constructor(
+  private citizenService: CitizenService,
+  private emergencyRequestService: EmergencyRequestService
+) {}
   ngOnInit(): void {
   this.loadCitizen();
 }
@@ -158,19 +164,70 @@ closeProfile(): void {
   }
 
   submitRequest(): void {
-    const newRequest: EmergencyRequest = {
-      id: 'ER-' + Math.floor(2800 + Math.random() * 100),
-      type: this.selectedType + ' Emergency',
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pending',
-      responder: '—',
-      location: this.location,
-      description: this.description
-    };
 
-    this.myRequests.unshift(newRequest);
-    this.showModal = false;
-  }
+  const request: EmergencyRequestDto = {
+
+    id: 0,
+
+    requestId: 'ER-' + Date.now(),
+
+    citizenName: this.citizen?.fullName ?? 'Unknown Citizen',
+
+    emergencyType: this.selectedType,
+
+    priority: 'High',
+
+    status: 'Pending',
+
+    location: this.location,
+
+    assignedVolunteer: '',
+
+    requestTime: ''
+
+  };
+
+  this.emergencyRequestService.addRequest(request).subscribe({
+
+    next: (savedRequest) => {
+
+      // Show immediately in Citizen page
+
+      this.myRequests.unshift({
+
+        id: savedRequest.requestId,
+
+        type: savedRequest.emergencyType,
+
+        date: new Date(savedRequest.requestTime).toISOString().split('T')[0],
+
+        status: 'Pending',
+
+        responder: '—',
+
+        location: savedRequest.location,
+
+        description: this.description
+
+      });
+
+      alert('Emergency Request Submitted Successfully');
+
+      this.showModal = false;
+
+    },
+
+    error: (err) => {
+
+      console.error(err);
+
+      alert('Failed to submit emergency request.');
+
+    }
+
+  });
+
+}
 
   scrollToSection(id: string): void {
     const element = document.getElementById(id);
