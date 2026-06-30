@@ -97,25 +97,25 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   /* ── Chart config ── */
   private chartData: ChartData<'bar'> = {
-    labels: ['Jun 1', 'Jun 2', 'Jun 3', 'Jun 4', 'Jun 5', 'Jun 6', 'Jun 7'],
+    labels: [],
     datasets: [
       {
-        data: [420, 380, 650, 820, 540, 720, 890],
-        label: 'Dispatched',
+        data: [],
+        label: 'Current Stock',
         backgroundColor: '#3b82f6',
         borderRadius: 4,
         borderSkipped: false,
       },
       {
-        data: [800, 200, 500, 1200, 300, 600, 400],
-        label: 'Restocked',
+        data: [],
+        label: 'Allocated Stock',
         backgroundColor: '#10b981',
         borderRadius: 4,
         borderSkipped: false,
       },
       {
-        data: [380, 340, 610, 780, 510, 680, 840],
-        label: 'Consumed',
+        data: [],
+        label: 'Min Threshold',
         backgroundColor: '#f43f5e',
         borderRadius: 4,
         borderSkipped: false,
@@ -146,8 +146,7 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
       },
       y: {
         min: 0,
-        max: 1200,
-        ticks: { stepSize: 300, color: '#94a3b8', font: { size: 11 } },
+        ticks: { color: '#94a3b8', font: { size: 11 } },
         grid: { color: '#f1f5f9' },
         border: { display: false },
       },
@@ -239,6 +238,23 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
       data: this.chartData,
       options: this.chartOptions,
     });
+    this.updateChart();
+  }
+
+  private updateChart(): void {
+    if (!this.chart) return;
+
+    const labels = this.filteredItems.map(item => item.name);
+    const currentStock = this.filteredItems.map(item => Number(String(item.count || '').replace(/,/g, '')) || 0);
+    const allocatedStock = this.filteredItems.map(item => Number(String(item.allocated || '').replace(/,/g, '')) || 0);
+    const minThreshold = this.filteredItems.map(item => Number(String(item.min || '').replace(/,/g, '')) || 0);
+
+    this.chart.data.labels = labels;
+    this.chart.data.datasets[0].data = currentStock;
+    this.chart.data.datasets[1].data = allocatedStock;
+    this.chart.data.datasets[2].data = minThreshold;
+
+    this.chart.update();
   }
 
   /* ── Filter / search ── */
@@ -258,6 +274,7 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
         (this.selectedCategory === 'All' || item.category === this.selectedCategory) &&
         (item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q))
     );
+    this.updateChart();
   }
 
   syncInventory(): void {
