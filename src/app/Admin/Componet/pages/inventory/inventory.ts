@@ -5,9 +5,11 @@ import {
   OnDestroy,
   ViewChild,
   ElementRef,
+  ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { InventoryService } from '../../../../Common/services/inventory.service';
 import {
   Chart,
   BarController,
@@ -49,6 +51,11 @@ export class InventoryItem {
 })
 export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
+  constructor(
+  private inventoryService: InventoryService,
+  private cdr: ChangeDetectorRef
+) {}
+
   @ViewChild('inventoryChart') chartCanvas!: ElementRef<HTMLCanvasElement>;
   private chart: Chart | null = null;
 
@@ -70,72 +77,7 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     'All', 'Food', 'Water', 'Medicine', 'Supplies', 'Shelter', 'Equipment', 'Hygiene',
   ];
 
-  inventoryItems: InventoryItem[] = [
-    {
-      id: '1', name: 'Food Kits', category: 'Food',
-      count: '8,420', total: '12,000', unit: 'kits', percentage: 70,
-      trend: '12% this week', trendUp: true,
-      ringColor: 'border-amber-500 text-amber-500',
-      dotColor: 'bg-amber-500', barColor: 'bg-amber-500',
-      allocated: '3,580', min: '3,000', lowStock: false,
-    },
-    {
-      id: '2', name: 'Drinking Water', category: 'Water',
-      count: '15,600', total: '25,000', unit: 'liters', percentage: 62,
-      trend: '8% this week', trendUp: false,
-      ringColor: 'border-blue-500 text-blue-500',
-      dotColor: 'bg-blue-500', barColor: 'bg-blue-600',
-      allocated: '9,400', min: '5,000', lowStock: false,
-    },
-    {
-      id: '3', name: 'Medical Kits', category: 'Medicine',
-      count: '1,240', total: '3,000', unit: 'kits', percentage: 41,
-      trend: '15% this week', trendUp: false,
-      ringColor: 'border-rose-500 text-rose-500',
-      dotColor: 'bg-rose-500', barColor: 'bg-rose-500',
-      allocated: '1,760', min: '1,500', lowStock: true,
-    },
-    {
-      id: '4', name: 'Emergency Blankets', category: 'Supplies',
-      count: '3,800', total: '8,000', unit: 'units', percentage: 48,
-      trend: '5% this week', trendUp: true,
-      ringColor: 'border-purple-600 text-purple-600',
-      dotColor: 'bg-purple-600', barColor: 'bg-purple-600',
-      allocated: '4,200', min: '1,500', lowStock: false,
-    },
-    {
-      id: '5', name: 'Relief Tents', category: 'Shelter',
-      count: '320', total: '600', unit: 'tents', percentage: 53,
-      trend: '3% this week', trendUp: false,
-      ringColor: 'border-emerald-500 text-emerald-500',
-      dotColor: 'bg-emerald-500', barColor: 'bg-emerald-500',
-      allocated: '280', min: '100', lowStock: false,
-    },
-    {
-      id: '6', name: 'First Aid Supplies', category: 'Medicine',
-      count: '580', total: '2,000', unit: 'boxes', percentage: 29,
-      trend: '22% this week', trendUp: false,
-      ringColor: 'border-rose-500 text-rose-500',
-      dotColor: 'bg-rose-500', barColor: 'bg-rose-500',
-      allocated: '1,420', min: '600', lowStock: true,
-    },
-    {
-      id: '7', name: 'Flashlights & Batteries', category: 'Equipment',
-      count: '2,100', total: '3,500', unit: 'sets', percentage: 60,
-      trend: '8% this week', trendUp: true,
-      ringColor: 'border-amber-500 text-amber-500',
-      dotColor: 'bg-amber-500', barColor: 'bg-amber-500',
-      allocated: '1,400', min: '700', lowStock: false,
-    },
-    {
-      id: '8', name: 'Sanitation Kits', category: 'Hygiene',
-      count: '410', total: '1,500', unit: 'kits', percentage: 27,
-      trend: '18% this week', trendUp: false,
-      ringColor: 'border-teal-500 text-teal-500',
-      dotColor: 'bg-teal-500', barColor: 'bg-teal-500',
-      allocated: '1,090', min: '300', lowStock: false,
-    },
-  ];
+  inventoryItems: InventoryItem[] = [];
 
   filteredItems: InventoryItem[] = [];
 
@@ -214,8 +156,8 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   /* ── Lifecycle ── */
   ngOnInit(): void {
-    this.filterCategory('All');
-  }
+    this.loadInventory();
+}
 
   ngAfterViewInit(): void {
     this.buildChart();
@@ -224,6 +166,69 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.chart?.destroy();
   }
+  loadInventory(): void {
+
+  this.inventoryService.getAllInventory().subscribe({
+
+    next: (data: any[]) => {
+
+      this.inventoryItems = data.map(item => {
+
+        const colors = this.getCategoryColors(item.category);
+
+        const percentage =
+          item.total > 0
+            ? Math.round((item.count / item.total) * 100)
+            : 0;
+
+        return {
+
+          id: String(item.id),
+
+          name: item.name,
+
+          category: item.category,
+
+          count: Number(item.count).toLocaleString(),
+
+          total: Number(item.total).toLocaleString(),
+
+          unit: item.unit,
+
+          percentage,
+
+          trend: 'Updated',
+
+          trendUp: true,
+
+          allocated: Number(item.allocated).toLocaleString(),
+
+          min: Number(item.minStock).toLocaleString(),
+
+          lowStock: item.count < item.minStock,
+
+          ringColor: colors.ring,
+
+          dotColor: colors.dot,
+
+          barColor: colors.bar
+
+        };
+
+      });
+
+      this.applyFilter();
+      
+      this.cdr.detectChanges();
+
+
+    },
+
+    error: err => console.error(err)
+
+  });
+
+}
 
   /* ── Chart init ── */
   private buildChart(): void {
@@ -256,9 +261,18 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   }
 
   syncInventory(): void {
+
     this.syncing = true;
-    setTimeout(() => (this.syncing = false), 1400);
-  }
+
+    this.loadInventory();
+
+    setTimeout(() => {
+
+        this.syncing = false;
+
+    },1000);
+
+}
 
   openAddModal(): void {
     this.addModalOpen = true;
@@ -279,49 +293,49 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     this.newItemAllocated = '0';
   }
 
-  addStockSubmit(): void {
-    const name = this.newItemName.trim();
-    if (!name) {
-      alert('Please enter a name');
-      return;
-    }
+ addStockSubmit(): void {
 
-    const countVal = parseInt(this.newItemCount.replace(/,/g, ''), 10) || 0;
-    const totalVal = parseInt(this.newItemTotal.replace(/,/g, ''), 10) || 0;
-    const minVal = parseInt(this.newItemMin.replace(/,/g, ''), 10) || 0;
-    const allocatedVal = parseInt(this.newItemAllocated.replace(/,/g, ''), 10) || 0;
+    const body = {
 
-    if (totalVal <= 0) {
-      alert('Please enter a valid total capacity');
-      return;
-    }
+        name: this.newItemName,
 
-    const percentage = Math.round((countVal / totalVal) * 100);
-    const colors = this.getCategoryColors(this.newItemCategory);
+        category: this.newItemCategory,
 
-    const nextId = (this.inventoryItems.length + 1).toString();
+        count: Number(this.newItemCount),
 
-    this.inventoryItems.unshift({
-      id: nextId,
-      name: name,
-      category: this.newItemCategory,
-      count: countVal.toLocaleString(),
-      total: totalVal.toLocaleString(),
-      unit: this.newItemUnit,
-      percentage: percentage,
-      trend: 'New item',
-      trendUp: true,
-      allocated: allocatedVal.toLocaleString(),
-      min: minVal.toLocaleString(),
-      lowStock: countVal < minVal,
-      ringColor: colors.ring,
-      dotColor: colors.dot,
-      barColor: colors.bar
+        total: Number(this.newItemTotal),
+
+        unit: this.newItemUnit,
+
+        allocated: Number(this.newItemAllocated),
+
+        minStock: Number(this.newItemMin)
+
+    };
+
+    this.inventoryService.addInventory(body).subscribe({
+
+        next: () => {
+
+            alert("Inventory Added Successfully");
+
+            this.closeAddModal();
+
+            this.loadInventory();
+
+        },
+
+        error: err => {
+
+            console.error(err);
+
+            alert("Failed to save inventory");
+
+        }
+
     });
 
-    this.applyFilter();
-    this.closeAddModal();
-  }
+}
 
   private getCategoryColors(category: string) {
     switch (category) {
