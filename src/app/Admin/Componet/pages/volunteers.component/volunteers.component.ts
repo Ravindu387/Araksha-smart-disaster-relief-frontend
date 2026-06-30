@@ -139,6 +139,12 @@ export class VolunteersComponent implements OnInit {
   inviteVolunteerSubmit(): void {
 
     if (!this.newVolunteerName.trim()) {
+      alert('Please enter a full name.');
+      return;
+    }
+
+    if (!this.newVolunteerPhone.trim()) {
+      alert('Please enter a phone number.');
       return;
     }
 
