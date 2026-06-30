@@ -35,7 +35,7 @@ interface ShelterInfo {
   styleUrl: './citizen.css',
 })
 export class Citizen implements OnInit {
-  citizen!: CitizenModel;
+  citizen: CitizenModel | null = null;
   constructor(private citizenService: CitizenService) {}
   ngOnInit(): void {
   this.loadCitizen();
@@ -48,7 +48,6 @@ loadCitizen(): void {
 
       this.citizen = data;
 
-      this.contactName = data.fullName;
       this.contactPhone = data.phoneNumber;
 
       console.log('Citizen Loaded', data);
@@ -82,7 +81,6 @@ closeProfile(): void {
   selectedType = '';
   description = '';
   location = '';
-  contactName = '';
   contactPhone = '';
 
   emergencyTypes = [
@@ -130,7 +128,7 @@ closeProfile(): void {
     this.selectedType = '';
     this.description = '';
     this.location = '';
-    this.contactPhone = '';
+    this.contactPhone = this.citizen?.phoneNumber ?? '';
   }
 
   closeModal(): void {
