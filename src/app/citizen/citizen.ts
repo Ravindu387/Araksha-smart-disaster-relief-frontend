@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { CitizenService } from '../Common/services/citizen.service';
+import { OnInit } from '@angular/core';
+import { Citizen as CitizenModel } from '../Common/models/citizen';
+import { HttpErrorResponse } from '@angular/common/http';
+
 interface EmergencyRequest {
   id: string;
   type: string;
@@ -29,16 +34,55 @@ interface ShelterInfo {
   templateUrl: './citizen.html',
   styleUrl: './citizen.css',
 })
-export class Citizen {
+export class Citizen implements OnInit {
+  citizen!: CitizenModel;
+  constructor(private citizenService: CitizenService) {}
+  ngOnInit(): void {
+  this.loadCitizen();
+}
+loadCitizen(): void {
+
+  this.citizenService.getCitizenById(1).subscribe({
+
+    next: (data: CitizenModel) => {
+
+      this.citizen = data;
+
+      this.contactName = data.fullName;
+      this.contactPhone = data.phoneNumber;
+
+      console.log('Citizen Loaded', data);
+
+    },
+
+    error: (error: HttpErrorResponse) => {
+
+      console.error('Error Loading Citizen', error);
+
+    }
+
+  });
+
+}
   // Modal State
   showModal = false;
   currentStep = 1;
+
+  //citizen profile
+  showProfile = false;
+  toggleProfile(): void {
+  this.showProfile = !this.showProfile;
+}
+
+closeProfile(): void {
+  this.showProfile = false;
+}
 
   // Form Fields
   selectedType = '';
   description = '';
   location = '';
-  contactName = 'Maria Santos';
+  contactName = '';
   contactPhone = '';
 
   emergencyTypes = [
