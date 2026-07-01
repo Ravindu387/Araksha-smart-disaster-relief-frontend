@@ -4,7 +4,9 @@
   <div class="lg:w-1/2 bg-gradient-to-br from-slate-950 via-blue-950 to-black text-white relative overflow-hidden">
 
     <div class="absolute inset-0 opacity-20">
-      <div class="h-full w-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:24px_24px]"></div>
+      <div
+        class="h-full w-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:24px_24px]">
+      </div>
     </div>
 
     <div class="relative z-10 flex flex-col justify-between h-full p-8 lg:p-10">
@@ -76,8 +78,7 @@
           1
         </div>
 
-        <div class="h-0.5 w-12"
-          [ngClass]="step >= 2 ? 'bg-blue-500' : 'bg-gray-200'">
+        <div class="h-0.5 w-12" [ngClass]="step >= 2 ? 'bg-blue-500' : 'bg-gray-200'">
         </div>
 
         <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs"
@@ -114,9 +115,7 @@
         <div class="space-y-3 mt-3 text-sm">
 
           <!-- Citizen -->
-          <button
-            (click)="selectRole('Citizen')"
-            class="w-full rounded-xl border p-4 flex justify-between items-center"
+          <button (click)="selectRole('Citizen')" class="w-full rounded-xl border p-4 flex justify-between items-center"
             [ngClass]="selectedRole==='Citizen' ? 'border-blue-500 bg-blue-50' : 'bg-white'">
 
             <div class="text-left">
@@ -128,8 +127,7 @@
           </button>
 
           <!-- Volunteer -->
-          <button
-            (click)="selectRole('Volunteer')"
+          <button (click)="selectRole('Volunteer')"
             class="w-full rounded-xl border p-4 flex justify-between items-center"
             [ngClass]="selectedRole==='Volunteer' ? 'border-blue-500 bg-blue-50' : 'bg-white'">
 
@@ -145,51 +143,21 @@
 
         <!-- FORM -->
         <div class="grid grid-cols-2 gap-3 mt-5">
-          <div>
-            <input [(ngModel)]="user.firstName" name="firstName" #firstName="ngModel" required minlength="2" placeholder="First Name"
-              class="border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none w-full"
-              [ngClass]="firstName.invalid && (firstName.dirty || firstName.touched) ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'">
-            <div *ngIf="firstName.invalid && (firstName.dirty || firstName.touched)" class="text-red-500 text-[11px] mt-1">
-              <span *ngIf="firstName.errors?.['required']">First name is required.</span>
-              <span *ngIf="firstName.errors?.['minlength']">Must be at least 2 chars.</span>
-            </div>
-          </div>
+          <input [(ngModel)]="user.firstName" name="firstName" placeholder="First Name"
+            class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
 
-          <div>
-            <input [(ngModel)]="user.lastName" name="lastName" #lastName="ngModel" required minlength="2" placeholder="Last Name"
-              class="border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none w-full"
-              [ngClass]="lastName.invalid && (lastName.dirty || lastName.touched) ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'">
-            <div *ngIf="lastName.invalid && (lastName.dirty || lastName.touched)" class="text-red-500 text-[11px] mt-1">
-              <span *ngIf="lastName.errors?.['required']">Last name is required.</span>
-              <span *ngIf="lastName.errors?.['minlength']">Must be at least 2 chars.</span>
-            </div>
-          </div>
+          <input [(ngModel)]="user.lastName" name="lastName" placeholder="Last Name"
+            class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
-        <div class="mt-3">
-          <input [(ngModel)]="user.email" name="email" #email="ngModel" required email placeholder="Email Address"
-            class="border rounded-lg px-3 py-2 w-full text-sm focus:ring-2 outline-none"
-            [ngClass]="email.invalid && (email.dirty || email.touched) ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'">
-          <div *ngIf="email.invalid && (email.dirty || email.touched)" class="text-red-500 text-[11px] mt-1">
-            <span *ngIf="email.errors?.['required']">Email is required.</span>
-            <span *ngIf="email.errors?.['email']">Please enter a valid email.</span>
-          </div>
-        </div>
+        <input [(ngModel)]="user.email" name="email" placeholder="Email Address"
+          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
 
-        <div class="mt-3">
-          <input [(ngModel)]="user.phone" name="phone" #phone="ngModel" required pattern="^[0-9]{10}$" placeholder="Phone Number (10 digits)"
-            class="border rounded-lg px-3 py-2 w-full text-sm focus:ring-2 outline-none"
-            [ngClass]="phone.invalid && (phone.dirty || phone.touched) ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'">
-          <div *ngIf="phone.invalid && (phone.dirty || phone.touched)" class="text-red-500 text-[11px] mt-1">
-            <span *ngIf="phone.errors?.['required']">Phone number is required.</span>
-            <span *ngIf="phone.errors?.['pattern']">Must be a valid 10-digit number.</span>
-          </div>
-        </div>
+        <input [(ngModel)]="user.phone" name="phone" placeholder="Phone Number"
+          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
 
-        <button
-          (click)="nextStep()"
-          [disabled]="!selectedRole || firstName.invalid || lastName.invalid || email.invalid || phone.invalid"
-          class="w-full mt-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-3 rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <button (click)="nextStep()"
+          class="w-full mt-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-3 rounded-lg font-semibold text-sm">
           Continue
         </button>
 
@@ -208,39 +176,31 @@
 
         <!-- PASSWORD -->
         <div class="mt-6">
-          <label class="text-xs font-medium text-slate-700">Password</label>
-          <input [(ngModel)]="user.password" name="password" #password="ngModel" required minlength="8" type="password"
-            class="border rounded-lg px-3 py-2 w-full mt-1 text-sm focus:ring-2 outline-none"
-            [ngClass]="password.invalid && (password.dirty || password.touched) ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'">
-          <div *ngIf="password.invalid && (password.dirty || password.touched)" class="text-red-500 text-[11px] mt-1">
-            <span *ngIf="password.errors?.['required']">Password is required.</span>
-            <span *ngIf="password.errors?.['minlength']">Password must be at least 8 characters.</span>
-          </div>
+          <label class="text-xs font-medium">Password</label>
+          <input [(ngModel)]="user.password" name="password" type="password"
+            class="border rounded-lg px-3 py-2 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <!-- TERMS -->
         <div class="mt-4 flex items-center gap-2">
-          <input type="checkbox" [(ngModel)]="user.agree" name="agree" #agree="ngModel" required>
+          <input type="checkbox" [(ngModel)]="user.agree" name="agree">
           <span class="text-xs text-gray-600">
             I agree to the
-            <a class="text-blue-600 hover:underline cursor-pointer">Terms</a>
+            <a class="text-blue-600">Terms</a>
             and
-            <a class="text-blue-600 hover:underline cursor-pointer">Privacy Policy</a>
+            <a class="text-blue-600">Privacy Policy</a>
           </span>
         </div>
 
         <!-- ACTIONS -->
         <div class="flex gap-3 mt-6">
 
-          <button (click)="previousStep()"
-            class="px-4 py-2 border rounded-lg text-sm hover:bg-gray-100 transition-colors">
+          <button (click)="previousStep()" class="px-4 py-2 border rounded-lg text-sm">
             Back
           </button>
 
-          <button
-            (click)="submit()"
-            [disabled]="!user.agree || isSubmitting || password.invalid"
-            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-2 rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          <button (click)="submit()" [disabled]="!user.agree || isSubmitting"
+            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-2 rounded-lg font-semibold text-sm disabled:opacity-50">
             {{ isSubmitting ? 'Creating account...' : 'Create ' + selectedRole + ' Account' }}
           </button>
 

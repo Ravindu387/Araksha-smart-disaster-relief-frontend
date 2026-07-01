@@ -1,18 +1,33 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/service/auth.service';
+
+type Role = 'Citizen' | 'Volunteer';
+
+interface SignupModel {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  agree: boolean;
+}
 
 @Component({
   selector: 'app-signup',
   standalone: true,
-  imports: [CommonModule, FormsModule], // Brings in [ngClass] and [(ngModel)]
+  imports: [CommonModule, FormsModule],
   templateUrl: './signup.html'
 })
 export class SignupComponent {
-  step: number = 1;
-  selectedRole: string = '';
+  step = 1;
+  selectedRole: Role | null = null;
+  isSubmitting = false;
+  errorMessage = '';
 
-  user: any = {
+  user: SignupModel = {
     firstName: '',
     lastName: '',
     email: '',
@@ -21,51 +36,64 @@ export class SignupComponent {
     agree: false
   };
 
-  selectRole(role: string) {
+  constructor(private authService: AuthService, private router: Router) { }
+
+  selectRole(role: Role) {
     this.selectedRole = role;
+    this.errorMessage = '';
   }
 
   nextStep() {
     if (!this.selectedRole) {
-      alert('Please select a role');
+      this.errorMessage = 'Please select a role.';
       return;
     }
-
-    // validate required fields
-    if (
-      !this.user.firstName ||
-      !this.user.lastName ||
-      !this.user.email ||
-      !this.user.phone
-    ) {
-      alert('Please fill all required fields');
+    if (!this.user.firstName || !this.user.lastName || !this.user.email) {
+      this.errorMessage = 'Please fill in all required fields.';
       return;
     }
-
+    this.errorMessage = '';
     this.step = 2;
   }
 
   previousStep() {
+    this.errorMessage = '';
     this.step = 1;
   }
 
-  submitSignup() {
-    if (!this.user.password) {
-      alert('Please enter password');
+  submit() {
+    if (!this.user.agree || !this.selectedRole || this.isSubmitting) {
       return;
     }
 
-    if (!this.user.agree) {
-      alert('You must agree to Terms & Privacy Policy');
-      return;
-    }
+    this.isSubmitting = true;
+    this.errorMessage = '';
 
-    const payload = {
-      role: this.selectedRole,
-      ...this.user
-    };
-
-    console.log('Signup Data:', payload);
-    alert('Account created successfully!');
+    // NOTE: backend RegisterRequest/User currently have no "phone" field,
+    // so it isn't sent. Add a `phone` column to User + RegisterRequest
+    // on the backend if you want to persist it.
+    this.authService
+      .register({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        password: this.user.password,
+        role: this.selectedRole.toUpperCase() // must match backend Role enum names
+      })
+      .subscribe({
+        next: (message: any) => {
+          this.isSubmitting = false;
+          if (message === 'Email already exists') {
+            this.errorMessage = message;
+            return;
+          }
+          this.router.navigate(['/login']);
+        },
+        error: (err: any) => {
+          this.isSubmitting = false;
+          this.errorMessage = 'Something went wrong. Please try again.';
+          console.error(err);
+        }
+      });
   }
 }

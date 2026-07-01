@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { AuthService } from '../../core/service/auth.service';
+import { AuthService, LoginPayload } from '../../core/service/auth.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -29,7 +29,12 @@ export class Login {
       return;
     }
 
-    this.authService.login(this.loginForm.value).subscribe({
+    const payload: LoginPayload = {
+      email: this.loginForm.value.email ?? '',
+      password: this.loginForm.value.password ?? ''
+    };
+
+    this.authService.login(payload).subscribe({
       next: (res: any) => {
 
         localStorage.setItem('token', res.token);
