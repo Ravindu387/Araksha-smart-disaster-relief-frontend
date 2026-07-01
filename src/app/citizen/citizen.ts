@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { CitizenService } from '../Common/services/citizen.service';
 import { EmergencyRequestService } from '../Common/services/emergency-request.service';
+import { NotificationService, NotificationItem } from '../Common/services/notification.service';
 import { OnInit } from '@angular/core';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -28,6 +29,17 @@ interface ShelterInfo {
   bedsFree: number;
 }
 
+interface CitizenNotification {
+  id: number;
+  title: string;
+  description: string;
+  severity: string;
+  badge: string;
+  time: string;
+  isLocal: boolean;
+  category: string;
+}
+
 @Component({
   selector: 'app-citizen',
   standalone: true,
@@ -37,16 +49,19 @@ interface ShelterInfo {
 })
 export class Citizen implements OnInit {
   citizen: CitizenModel | null = null;
+  notifications: CitizenNotification[] = [];
   
   constructor(
     private citizenService: CitizenService,
     private emergencyService: EmergencyRequestService,
+    private notificationService: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
   
   ngOnInit(): void {
     this.loadCitizen();
     this.loadRequests();
+    this.loadNotifications();
   }
   
   loadCitizen(): void {
@@ -55,13 +70,61 @@ export class Citizen implements OnInit {
         this.citizen = data;
         this.contactPhone = data.phoneNumber;
         console.log('Citizen Loaded', data);
-        // Refresh requests with citizen name loaded
+        // Refresh requests and notifications with citizen info loaded
         this.loadRequests();
+        this.loadNotifications();
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
         console.error('Error Loading Citizen', error);
       }
+    });
+  }
+
+  isLocalAlert(notification: NotificationItem): boolean {
+    if (!this.citizen) return false;
+    const locationKeywords = ['houston', 'harris', 'texas', 'tx'];
+    const title = (notification.title || '').toLowerCase();
+    const desc = (notification.description || '').toLowerCase();
+    
+    const addressParts = this.citizen.address ? this.citizen.address.toLowerCase().split(/[,\s]+/) : [];
+    const keywords = new Set([...locationKeywords, ...addressParts].filter(w => w.length > 2));
+    
+    for (const keyword of keywords) {
+      if (title.includes(keyword) || desc.includes(keyword)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  loadNotifications(): void {
+    this.notificationService.getNotifications().subscribe({
+      next: (data) => {
+        // Filter ONLY emergency notifications (category is 'alerts')
+        const emergencyOnly = data.filter(item => item.category === 'alerts');
+        
+        this.notifications = emergencyOnly.map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          severity: item.severity,
+          badge: item.badge,
+          time: item.time || 'Just now',
+          category: item.category,
+          isLocal: this.isLocalAlert(item)
+        }));
+        
+        // Prioritize local alerts first
+        this.notifications.sort((a, b) => {
+          if (a.isLocal && !b.isLocal) return -1;
+          if (!a.isLocal && b.isLocal) return 1;
+          return 0;
+        });
+        
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading notifications:', err)
     });
   }
 
@@ -90,15 +153,33 @@ export class Citizen implements OnInit {
   // Modal State
   showModal = false;
   currentStep = 1;
+  showSosConfirm = false;
+  sosLoading = false;
 
   //citizen profile
   showProfile = false;
+  showNotifications = false;
+
   toggleProfile(): void {
     this.showProfile = !this.showProfile;
+    if (this.showProfile) {
+      this.showNotifications = false;
+    }
   }
 
   closeProfile(): void {
     this.showProfile = false;
+  }
+
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications) {
+      this.showProfile = false;
+    }
+  }
+
+  closeNotifications(): void {
+    this.showNotifications = false;
   }
 
   // Form Fields
@@ -159,6 +240,44 @@ export class Citizen implements OnInit {
     this.showModal = false;
   }
 
+  openSosConfirm(): void {
+    this.showSosConfirm = true;
+  }
+
+  closeSosConfirm(): void {
+    this.showSosConfirm = false;
+  }
+
+  sendQuickSos(): void {
+    this.sosLoading = true;
+    const reqId = 'ER-' + Math.floor(2800 + Math.random() * 100);
+    const sosDto = {
+      id: 0,
+      requestId: reqId,
+      citizenName: this.citizen?.fullName || 'Alice Smith',
+      emergencyType: 'Critical SOS',
+      priority: 'Critical' as const,
+      status: 'Pending' as const,
+      location: this.citizen?.address || 'Current Location',
+      assignedVolunteer: '',
+      requestTime: new Date().toISOString()
+    };
+
+    this.emergencyService.addRequest(sosDto).subscribe({
+      next: () => {
+        this.loadRequests();
+        this.sosLoading = false;
+        this.showSosConfirm = false;
+        alert('🚨 Quick SOS Alert Dispatched! Rescue teams are being routed to your location.');
+      },
+      error: (err) => {
+        console.error('Error dispatching SOS:', err);
+        this.sosLoading = false;
+        alert('Failed to dispatch Quick SOS.');
+      }
+    });
+  }
+
   selectType(type: string): void {
     this.selectedType = type;
   }
@@ -167,8 +286,9 @@ export class Citizen implements OnInit {
     if (this.currentStep === 1 && !this.selectedType) return;
     if (this.currentStep === 2 && this.description.trim().length < 5) return;
     if (this.currentStep === 3 && this.location.trim().length < 5) return;
+    if (this.currentStep === 4 && (!this.contactPhone || this.contactPhone.trim().length < 5)) return;
     
-    if (this.currentStep < 4) {
+    if (this.currentStep < 5) {
       this.currentStep++;
     } else {
       this.submitRequest();
