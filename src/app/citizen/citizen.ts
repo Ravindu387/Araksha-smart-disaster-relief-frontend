@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { CitizenService } from '../Common/services/citizen.service';
 import { EmergencyRequestService } from '../Common/services/emergency-request.service';
+import { ShelterService } from '../services/shelter';
 import { OnInit } from '@angular/core';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -24,7 +25,7 @@ interface ShelterInfo {
   id: string;
   name: string;
   distance: string;
-  status: 'Available' | 'Limited' | 'Full';
+  status: 'Available' | 'Limited' | 'Full' | string;
   bedsFree: number;
 }
 
@@ -41,16 +42,19 @@ export class Citizen implements OnInit {
   constructor(
     private citizenService: CitizenService,
     private emergencyService: EmergencyRequestService,
+    private shelterService: ShelterService,
     private cdr: ChangeDetectorRef
   ) {}
   
   ngOnInit(): void {
     this.loadCitizen();
     this.loadRequests();
+    this.loadShelters();
   }
   
   loadCitizen(): void {
-    this.citizenService.getCitizenById(1).subscribe({
+    const email = localStorage.getItem('email') || 'citizen@araksha.com';
+    this.citizenService.getCitizenByEmail(email).subscribe({
       next: (data: CitizenModel) => {
         this.citizen = data;
         this.contactPhone = data.phoneNumber;
@@ -140,11 +144,25 @@ export class Citizen implements OnInit {
     }
   ];
 
-  shelters: ShelterInfo[] = [
-    { id: 'SH-101', name: 'Houston Community Center', distance: '1.2 mi away', status: 'Available', bedsFree: 68 },
-    { id: 'SH-102', name: 'Riverside School Gym', distance: '2.8 mi away', status: 'Limited', bedsFree: 12 },
-    { id: 'SH-103', name: 'Northside Relief Hub', distance: '4.1 mi away', status: 'Full', bedsFree: 0 }
-  ];
+  shelters: ShelterInfo[] = [];
+
+  loadShelters(): void {
+    this.shelterService.getShelters().subscribe({
+      next: (shelters) => {
+        if (shelters && shelters.length > 0) {
+          this.shelters = shelters.map(s => ({
+            id: 'SH-' + (s.id || ''),
+            name: s.name,
+            distance: (1.0 + Math.random() * 3).toFixed(1) + ' mi away',
+            status: s.status || 'Available',
+            bedsFree: (s.capacity || 0) - (s.occupied || 0)
+          }));
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error fetching shelters:', err)
+    });
+  }
 
   openReportModal(): void {
     this.showModal = true;
