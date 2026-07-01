@@ -139,10 +139,10 @@ export class AllocationComponent implements OnInit {
 
         // 3. Map Shelters
         this.shelters = res.shelters.map((s: any) => ({
-          id: s.shelterId,
+          id: s.id,
           name: s.name,
           distance: '1.5 mi',
-          bedsFree: s.totalCapacity - s.occupiedBeds
+          bedsFree: s.capacity - s.occupied
         }));
 
         // 4. Map Inventory Resources
@@ -255,7 +255,7 @@ export class AllocationComponent implements OnInit {
           }
         });
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error(err);
         this.matching = false;
       }
@@ -295,7 +295,7 @@ export class AllocationComponent implements OnInit {
             }
           });
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error(err);
           this.matching = false;
         }
@@ -328,35 +328,25 @@ export class AllocationComponent implements OnInit {
           }
         });
       },
-      error: (err) => console.error('Error assigning volunteer:', err)
+      error: (err: any) => console.error('Error assigning volunteer:', err)
     });
   }
 
   assignShelter(s: Shelter): void {
     const emergency = this.selectedEmergency;
-    const originalShelter = this.originalShelters.find(x => x.shelterId === s.id);
+    const originalShelter = this.originalShelters.find(x => x.id === s.id);
 
     if (!emergency || !originalShelter) return;
 
-    if (originalShelter.occupiedBeds >= originalShelter.totalCapacity) {
+    if (originalShelter.occupied >= originalShelter.capacity) {
       alert('This shelter is already full!');
       return;
     }
 
     // Increment occupied beds in the database
-    originalShelter.occupiedBeds++;
+    originalShelter.occupied++;
 
-    this.shelterService.updateShelter(originalShelter.shelterId, {
-      shelterName: originalShelter.name,
-      address: originalShelter.address,
-      totalCapacity: originalShelter.totalCapacity,
-      occupiedBeds: originalShelter.occupiedBeds,
-      latitude: originalShelter.latitude,
-      longitude: originalShelter.longitude,
-      wifi: originalShelter.wifi,
-      power: originalShelter.electricity,
-      water: originalShelter.water
-    }).subscribe({
+    this.shelterService.update(originalShelter.id, originalShelter).subscribe({
       next: () => {
         this.allocationService.createAllocation({
           message: `${s.name} linked to response for ${emergency.id}`,
@@ -370,7 +360,7 @@ export class AllocationComponent implements OnInit {
           }
         });
       },
-      error: (err) => console.error('Error linking shelter:', err)
+      error: (err: any) => console.error('Error linking shelter:', err)
     });
   }
 
@@ -404,7 +394,7 @@ export class AllocationComponent implements OnInit {
           }
         });
       },
-      error: (err) => console.error('Error dispatching resource:', err)
+      error: (err: any) => console.error('Error dispatching resource:', err)
     });
   }
 
