@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Icon } from '../../../../Common/icon/icon';
@@ -66,11 +66,14 @@ private loadSettings(): void {
       this.aiRecommendations.set(data.aiRecommendations !== null && data.aiRecommendations !== undefined ? data.aiRecommendations : true);
       this.gpsVolunteerTracking.set(data.gpsTracking !== null && data.gpsTracking !== undefined ? data.gpsTracking : true);
       this.publicEmergencyAlerts.set(data.publicAlerts !== null && data.publicAlerts !== undefined ? data.publicAlerts : true);
+      
+      this.cdr.detectChanges();
     },
     error: (err) => console.error(err)
   });
 }
   private readonly settingsService = inject(SettingsService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
 settings!: SettingsModel;
 

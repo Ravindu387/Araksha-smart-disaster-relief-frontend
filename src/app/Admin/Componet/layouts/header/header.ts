@@ -1,8 +1,9 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { Icon } from '../../../../Common/icon/icon';
+import { SettingsService } from '../../../../Common/services/settings.service';
 
 @Component({
   selector: 'app-header',
@@ -20,12 +21,17 @@ export class Header implements OnInit {
   currentSection = 'Dashboard';
   notificationCount = 5;
   adminName = 'Admin Kumar';
+  adminInitials = 'AK';
 
   showDropdown = false;
+
+  private settingsService = inject(SettingsService);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(private router: Router) {}
 
   ngOnInit(): void {
+    this.loadAdminProfile();
     this.updateSection(this.router.url);
 
     this.router.events
@@ -33,7 +39,23 @@ export class Header implements OnInit {
       .subscribe((event: NavigationEnd) => {
         this.updateSection(event.urlAfterRedirects);
         this.closeDropdown(); // auto close dropdown on route changes
+        this.loadAdminProfile();
       });
+  }
+
+  loadAdminProfile(): void {
+    this.settingsService.getSettings().subscribe({
+      next: (data) => {
+        if (data) {
+          const first = data.firstName || 'Admin';
+          const last = data.lastName || 'Kumar';
+          this.adminName = `${first} ${last}`;
+          this.adminInitials = (first.charAt(0) + (last ? last.charAt(0) : '')).toUpperCase();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => console.error('Error loading admin profile in header:', err)
+    });
   }
 
   onToggleSidebar(): void {

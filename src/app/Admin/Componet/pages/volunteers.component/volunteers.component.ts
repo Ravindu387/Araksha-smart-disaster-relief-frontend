@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { VolunteerService } from '../../../../Common/services/volunteer.service';
+import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { Volunteer } from '../../../../Common/models/volunteer.model';
 
 @Component({
@@ -18,6 +19,13 @@ export class VolunteersComponent implements OnInit {
   viewMode: 'list' | 'grid' = 'list';
 
   inviteModalOpen = signal(false);
+  viewModalOpen = signal(false);
+  assignModalOpen = signal(false);
+
+  selectedVolunteer = signal<Volunteer | null>(null);
+  selectedVolunteerForAssign = signal<Volunteer | null>(null);
+  activeRequests: any[] = [];
+  selectedRequestIdForAssign = '';
 
   newVolunteerName = '';
   newVolunteerLocation = '';
@@ -28,6 +36,7 @@ export class VolunteersComponent implements OnInit {
 
   constructor(
     private volunteerService: VolunteerService,
+    private emergencyService: EmergencyRequestService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -198,11 +207,74 @@ export class VolunteersComponent implements OnInit {
   }
 
   assignVolunteer(v: Volunteer): void {
-    alert(`Assign ${v.name}`);
+    this.selectedVolunteerForAssign.set(v);
+    this.selectedRequestIdForAssign = '';
+    this.loadActiveRequests();
+    this.assignModalOpen.set(true);
   }
 
   viewVolunteer(v: Volunteer): void {
-    alert(`View ${v.name}`);
+    this.selectedVolunteer.set(v);
+    this.viewModalOpen.set(true);
+  }
+
+  closeViewModal(): void {
+    this.viewModalOpen.set(false);
+    this.selectedVolunteer.set(null);
+  }
+
+  closeAssignModal(): void {
+    this.assignModalOpen.set(false);
+    this.selectedVolunteerForAssign.set(null);
+    this.selectedRequestIdForAssign = '';
+  }
+
+  loadActiveRequests(): void {
+    this.emergencyService.getAllRequests().subscribe({
+      next: (requests) => {
+        this.activeRequests = requests.filter(r => r.status !== 'Completed');
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading active requests for assignment:', err)
+    });
+  }
+
+  assignVolunteerSubmit(): void {
+    const v = this.selectedVolunteerForAssign();
+    if (!v) return;
+
+    if (!this.selectedRequestIdForAssign) {
+      alert('Please select an emergency request.');
+      return;
+    }
+
+    const req = this.activeRequests.find(r => r.id === Number(this.selectedRequestIdForAssign));
+    if (!req) return;
+
+    req.assignedVolunteer = v.name;
+    if (req.status === 'Pending') {
+      req.status = 'In Progress';
+    }
+
+    this.emergencyService.updateRequest(req.id, req).subscribe({
+      next: () => {
+        v.status = 'On Duty';
+        this.volunteerService.updateVolunteer(v.id, v).subscribe({
+          next: () => {
+            this.loadVolunteers();
+            this.closeAssignModal();
+          },
+          error: (err) => {
+            console.error('Error updating volunteer status:', err);
+            alert('Assigned volunteer, but failed to update volunteer status.');
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error updating emergency request with volunteer:', err);
+        alert('Failed to assign volunteer to request.');
+      }
+    });
   }
 
 }
