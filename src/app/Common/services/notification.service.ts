@@ -34,4 +34,8 @@ export class NotificationService {
     return this.http.put(`${this.apiUrl}/read-all`, {});
   }
 
+  addNotification(notification: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, notification);
+  }
+
 }

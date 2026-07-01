@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { VolunteerService } from '../../../../Common/services/volunteer.service';
 import { ShelterService } from '../../../../services/shelter';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
-import { forkJoin } from 'rxjs';
+import { NotificationService } from '../../../../Common/services/notification.service';
+import { forkJoin, catchError, of } from 'rxjs';
 
 declare const L: any;
 
@@ -43,6 +44,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private readonly volunteerService = inject(VolunteerService);
   private readonly shelterService = inject(ShelterService);
   private readonly emergencyRequestService = inject(EmergencyRequestService);
+  private readonly notificationService = inject(NotificationService);
 
   private coordsMap = new Map<string, { lat: number, lng: number }>();
 
@@ -117,9 +119,9 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
   loadAllData() {
     forkJoin({
-      requests: this.emergencyRequestService.getAllRequests(),
-      vols: this.volunteerService.getAllVolunteers(),
-      shelters: this.shelterService.getShelters()
+      requests: this.emergencyRequestService.getAllRequests().pipe(catchError(err => { console.error(err); return of([]); })),
+      vols: this.volunteerService.getAllVolunteers().pipe(catchError(err => { console.error(err); return of([]); })),
+      shelters: this.shelterService.getShelters().pipe(catchError(err => { console.error(err); return of([]); }))
     }).subscribe({
       next: (res) => {
         this.incidents = res.requests.map((req: any) => {
@@ -418,7 +420,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       citizenName: 'Operations Center',
       emergencyType: this.newIncidentTitle,
       priority: this.newIncidentSeverity,
-      status: 'Active',
+      status: 'Pending',
       location: this.newIncidentLocation
     };
 
@@ -427,6 +429,20 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         const markerId = 'inc-' + savedReq.id;
         this.getOrCreateCoords(markerId, savedReq.emergencyType + ' ' + savedReq.location);
         this.loadAllData();
+
+        // Broadcast system notification alert
+        const notificationPayload = {
+          category: 'alerts',
+          severity: this.newIncidentSeverity.toLowerCase() === 'critical' ? 'critical' : (this.newIncidentSeverity.toLowerCase() === 'low' ? 'info' : 'high'),
+          title: `New Incident Alert: ${savedReq.emergencyType}`,
+          badge: savedReq.priority,
+          description: this.newIncidentDetails || `A critical emergency request has been reported at ${savedReq.location}.`,
+          time: 'Just now',
+          read: false
+        };
+        this.notificationService.addNotification(notificationPayload).subscribe({
+          error: (err) => console.error('Failed to create notification', err)
+        });
 
         this.newIncidentTitle = '';
         this.newIncidentLocation = '';

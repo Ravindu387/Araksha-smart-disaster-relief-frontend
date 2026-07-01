@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
@@ -6,7 +6,9 @@ import { VolunteerService } from '../../../../Common/services/volunteer.service'
 import { ShelterService } from '../../../../services/shelter';
 import { InventoryService } from '../../../../Common/services/inventory.service';
 import { AllocationService, RecentAllocation } from '../../../../Common/services/allocation.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, catchError, of } from 'rxjs';
+
+declare const L: any;
 
 interface Emergency {
   id: string;
@@ -15,6 +17,8 @@ interface Emergency {
   priority: string;
   resources: string[];
   status: string;
+  lat?: number;
+  lng?: number;
 }
 
 interface Volunteer {
@@ -25,6 +29,8 @@ interface Volunteer {
   eta: string;
   isBest?: boolean;
   matchScore?: number;
+  lat?: number;
+  lng?: number;
 }
 
 interface Shelter {
@@ -32,6 +38,8 @@ interface Shelter {
   name: string;
   distance: string;
   bedsFree: number;
+  lat?: number;
+  lng?: number;
 }
 
 interface ResourceItem {
@@ -47,7 +55,7 @@ interface ResourceItem {
   templateUrl: './allocation.html',
   styleUrls: ['./allocation.css']
 })
-export class AllocationComponent implements OnInit {
+export class AllocationComponent implements OnInit, AfterViewInit {
 
   selectedEmergencyId = '';
   assigned = false;
@@ -65,6 +73,10 @@ export class AllocationComponent implements OnInit {
   private originalShelters: any[] = [];
   private originalInventory: any[] = [];
 
+  private map: any;
+  private markersGroup: any;
+  private coordsMap = new Map<string, { lat: number, lng: number }>();
+
   constructor(
     private emergencyService: EmergencyRequestService,
     private volunteerService: VolunteerService,
@@ -78,13 +90,17 @@ export class AllocationComponent implements OnInit {
     this.loadAllData();
   }
 
+  ngAfterViewInit(): void {
+    this.initMap();
+  }
+
   loadAllData(): void {
     forkJoin({
-      emergencies: this.emergencyService.getAllRequests(),
-      volunteers: this.volunteerService.getAllVolunteers(),
-      shelters: this.shelterService.getShelters(),
-      inventory: this.inventoryService.getAllInventory(),
-      allocations: this.allocationService.getAllAllocations()
+      emergencies: this.emergencyService.getAllRequests().pipe(catchError(err => { console.error('Emergencies error', err); return of([]); })),
+      volunteers: this.volunteerService.getAllVolunteers().pipe(catchError(err => { console.error('Volunteers error', err); return of([]); })),
+      shelters: this.shelterService.getShelters().pipe(catchError(err => { console.error('Shelters error', err); return of([]); })),
+      inventory: this.inventoryService.getAllInventory().pipe(catchError(err => { console.error('Inventory error', err); return of([]); })),
+      allocations: this.allocationService.getAllAllocations().pipe(catchError(err => { console.error('Allocations error', err); return of([]); }))
     }).subscribe({
       next: (res) => {
         this.originalEmergencies = res.emergencies;
@@ -112,13 +128,17 @@ export class AllocationComponent implements OnInit {
             }
           }
 
+          const coords = this.getOrCreateCoords(req.requestId || `ER-${req.id}`, req.emergencyType + ' ' + (req.location || ''));
+
           return {
             id: req.requestId || `ER-${req.id.toString().padStart(4, '0')}`,
             title: `${req.emergencyType || 'General'} Emergency`,
             location: req.location || 'Unknown Location',
             priority: req.priority || 'Medium',
             resources,
-            status
+            status,
+            lat: coords.lat,
+            lng: coords.lng
           };
         });
 
@@ -128,22 +148,40 @@ export class AllocationComponent implements OnInit {
         }
 
         // 2. Map Volunteers
-        this.volunteers = res.volunteers.map((v: any) => ({
-          id: v.id,
-          name: v.name,
-          skill: (v.skills || []).join(' · ') || 'General Relief',
-          distance: '2.5 mi',
-          eta: 'ETA 10 min',
-          isBest: v.rating >= 4.8
-        }));
+        this.volunteers = res.volunteers.map((v: any) => {
+          const coords = this.getOrCreateCoords('vol-' + v.id, v.name + ' ' + (v.location || ''));
+          return {
+            id: v.id,
+            name: v.name,
+            skill: (v.skills || []).join(' · ') || 'General Relief',
+            distance: '2.5 mi',
+            eta: 'ETA 10 min',
+            isBest: v.rating >= 4.8,
+            lat: coords.lat,
+            lng: coords.lng
+          };
+        });
 
         // 3. Map Shelters
-        this.shelters = res.shelters.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          distance: '1.5 mi',
-          bedsFree: s.capacity - s.occupied
-        }));
+        this.shelters = res.shelters.map((s: any) => {
+          let lat = s.latitude;
+          let lng = s.longitude;
+          if (!lat || !lng || lat < 5.0 || lat > 10.0 || lng < 79.0 || lng > 83.0) {
+            const coords = this.getOrCreateCoords('she-' + s.id, s.name + ' ' + (s.address || ''));
+            lat = coords.lat;
+            lng = coords.lng;
+          } else {
+            this.coordsMap.set('she-' + s.id, { lat, lng });
+          }
+          return {
+            id: s.id,
+            name: s.name,
+            distance: '1.5 mi',
+            bedsFree: s.capacity - s.occupied,
+            lat,
+            lng
+          };
+        });
 
         // 4. Map Inventory Resources
         this.resources = res.inventory.map((item: any) => ({
@@ -155,10 +193,168 @@ export class AllocationComponent implements OnInit {
         // 5. Map Recent Allocations
         this.recentAllocations = [...res.allocations].reverse();
 
+        // Render Map markers
+        this.renderMapMarkers();
+
         // Force Angular change detection
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Error fetching allocation dashboard data:', err)
+    });
+  }
+
+  private getOrCreateCoords(id: string, name: string = ''): { lat: number, lng: number } {
+    if (this.coordsMap.has(id)) {
+      return this.coordsMap.get(id)!;
+    }
+
+    const n = name.toLowerCase();
+    let coords = { lat: 0, lng: 0 };
+
+    const regions: { [key: string]: { lat: number, lng: number } } = {
+      'colombo': { lat: 6.9271, lng: 79.8612 },
+      'kandy': { lat: 7.2906, lng: 80.6337 },
+      'galle': { lat: 6.0367, lng: 80.2170 },
+      'jaffna': { lat: 9.6615, lng: 80.0144 },
+      'gampaha': { lat: 7.0873, lng: 80.0164 },
+      'kalutara': { lat: 6.5854, lng: 79.9607 },
+      'matara': { lat: 5.9549, lng: 80.5550 },
+      'hambantota': { lat: 6.1249, lng: 81.1185 },
+      'negombo': { lat: 7.2089, lng: 79.8373 },
+      'batticaloa': { lat: 7.7170, lng: 81.7000 },
+      'trincomalee': { lat: 8.5873, lng: 81.2152 },
+      'anuradhapura': { lat: 8.3114, lng: 80.4037 },
+      'polonnaruwa': { lat: 7.9403, lng: 81.0188 },
+      'kurunegala': { lat: 7.4863, lng: 80.3623 },
+      'puttalam': { lat: 8.0333, lng: 79.8333 },
+      'ratnapura': { lat: 6.6828, lng: 80.3992 },
+      'kegalle': { lat: 7.2513, lng: 80.3464 },
+      'badulla': { lat: 6.9934, lng: 81.0550 },
+      'moneragala': { lat: 6.8724, lng: 81.3507 },
+      'nuwara eliya': { lat: 6.9497, lng: 80.7891 },
+      'matale': { lat: 7.4675, lng: 80.6234 },
+      'vavuniya': { lat: 8.7542, lng: 80.4982 },
+      'mannar': { lat: 8.9810, lng: 79.9044 },
+      'mullaitivu': { lat: 9.2671, lng: 80.8142 },
+      'kilinochchi': { lat: 9.3803, lng: 80.3992 },
+      'ampara': { lat: 7.2833, lng: 81.6667 }
+    };
+
+    const foundRegion = Object.keys(regions).find(region => n.includes(region));
+
+    if (foundRegion) {
+      const base = regions[foundRegion];
+      coords = {
+        lat: base.lat + (Math.random() - 0.5) * 0.05,
+        lng: base.lng + (Math.random() - 0.5) * 0.05
+      };
+    } else {
+      coords = {
+        lat: 6.0 + Math.random() * 3.5, 
+        lng: 79.8 + Math.random() * 1.8 
+      };
+    }
+
+    this.coordsMap.set(id, coords);
+    return coords;
+  }
+
+  private initMap() {
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet is not loaded yet');
+      return;
+    }
+
+    this.map = L.map('allocationMap', {
+      center: [7.8731, 80.7718], 
+      zoom: 7.5,
+      zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(this.map);
+
+    this.markersGroup = L.layerGroup().addTo(this.map);
+
+    this.renderMapMarkers();
+  }
+
+  private renderMapMarkers() {
+    if (!this.map || !this.markersGroup) return;
+
+    this.markersGroup.clearLayers();
+
+    // 1. Render Emergencies (Red circles)
+    this.emergencies.forEach(e => {
+      if (e.status !== 'Awaiting Assignment' && e.status !== 'Pending') return;
+      if (!e.lat || !e.lng) return;
+
+      const priorityPulse = e.priority === 'Critical' ? 'animate-ping' : '';
+      const emergencyIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="relative w-8 h-8 flex items-center justify-center">
+            <span class="absolute inline-flex h-8 w-8 rounded-full bg-rose-500 opacity-30 ${priorityPulse}"></span>
+            <div class="relative w-5 h-5 bg-rose-600 border-2 border-rose-200 rounded-full flex items-center justify-center shadow">
+              <span class="text-[9px]">🚨</span>
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const marker = L.marker([e.lat, e.lng], { icon: emergencyIcon });
+      marker.on('click', () => {
+        this.selectEmergency(e.id);
+        this.cdr.detectChanges();
+      });
+      this.markersGroup.addLayer(marker);
+    });
+
+    // 2. Render Volunteers (Blue circles)
+    this.volunteers.forEach(vol => {
+      if (!vol.lat || !vol.lng) return;
+
+      const volunteerIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="relative w-8 h-8 flex items-center justify-center">
+            <div class="relative w-6 h-6 bg-blue-500 border border-blue-200 rounded-full flex items-center justify-center shadow text-xs">
+              🏃
+            </div>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([vol.lat, vol.lng], { icon: volunteerIcon });
+      marker.bindPopup(`<b>Volunteer:</b> ${vol.name}<br><b>Skill:</b> ${vol.skill}`);
+      this.markersGroup.addLayer(marker);
+    });
+
+    // 3. Render Shelters (Green circle icon badges)
+    this.shelters.forEach(sh => {
+      if (!sh.lat || !sh.lng) return;
+
+      const shelterIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div class="px-2 py-0.5 bg-emerald-500 border border-emerald-300 rounded-lg flex items-center justify-center gap-1 shadow text-[9px] font-bold text-white whitespace-nowrap">
+            🏠 <span>${sh.bedsFree} free</span>
+          </div>
+        `,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
+      });
+
+      const marker = L.marker([sh.lat, sh.lng], { icon: shelterIcon });
+      marker.bindPopup(`<b>Shelter:</b> ${sh.name}<br><b>Free Beds:</b> ${sh.bedsFree}`);
+      this.markersGroup.addLayer(marker);
     });
   }
 
