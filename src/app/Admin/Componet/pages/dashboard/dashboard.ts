@@ -100,8 +100,8 @@ export class Dashboard implements OnInit {
     // 3. Shelters
     this.shelterService.getShelters().subscribe({
       next: (shelters) => {
-        const totalCapacity = shelters.reduce((sum: number, s: any) => sum + s.capacity, 0);
-        const totalOccupied = shelters.reduce((sum: number, s: any) => sum + s.occupied, 0);
+        const totalCapacity = shelters.reduce((sum: number, s: any) => sum + (s.capacity ?? 0), 0);
+        const totalOccupied = shelters.reduce((sum: number, s: any) => sum + (s.occupied ?? 0), 0);
         const occupancyPercent = totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
         
         this.stats[3].value = `${occupancyPercent}%`;

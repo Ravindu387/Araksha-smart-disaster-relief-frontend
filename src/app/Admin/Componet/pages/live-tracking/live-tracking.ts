@@ -155,7 +155,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         });
 
         this.shelters = res.shelters.map((s: any) => {
-          const id = 'she-' + s.shelterId;
+          const id = 'she-' + s.id;
           
           let lat = s.latitude;
           let lng = s.longitude;
@@ -172,8 +172,8 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
             id: id,
             name: s.name,
             location: s.address || s.city || 'Relief Center',
-            occupancy: s.occupiedBeds || 0,
-            capacity: s.totalCapacity || 100,
+            occupancy: s.occupied || 0,
+            capacity: s.capacity || 100,
             lat: lat,
             lng: lng,
             status: s.status || 'Active',

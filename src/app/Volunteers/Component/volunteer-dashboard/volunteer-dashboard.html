@@ -4,7 +4,7 @@
 
     <div class="flex items-center gap-4">
 
-      <button class="text-gray-500 text-2xl">
+      <button (click)="goBack()" class="text-gray-500 text-2xl cursor-pointer">
         ←
       </button>
 
@@ -18,7 +18,7 @@
         </h1>
 
         <p class="text-gray-400 text-sm">
-          James Wright · V-1024
+          {{volunteer.name}} · {{volunteer.volunteerCode}}
         </p>
       </div>
 
@@ -26,12 +26,90 @@
 
     <div class="flex items-center gap-4">
 
-      <div class="px-5 py-2 rounded-full border border-emerald-300 text-emerald-600">
-        🟢 Available
+      <div class="px-5 py-2 rounded-full border border-blue-300 text-blue-600">
+        🔵 {{volunteer.status}}
       </div>
 
-      <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500 shadow-sm">
-        <img src="src/assets/images/profile.png" alt="Volunteer Profile" class="w-full h-full object-cover" />
+      <!--<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500 shadow-sm">
+        <img src="assets/images/profile.png" alt="Volunteer Profile" class="w-full h-full object-cover" />
+      </div>-->
+
+      <div
+        class="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500 shadow-sm cursor-pointer hover:scale-105 transition"
+        (click)="openProfile()">
+        <img
+          src="/assets/images/profile.png"
+          alt="Volunteer Profile"
+          class="w-full h-full object-cover" />
+      </div>
+
+      <!-- Volunteer Profile Popup -->
+      <div
+        *ngIf="showProfile"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        (click)="closeProfile()">
+
+        <div class="bg-white rounded-3xl shadow-2xl w-[450px] max-w-[95%] p-8 relative" (click)="$event.stopPropagation()">
+
+          <!-- Close Button -->
+          <button
+            (click)="closeProfile()"
+            class="absolute top-4 right-5 text-2xl text-gray-500 hover:text-red-500">
+            ×
+          </button>
+
+          <!-- Profile Image -->
+          <div class="flex justify-center">
+            <img
+              src="/assets/images/profile.png"
+              class="w-28 h-28 rounded-full border-4 border-blue-500 object-cover">
+          </div>
+
+          <h2 class="text-2xl font-bold text-center mt-4">
+            {{ volunteer.name }}
+          </h2>
+
+          <p class="text-center text-gray-500">
+            {{ volunteer.volunteerCode }}
+          </p>
+
+          <div class="mt-6 space-y-3">
+
+            <div class="flex justify-between border-b pb-2">
+              <span class="font-semibold">Status</span>
+              <span>{{ volunteer.status }}</span>
+            </div>
+
+            <div class="flex justify-between border-b pb-2">
+              <span class="font-semibold">Email</span>
+              <span>{{ volunteerDetails?.email }}</span>
+            </div>
+
+            <div class="flex justify-between border-b pb-2">
+              <span class="font-semibold">Phone</span>
+              <span>{{ volunteerDetails?.phone }}</span>
+            </div>
+
+            <div class="flex justify-between border-b pb-2">
+              <span class="font-semibold">Address</span>
+              <span>{{ volunteerDetails?.address }}</span>
+            </div>
+
+            <div class="flex justify-between border-b pb-2">
+              <span class="font-semibold">District</span>
+              <span>{{ volunteerDetails?.district }}</span>
+            </div>
+
+          </div>
+
+          <button
+            (click)="closeProfile()"
+            class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition cursor-pointer">
+            Close
+          </button>
+
+        </div>
+
       </div>
 
     </div>
@@ -90,16 +168,17 @@
         </h2>
 
 
-        <div *ngFor="let task of tasks" class="bg-white rounded-2xl p-5 shadow-sm">
+        <div *ngFor="let task of tasks" class="bg-white rounded-2xl p-5 shadow-sm" [ngClass]="{'border-2 border-blue-500': selectedTask?.id === task.id}">
 
 
 
           <div class="flex justify-between">
 
 
+
             <span class="text-blue-600 font-bold">
 
-              {{task.id}}
+              {{task.taskCode}}
 
             </span>
 
@@ -146,7 +225,7 @@
           <div class="flex gap-3 mt-4">
 
 
-            <button class="flex-1 bg-blue-600 text-white rounded-full py-2 text-sm">
+            <button (click)="selectTask(task)" class="flex-1 bg-blue-600 text-white rounded-full py-2 text-sm cursor-pointer">
 
               ✈ Navigate
 
@@ -154,7 +233,7 @@
 
 
 
-            <button class="flex-1 bg-emerald-500 text-white rounded-full py-2 text-sm">
+            <button (click)="completeTask(task.id)" class="flex-1 bg-emerald-500 text-white rounded-full py-2 text-sm cursor-pointer">
 
               ✓ Complete
 
@@ -186,12 +265,12 @@
 
             <span class="text-blue-600 font-bold">
 
-              {{req.id}}
+              {{req.requestCode}}
 
             </span>
 
 
-            <span class="text-xs" [ngClass]="req.priorityClass">
+            <span class="text-xs px-2.5 py-1 rounded-full" [ngClass]="req.priorityClass">
 
               {{req.priority}}
 
@@ -202,7 +281,7 @@
 
 
 
-          <p class="text-sm mt-2">
+          <p class="text-sm mt-2 text-gray-600">
 
             {{req.description}}
 
@@ -210,14 +289,17 @@
 
 
 
-          <div class="flex justify-between mt-3">
+          <div class="flex justify-between mt-4 items-center">
 
-            <span class="text-gray-400">
+            <span class="text-gray-400 text-xs">
 
               📍 {{req.distance}}
 
             </span>
 
+            <button (click)="acceptRequest(req)" class="bg-blue-600 text-white rounded-full px-4 py-1.5 text-xs font-semibold hover:bg-blue-700 transition cursor-pointer">
+              Accept Task
+            </button>
 
           </div>
 
@@ -235,66 +317,185 @@
 
 
 
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div *ngIf="selectedTask" class="flex flex-col gap-5">
+
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
 
-          <div class="p-5 flex justify-between">
+            <div class="p-5 flex justify-between">
 
 
-            <h2 class="font-bold">
+              <h2 class="font-bold">
 
-              Route to ER-2847
+                Route to {{selectedTask.taskCode}}
 
-            </h2>
+              </h2>
 
 
-            <span class="text-blue-500">
+              <span class="text-blue-500">
 
-              ⚡ AI Route
+                ⚡ AI Route
 
-            </span>
+              </span>
 
+
+            </div>
+
+
+            <div class="h-56 bg-[#08182d] relative">
+
+
+              <div class="absolute inset-0 opacity-20" style="
+  background-image:
+  linear-gradient(#4b6b8a 1px,transparent 1px),
+  linear-gradient(90deg,#4b6b8a 1px,transparent 1px);
+  background-size:35px 35px;
+  ">
+
+              </div>
+
+
+              <div class="absolute left-1/4 bottom-8">
+
+                🔵
+
+                <div class="bg-white px-3 rounded text-xs shadow-sm">
+
+                  You
+
+                </div>
+
+              </div>
+
+
+
+
+              <div class="absolute right-1/4 top-12">
+
+                🚨
+
+                <div class="bg-white px-3 rounded text-xs shadow-sm font-semibold">
+
+                  {{selectedTask.taskCode}}
+
+                </div>
+
+
+              </div>
+
+
+            </div>
 
           </div>
 
 
-          <div class="h-56 bg-[#08182d] relative">
+          <div class="bg-white rounded-2xl p-5 shadow-sm">
 
 
-            <div class="absolute inset-0 opacity-20" style="
-background-image:
-linear-gradient(#4b6b8a 1px,transparent 1px),
-linear-gradient(90deg,#4b6b8a 1px,transparent 1px);
-background-size:35px 35px;
-">
+            <div class="flex justify-between">
+
+
+              <div>
+
+                <p class="text-blue-500 font-bold">
+                  {{selectedTask.taskCode}}
+                </p>
+
+
+                <h1 class="text-xl font-bold">
+                  {{selectedTask.name}}
+                </h1>
+
+
+              </div>
+
+
+
+              <span class="px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center self-start" [ngClass]="selectedTask.priorityColor">
+
+                {{selectedTask.priority}}
+
+              </span>
+
 
             </div>
 
 
-            <div class="absolute left-1/4 bottom-8">
 
-              🔵
 
-              <div class="bg-white px-3 rounded">
+            <div class="grid grid-cols-2 gap-4 mt-5">
 
-                You
+
+              <div class="bg-gray-50 p-4 rounded-xl">
+
+                <p class="text-gray-400 text-sm mb-1">
+
+                  Citizen
+
+                </p>
+
+                <b>
+                  {{selectedTask.citizenName}}
+                </b>
 
               </div>
+
+
+
+              <div class="bg-gray-50 p-4 rounded-xl">
+
+                <p class="text-gray-400 text-sm mb-1">
+
+                  Contact
+
+                </p>
+
+                <b class="text-blue-600">
+
+                  {{selectedTask.contact}}
+
+                </b>
+
+              </div>
+            </div>
+
+
+            <div class="bg-gray-50 p-4 rounded-xl mt-4">
+
+
+              <p class="text-gray-400 text-sm mb-1">
+
+                Address
+
+              </p>
+
+
+              <b>
+
+                {{selectedTask.location}}
+
+              </b>
 
             </div>
 
 
 
+            <h3 class="text-xs font-bold text-gray-400 mt-6">
 
-            <div class="absolute right-1/4 top-12">
+              NEEDS ASSESSMENT
 
-              🚨
+            </h3>
 
-              <div class="bg-white px-3 rounded">
 
-                ER-2847
 
-              </div>
+            <div class="flex gap-3 mt-3 flex-wrap">
+
+
+              <span *ngFor="let need of needs" class="px-4 py-2 bg-blue-50 text-blue-500 rounded-full text-sm">
+
+                {{need}}
+
+              </span>
 
 
             </div>
@@ -304,119 +505,10 @@ background-size:35px 35px;
 
         </div>
 
-
-        <div class="bg-white rounded-2xl p-5 shadow-sm">
-
-
-          <div class="flex justify-between">
-
-
-            <div>
-
-              <p class="text-blue-500 font-bold">
-                ER-2847
-              </p>
-
-
-              <h1 class="text-xl font-bold">
-                Flood Emergency
-              </h1>
-
-
-            </div>
-
-
-
-            <span class="bg-red-100 text-red-500 px-4 py-2 rounded-full">
-
-              Critical
-
-            </span>
-
-
-          </div>
-
-
-
-
-          <div class="grid grid-cols-2 gap-4 mt-5">
-
-
-            <div class="bg-gray-50 p-4 rounded-xl">
-
-              <p class="text-gray-400 text-sm">
-
-                Citizen
-
-              </p>
-
-              <b>
-                Maria Santos
-              </b>
-
-            </div>
-
-
-
-            <div class="bg-gray-50 p-4 rounded-xl">
-
-              <p class="text-gray-400 text-sm">
-
-                Contact
-
-              </p>
-
-              <b class="text-blue-600">
-
-                +1 713 555 0192
-
-              </b>
-
-            </div>
-          </div>
-
-
-          <div class="bg-gray-50 p-4 rounded-xl mt-4">
-
-
-            <p class="text-gray-400 text-sm">
-
-              Address
-
-            </p>
-
-
-            <b>
-
-              4800 Westheimer Rd, Houston
-
-            </b>
-
-          </div>
-
-
-
-          <h3 class="text-xs font-bold text-gray-400 mt-6">
-
-            NEEDS ASSESSMENT
-
-          </h3>
-
-
-
-          <div class="flex gap-3 mt-3 flex-wrap">
-
-
-            <span *ngFor="let need of needs" class="px-4 py-2 bg-blue-50 text-blue-500 rounded-full text-sm">
-
-              {{need}}
-
-            </span>
-
-
-          </div>
-
-
+        <div *ngIf="!selectedTask" class="bg-white rounded-2xl p-10 shadow-sm text-center text-gray-400 flex flex-col items-center justify-center min-h-[350px]">
+          <span class="text-4xl mb-4">🛡️</span>
+          <p class="font-semibold text-gray-600 mb-1">No Active Tasks Assigned</p>
+          <p class="text-sm text-gray-400">Select an assigned task from the left list or accept a nearby open request to view live route navigation and needs assessment.</p>
         </div>
 
 
@@ -566,3 +658,5 @@ background-size:35px 35px;
 
 
   </div>
+
+</div>

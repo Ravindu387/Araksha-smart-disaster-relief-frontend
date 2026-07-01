@@ -38,6 +38,30 @@ export class SignupComponent {
 
   constructor(private authService: AuthService, private router: Router) { }
 
+  get hasMinLength(): boolean {
+    return (this.user.password || '').length >= 8;
+  }
+
+  get hasUppercase(): boolean {
+    return /[A-Z]/.test(this.user.password || '');
+  }
+
+  get hasLowercase(): boolean {
+    return /[a-z]/.test(this.user.password || '');
+  }
+
+  get hasNumber(): boolean {
+    return /[0-9]/.test(this.user.password || '');
+  }
+
+  get hasSpecial(): boolean {
+    return /[!@#$%^&*(),.?":{}|<>]/.test(this.user.password || '');
+  }
+
+  get isPasswordValid(): boolean {
+    return this.hasMinLength && this.hasUppercase && this.hasLowercase && this.hasNumber && this.hasSpecial;
+  }
+
   selectRole(role: Role) {
     this.selectedRole = role;
     this.errorMessage = '';
@@ -63,6 +87,11 @@ export class SignupComponent {
 
   submit() {
     if (!this.user.agree || !this.selectedRole || this.isSubmitting) {
+      return;
+    }
+
+    if (!this.isPasswordValid) {
+      this.errorMessage = 'Password must meet all complexity requirements.';
       return;
     }
 
