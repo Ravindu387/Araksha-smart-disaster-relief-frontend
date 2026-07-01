@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VolunteerService } from '../../../../Common/services/volunteer.service';
@@ -45,6 +45,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private readonly shelterService = inject(ShelterService);
   private readonly emergencyRequestService = inject(EmergencyRequestService);
   private readonly notificationService = inject(NotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private coordsMap = new Map<string, { lat: number, lng: number }>();
 
@@ -304,7 +305,24 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       });
 
       const marker = L.marker([inc.lat, inc.lng], { icon: incidentIcon });
-      marker.on('click', () => this.selectMarker(inc, 'Incident'));
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Incident</span>
+            <span style="font-size: 9px; font-weight: bold; color: #ef4444;">${inc.severity}</span>
+          </div>
+          <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${inc.title}</h4>
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${inc.location}</p>
+          <div style="font-size: 10px; color: #475569; background: #f8fafc; padding: 4px; border-radius: 6px; border: 1px solid #f1f5f9;">${inc.details}</div>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+
+      marker.on('click', () => {
+        this.selectMarker(inc, 'Incident');
+        this.cdr.detectChanges();
+      });
       this.markersGroup.addLayer(marker);
     });
 
@@ -325,7 +343,21 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       });
 
       const marker = L.marker([vol.lat, vol.lng], { icon: volunteerIcon });
-      marker.on('click', () => this.selectMarker(vol, 'Volunteer'));
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.1); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.2);">Volunteer</span>
+          <h4 style="margin: 6px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${vol.name}</h4>
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748b;">Specialty: ${vol.role}</p>
+          <p style="margin: 0; font-size: 10px; color: #64748b;">📞 ${vol.phone}</p>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+
+      marker.on('click', () => {
+        this.selectMarker(vol, 'Volunteer');
+        this.cdr.detectChanges();
+      });
       this.markersGroup.addLayer(marker);
     });
 
@@ -344,7 +376,21 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       });
 
       const marker = L.marker([sh.lat, sh.lng], { icon: shelterIcon });
-      marker.on('click', () => this.selectMarker(sh, 'Shelter'));
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2);">Shelter</span>
+          <h4 style="margin: 6px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${sh.name}</h4>
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748b;">📍 ${sh.location}</p>
+          <div style="font-size: 11px; font-weight: 600; color: #1e293b;">Occupancy: ${sh.occupancy} / ${sh.capacity} (${Math.round((sh.occupancy/sh.capacity)*100)}%)</div>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+
+      marker.on('click', () => {
+        this.selectMarker(sh, 'Shelter');
+        this.cdr.detectChanges();
+      });
       this.markersGroup.addLayer(marker);
     });
   }
