@@ -1,5 +1,5 @@
 <div class="p-8 flex flex-col gap-6">
-  <!-- Header -->
+  
   <div class="flex items-start justify-between gap-4">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
@@ -24,7 +24,7 @@
   }
 
   <div class="flex gap-8 items-start">
-    <!-- Sub-nav -->
+    
     <div class="w-56 shrink-0 flex flex-col justify-between self-stretch min-h-[480px]">
       <nav class="flex flex-col gap-1">
         @for (section of sections; track section.id) {
@@ -46,9 +46,9 @@
         }
       </nav>
 
-      <!-- Version & Status -->
+      
       <div class="pt-6 pl-3 mt-auto border-t border-gray-100">
-        <p class="text-[11px] text-gray-400 font-bold tracking-wide">SDRMS v2.4.1</p>
+        <p class="text-[11px] text-gray-400 font-bold tracking-wide">ADRMS v2.4.1</p>
         <div class="flex items-center gap-1.5 mt-1">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="text-[11px] text-emerald-600 font-bold">All systems operational</span>
@@ -56,7 +56,7 @@
       </div>
     </div>
 
-    <!-- Content -->
+    
     <div class="flex-1 min-w-0 flex flex-col gap-6 max-w-3xl">
       <!-- Profile -->
       @if (activeSection() === 'profile') {
@@ -250,7 +250,7 @@
         </div>
       }
 
-      <!-- Notifications -->
+      
       @if (activeSection() === 'notifications') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Alert Priorities</h3>
@@ -333,7 +333,7 @@
         </div>
       }
 
-      <!-- Security -->
+     
       @if (activeSection() === 'security') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Two-Factor Authentication</h3>
@@ -571,7 +571,7 @@
         </div>
       }
 
-      <!-- System -->
+     
       @if (activeSection() === 'system') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Automation</h3>
@@ -694,7 +694,6 @@
         </div>
       }
 
-      <!-- Appearance -->
       @if (activeSection() === 'appearance') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Theme</h3>
@@ -858,7 +857,7 @@
         </div>
       }
 
-      <!-- Team & Access -->
+     
       @if (activeSection() === 'team') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Team Members</h3>
@@ -943,7 +942,7 @@
         </div>
       }
 
-      <!-- Integrations -->
+      
       @if (activeSection() === 'integrations') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">Integrations</h3>
@@ -980,13 +979,13 @@
         </div>
       }
 
-      <!-- API Keys -->
+      
       @if (activeSection() === 'api-keys') {
         <div class="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 class="font-semibold text-gray-900">API Keys</h3>
           <p class="text-sm text-gray-400 mt-0.5 mb-5">Authentication tokens for accessing the platform API</p>
 
-          <!-- API Keys List -->
+          
           <div class="flex flex-col divide-y divide-gray-100">
             @for (key of apiKeys; track key.id) {
               <div class="flex items-center justify-between gap-4 py-4">
@@ -1025,7 +1024,7 @@
             }
           </div>
 
-          <!-- Generate New Key Section -->
+          
           <div class="border-t border-gray-100 pt-6 mt-6">
             <h4 class="text-sm font-bold text-gray-800 mb-3">Generate New API Key</h4>
             <div class="flex flex-col sm:flex-row gap-3">
@@ -1046,7 +1045,7 @@
           </div>
         </div>
 
-        <!-- Created Modal (Simple simulated box inside the view) -->
+        
         @if (showApiKeyCreatedModal()) {
           <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mt-4 flex flex-col gap-3 relative">
             <button

@@ -4,13 +4,19 @@
   [class.translate-x-0]="open"
   [class.lg:translate-x-0]="true"
 >
-  <!-- Logo -->
+  
   <div class="h-20 flex items-center gap-3 px-6 border-b border-white/5 shrink-0">
-    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-      <app-icon name="shield" class="w-5 h-5" />
+      <div class="w-20 h-20 rounded-xl flex items-center justify-center shadow-md">
+
+        <img
+            src="assets/images/logo.png"
+            alt="ADRMS Logo"
+            class="w-18 h-18 object-contain"
+        />
+
     </div>
-    <span class="text-white font-bold text-lg tracking-wide flex-1">SDRMS</span>
-    <!-- Close button (mobile only) -->
+    <span class="text-white font-bold text-lg tracking-wide flex-1">ADRMS</span>
+    
     <button
       type="button"
       aria-label="Close sidebar"
@@ -23,7 +29,7 @@
     </button>
   </div>
 
-  <!-- Active Incidents Red Widget -->
+  
   <div class="mx-4 mt-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/15 flex items-center gap-3 shrink-0">
     <div class="w-9 h-9 rounded-xl bg-rose-600/20 flex items-center justify-center text-rose-500 shrink-0">
       <app-icon name="radio" class="w-5 h-5" />
@@ -35,7 +41,7 @@
     <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
   </div>
 
-  <!-- Menu -->
+  
   <div class="sidebar-nav-scroll px-4 flex-1 overflow-y-auto">
     <nav class="flex flex-col gap-6 text-sm py-4">
       @for (group of navGroups; track group.title) {
@@ -73,7 +79,7 @@
     </nav>
   </div>
 
-  <!-- Bottom user -->
+  
   <div class="border-t border-white/5 px-4 py-4 flex items-center gap-3 shrink-0">
     <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm shrink-0">
       {{ adminInitials }}
