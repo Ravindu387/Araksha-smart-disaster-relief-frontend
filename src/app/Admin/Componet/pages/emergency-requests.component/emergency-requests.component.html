@@ -131,6 +131,7 @@
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</th>
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Volunteer</th>
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</th>
+            <th class="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -184,6 +185,20 @@
               <td class="px-5 py-4 text-slate-500">{{ item.volunteer }}</td>
 
               <td class="px-5 py-4 text-slate-400 whitespace-nowrap">{{ item.time }}</td>
+
+              <td class="px-5 py-4 text-right whitespace-nowrap">
+                @if (item.status !== 'Resolved' && item.status !== 'Completed') {
+                  <button
+                    type="button"
+                    (click)="resolveRequest(item)"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:shadow transition cursor-pointer select-none"
+                  >
+                    Resolve
+                  </button>
+                } @else {
+                  <span class="text-xs text-slate-400 font-bold uppercase select-none">Resolved</span>
+                }
+              </td>
             </tr>
           }
         </tbody>

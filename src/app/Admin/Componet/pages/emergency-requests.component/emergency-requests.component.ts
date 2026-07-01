@@ -10,6 +10,8 @@ interface EmergencyRequest {
 
   id: string;
 
+  dbId: number;
+
   initials: string;
 
   citizen: string;
@@ -18,7 +20,7 @@ interface EmergencyRequest {
 
   priority: 'Critical' | 'High' | 'Medium' | 'Low';
 
-  status: 'Pending' | 'Assigned' | 'In Progress' | 'Resolved';
+  status: 'Pending' | 'Assigned' | 'In Progress' | 'Resolved' | 'Completed';
 
   location: string;
 
@@ -62,6 +64,7 @@ ngOnInit(): void {
 
           return {
             id: `ER-${r.id.toString().padStart(4, '0')}`,
+            dbId: r.id,
             initials: this.generateInitials(r.citizenName),
             citizen: r.citizenName || 'Unknown Citizen',
             type: r.emergencyType || 'General',
@@ -75,6 +78,30 @@ ngOnInit(): void {
         this.cdr.detectChanges();
       },
       error: err => console.error(err)
+    });
+  }
+
+  resolveRequest(item: EmergencyRequest): void {
+    const updatedDto = {
+      id: item.dbId,
+      requestId: item.id,
+      citizenName: item.citizen,
+      emergencyType: item.type,
+      priority: item.priority,
+      status: 'Completed' as const,
+      location: item.location,
+      assignedVolunteer: item.volunteer === '—' ? '' : item.volunteer,
+      requestTime: new Date().toISOString()
+    };
+
+    this.emergencyRequestService.updateRequest(item.dbId, updatedDto).subscribe({
+      next: () => {
+        this.loadRequests();
+      },
+      error: (err) => {
+        console.error('Error resolving request:', err);
+        alert('Failed to resolve request.');
+      }
     });
   }
 
@@ -243,6 +270,7 @@ ngOnInit(): void {
       Assigned:     'bg-violet-100 text-violet-600',
       'In Progress':'bg-blue-100 text-blue-600',
       Resolved:     'bg-emerald-100 text-emerald-600',
+      Completed:    'bg-emerald-100 text-emerald-600',
     };
     return map[status] ?? 'bg-gray-100 text-gray-600';
   }
