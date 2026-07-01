@@ -308,6 +308,20 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       });
 
       const marker = L.marker([e.lat, e.lng], { icon: emergencyIcon });
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Emergency</span>
+            <span style="font-size: 9px; font-weight: bold; color: #ef4444;">${e.priority}</span>
+          </div>
+          <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${e.title}</h4>
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${e.location}</p>
+          <div style="font-size: 10px; color: #64748b;">Status: <b>${e.status}</b></div>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+
       marker.on('click', () => {
         this.selectEmergency(e.id);
         this.cdr.detectChanges();
@@ -333,7 +347,17 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       });
 
       const marker = L.marker([vol.lat, vol.lng], { icon: volunteerIcon });
-      marker.bindPopup(`<b>Volunteer:</b> ${vol.name}<br><b>Skill:</b> ${vol.skill}`);
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2);">Volunteer</span>
+          <h4 style="margin: 6px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${vol.name}</h4>
+          <p style="margin: 0 0 2px 0; font-size: 11px; color: #64748b;"><b>Skill:</b> ${vol.skill}</p>
+          <p style="margin: 0; font-size: 11px; color: #64748b;"><b>Distance:</b> ${vol.distance}</p>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+      
       this.markersGroup.addLayer(marker);
     });
 
@@ -353,7 +377,16 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       });
 
       const marker = L.marker([sh.lat, sh.lng], { icon: shelterIcon });
-      marker.bindPopup(`<b>Shelter:</b> ${sh.name}<br><b>Free Beds:</b> ${sh.bedsFree}`);
+      
+      const popupHtml = `
+        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
+          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2);">Shelter</span>
+          <h4 style="margin: 6px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${sh.name}</h4>
+          <p style="margin: 0; font-size: 11px; color: #64748b;"><b>Beds Free:</b> ${sh.bedsFree}</p>
+        </div>
+      `;
+      marker.bindPopup(popupHtml);
+      
       this.markersGroup.addLayer(marker);
     });
   }
