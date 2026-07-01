@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Shelter } from '../../../../Common/models/shelter.model';
@@ -26,7 +26,7 @@ export class SheltersComponent implements OnInit {
   newShelterOccupied: number | null = null;
   newShelterAmenities = '';
 
-  constructor(private shelterService: ShelterService) {}
+  constructor(private shelterService: ShelterService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadShelters();
@@ -34,7 +34,10 @@ export class SheltersComponent implements OnInit {
 
   loadShelters(): void {
     this.shelterService.getAll().subscribe({
-      next: (data) => this.shelters = data,
+      next: (data) => {
+        this.shelters = data;
+        this.cdr.detectChanges();
+      },
       error: (err: any) => console.error('Failed to load shelters', err)
     });
   }

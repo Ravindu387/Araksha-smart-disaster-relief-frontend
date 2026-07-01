@@ -41,7 +41,7 @@
         class="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-500 bg-blue-900/20 mb-10"
       >
         <span class="w-2 h-2 rounded-full bg-green-400"></span>
-        LIVE — 47 active emergency requests
+        LIVE — {{ stats ? stats.activeEmergencyRequests : 47 }} active emergency requests
       </div>
 
    
@@ -77,22 +77,22 @@
      
       <div class="grid md:grid-cols-4 gap-4 mt-6">
         <div class="bg-red-900/10 border border-red-500/20 rounded-3xl p-8">
-          <h2 class="text-red-400 text-4xl font-bold">12</h2>
+          <h2 class="text-red-400 text-4xl font-bold">{{ stats ? stats.criticalIncidents : 12 }}</h2>
           <p class="text-slate-300 mt-2">Critical Incidents</p>
         </div>
 
         <div class="bg-orange-900/10 border border-orange-500/20 rounded-3xl p-8">
-          <h2 class="text-orange-400 text-4xl font-bold">35</h2>
+          <h2 class="text-orange-400 text-4xl font-bold">{{ stats ? stats.inProgressIncidents : 35 }}</h2>
           <p class="text-slate-300 mt-2">In Progress</p>
         </div>
 
         <div class="bg-green-900/10 border border-green-500/20 rounded-3xl p-8">
-          <h2 class="text-green-400 text-4xl font-bold">89</h2>
+          <h2 class="text-green-400 text-4xl font-bold">{{ stats ? stats.resolvedIncidents : 89 }}</h2>
           <p class="text-slate-300 mt-2">Resolved Today</p>
         </div>
 
         <div class="bg-blue-900/10 border border-blue-500/20 rounded-3xl p-8">
-          <h2 class="text-blue-400 text-4xl font-bold">247</h2>
+          <h2 class="text-blue-400 text-4xl font-bold">{{ stats ? stats.volunteersActive : 247 }}</h2>
           <p class="text-slate-300 mt-2">Volunteers Active</p>
         </div>
       </div>
@@ -109,12 +109,12 @@
         </div>
 
         <div>
-          <h2 class="text-green-600 text-4xl font-bold">500+</h2>
+          <h2 class="text-green-600 text-4xl font-bold">{{ stats ? stats.volunteersActive : 500 }}+</h2>
           <p class="text-slate-500 mt-3">Active Volunteers</p>
         </div>
 
         <div>
-          <h2 class="text-purple-600 text-4xl font-bold">120</h2>
+          <h2 class="text-purple-600 text-4xl font-bold">{{ stats ? stats.reliefSheltersCount : 120 }}</h2>
           <p class="text-slate-500 mt-3">Relief Shelters</p>
         </div>
 
