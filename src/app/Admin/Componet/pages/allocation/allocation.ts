@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
+import { VolunteerService } from '../../../../Common/services/volunteer.service';
+import { ShelterService } from '../../../../services/shelter';
+import { InventoryService } from '../../../../Common/services/inventory.service';
+import { AllocationService, RecentAllocation } from '../../../../Common/services/allocation.service';
+import { forkJoin } from 'rxjs';
 
 interface Emergency {
   id: string;
@@ -12,29 +18,26 @@ interface Emergency {
 }
 
 interface Volunteer {
+  id?: number;
   name: string;
   skill: string;
   distance: string;
   eta: string;
   isBest?: boolean;
+  matchScore?: number;
 }
 
 interface Shelter {
+  id: number;
   name: string;
   distance: string;
   bedsFree: number;
 }
 
 interface ResourceItem {
+  id: number;
   label: string;
   count: string;
-}
-
-interface RecentAllocation {
-  id: number;
-  message: string;
-  time: string;
-  type: 'volunteer' | 'resource' | 'shelter' | 'info';
 }
 
 @Component({
@@ -44,102 +47,164 @@ interface RecentAllocation {
   templateUrl: './allocation.html',
   styleUrls: ['./allocation.css']
 })
-export class AllocationComponent {
+export class AllocationComponent implements OnInit {
 
-  selectedEmergencyId = 'ER-2847';
+  selectedEmergencyId = '';
   assigned = false;
   matching = false;
   assignSuccess = '';
 
-  emergencies: Emergency[] = [
-    {
-      id: 'ER-2847',
-      title: 'Flood Emergency',
-      location: 'Houston, TX',
-      priority: 'Critical',
-      resources: ['Water Rescue', 'Food Kits', 'Blankets'],
-      status: 'Awaiting Assignment'
-    },
-    {
-      id: 'ER-2844',
-      title: 'Earthquake Emergency',
-      location: 'San Jose, CA',
-      priority: 'Critical',
-      resources: ['Medical', 'Search & Rescue'],
-      status: 'Awaiting Assignment'
-    },
-    {
-      id: 'ER-2843',
-      title: 'Hurricane Emergency',
-      location: 'Miami, FL',
-      priority: 'High',
-      resources: ['Evacuation', 'Tents', 'Food Kits'],
-      status: 'Assigned'
-    },
-    {
-      id: 'ER-2841',
-      title: 'Flood Emergency',
-      location: 'Phoenix, AZ',
-      priority: 'Medium',
-      resources: ['Evacuation', 'Water'],
-      status: 'Awaiting Assignment'
-    }
-  ];
+  emergencies: Emergency[] = [];
+  volunteers: Volunteer[] = [];
+  shelters: Shelter[] = [];
+  resources: ResourceItem[] = [];
+  recentAllocations: RecentAllocation[] = [];
 
-  volunteers: Volunteer[] = [
-    { name: 'Lisa Chen',     skill: 'Medical · Logistics', distance: '2.1 mi', eta: 'ETA 8 min',  isBest: true  },
-    { name: 'Michael Davis', skill: 'Search & Rescue',      distance: '3.4 mi', eta: 'ETA 12 min', isBest: false },
-    { name: 'Sarah Connor',  skill: 'Medical · First Aid',  distance: '1.8 mi', eta: 'ETA 6 min',  isBest: false },
-    { name: 'Diana Foster',  skill: 'Logistics',            distance: '4.2 mi', eta: 'ETA 15 min', isBest: false }
-  ];
+  private originalEmergencies: any[] = [];
+  private originalVolunteers: any[] = [];
+  private originalShelters: any[] = [];
+  private originalInventory: any[] = [];
 
-  shelters: Shelter[] = [
-    { name: 'Houston Community Center', distance: '1.2 mi', bedsFree: 68 },
-    { name: 'Denver Red Cross Hub',      distance: '3.8 mi', bedsFree: 220 },
-    { name: 'Chicago Metro Shelter',    distance: '5.1 mi', bedsFree: 211 }
-  ];
+  constructor(
+    private emergencyService: EmergencyRequestService,
+    private volunteerService: VolunteerService,
+    private shelterService: ShelterService,
+    private inventoryService: InventoryService,
+    private allocationService: AllocationService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  resources: ResourceItem[] = [
-    { label: 'Food Kits',     count: '8,420'  },
-    { label: 'Water (Liters)', count: '15,600' },
-    { label: 'Medical Kits',  count: '1,240'  }
-  ];
+  ngOnInit(): void {
+    this.loadAllData();
+  }
 
-  recentAllocations: RecentAllocation[] = [
-    {
-      id: 1,
-      message: 'James Wright assigned to ER-2847 (Flood, Houston)',
-      time: '14:38',
-      type: 'volunteer'
-    },
-    {
-      id: 2,
-      message: 'Food Kits (200 units) dispatched to ER-2843 (Miami)',
-      time: '14:22',
-      type: 'resource'
-    },
-    {
-      id: 3,
-      message: 'SH-101 capacity increased — Houston Flood response',
-      time: '14:05',
-      type: 'shelter'
-    },
-    {
-      id: 4,
-      message: 'Medical team (3 volunteers) allocated to ER-2844',
-      time: '13:48',
-      type: 'volunteer'
-    },
-    {
-      id: 5,
-      message: 'Water supply (5,000L) dispatched from Phoenix depot',
-      time: '13:30',
-      type: 'resource'
-    }
-  ];
+  loadAllData(): void {
+    forkJoin({
+      emergencies: this.emergencyService.getAllRequests(),
+      volunteers: this.volunteerService.getAllVolunteers(),
+      shelters: this.shelterService.getShelters(),
+      inventory: this.inventoryService.getAllInventory(),
+      allocations: this.allocationService.getAllAllocations()
+    }).subscribe({
+      next: (res) => {
+        this.originalEmergencies = res.emergencies;
+        this.originalVolunteers = res.volunteers;
+        this.originalShelters = res.shelters;
+        this.originalInventory = res.inventory;
+
+        // 1. Map Emergencies
+        this.emergencies = res.emergencies.map((req: any) => {
+          let status = 'Awaiting Assignment';
+          if (req.status === 'Completed' || req.status === 'Resolved' || req.status === 'Assigned' || req.assignedVolunteer) {
+            status = 'Assigned';
+          }
+          
+          // Connect database needs (resources list) to emergency
+          let resources = (req.resources || []).length > 0 ? req.resources : ['Supplies', 'Food Kits'];
+          if ((req.resources || []).length === 0) {
+            const type = (req.emergencyType || '').toLowerCase();
+            if (type.includes('flood')) {
+              resources = ['Water Rescue', 'Food Kits', 'Blankets'];
+            } else if (type.includes('earthquake')) {
+              resources = ['Medical', 'Search & Rescue'];
+            } else if (type.includes('hurricane')) {
+              resources = ['Evacuation', 'Tents', 'Food Kits'];
+            }
+          }
+
+          return {
+            id: req.requestId || `ER-${req.id.toString().padStart(4, '0')}`,
+            title: `${req.emergencyType || 'General'} Emergency`,
+            location: req.location || 'Unknown Location',
+            priority: req.priority || 'Medium',
+            resources,
+            status
+          };
+        });
+
+        // Auto-select first emergency if none selected
+        if (this.emergencies.length > 0 && !this.selectedEmergencyId) {
+          this.selectedEmergencyId = this.emergencies[0].id;
+        }
+
+        // 2. Map Volunteers
+        this.volunteers = res.volunteers.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          skill: (v.skills || []).join(' · ') || 'General Relief',
+          distance: '2.5 mi',
+          eta: 'ETA 10 min',
+          isBest: v.rating >= 4.8
+        }));
+
+        // 3. Map Shelters
+        this.shelters = res.shelters.map((s: any) => ({
+          id: s.shelterId,
+          name: s.name,
+          distance: '1.5 mi',
+          bedsFree: s.totalCapacity - s.occupiedBeds
+        }));
+
+        // 4. Map Inventory Resources
+        this.resources = res.inventory.map((item: any) => ({
+          id: item.id,
+          label: `${item.name} (${item.unit})`,
+          count: item.count.toLocaleString()
+        }));
+
+        // 5. Map Recent Allocations
+        this.recentAllocations = [...res.allocations].reverse();
+
+        // Force Angular change detection
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error fetching allocation dashboard data:', err)
+    });
+  }
 
   get selectedEmergency(): Emergency | undefined {
     return this.emergencies.find(e => e.id === this.selectedEmergencyId);
+  }
+
+  get recommendedVolunteers(): Volunteer[] {
+    const emergency = this.selectedEmergency;
+    if (!emergency) return this.volunteers;
+
+    return this.volunteers
+      .map(v => {
+        let score = 0;
+        const volunteerSkills = v.skill.toLowerCase();
+
+        emergency.resources.forEach(resName => {
+          const reqRes = resName.toLowerCase();
+          if (volunteerSkills.includes(reqRes) || reqRes.includes(volunteerSkills)) {
+            score += 10;
+          }
+          if (reqRes.includes('medical') && (volunteerSkills.includes('medical') || volunteerSkills.includes('first aid'))) {
+            score += 8;
+          }
+          if (reqRes.includes('rescue') && volunteerSkills.includes('rescue')) {
+            score += 8;
+          }
+          if (reqRes.includes('food') || reqRes.includes('supplies') || reqRes.includes('blanket')) {
+            if (volunteerSkills.includes('logistics')) {
+              score += 5;
+            }
+          }
+        });
+
+        if (v.isBest) {
+          score += 2;
+        }
+
+        return { ...v, matchScore: score };
+      })
+      .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+      .map((v, index) => ({
+        ...v,
+        // Mark top 2 highest matches with positive score as 'Best'
+        isBest: (v.matchScore || 0) > 0 && index < 2
+      }));
   }
 
   get awaitingAssignmentCount(): number {
@@ -153,113 +218,194 @@ export class AllocationComponent {
   }
 
   autoAssign(): void {
-    this.matching = true;
-    setTimeout(() => {
-      this.matching = false;
-      this.emergencies.forEach(e => {
-        if (e.status === 'Awaiting Assignment') {
-          e.status = 'Assigned';
-        }
-      });
-      this.assignSuccess = 'All pending emergencies auto-assigned successfully!';
-      
-      // Add a log to recent allocations
-      this.recentAllocations.unshift({
-        id: Date.now(),
-        message: 'Auto-Assign completed: all pending emergencies allocated',
-        time: this.getCurrentTimeString(),
-        type: 'info'
-      });
+    const unassigned = this.originalEmergencies.filter(
+      (e: any) => e.status !== 'Completed' && e.status !== 'Resolved' && e.status !== 'Assigned' && !e.assignedVolunteer
+    );
 
-      setTimeout(() => { this.assignSuccess = ''; }, 4000);
-    }, 1500);
+    if (unassigned.length === 0) {
+      this.assignSuccess = 'No pending emergencies to assign!';
+      setTimeout(() => { this.assignSuccess = ''; }, 3000);
+      return;
+    }
+
+    this.matching = true;
+    
+    // Assign available volunteers to each emergency request
+    const updateObservables = unassigned.map((e: any, index: number) => {
+      const vol = this.originalVolunteers[index % this.originalVolunteers.length];
+      e.status = 'Assigned';
+      if (vol) {
+        e.assignedVolunteer = vol.name;
+      }
+      return this.emergencyService.updateRequest(e.id, e);
+    });
+
+    forkJoin(updateObservables).subscribe({
+      next: () => {
+        this.allocationService.createAllocation({
+          message: 'Auto-Assign completed: all pending emergencies allocated',
+          time: this.getCurrentTimeString(),
+          type: 'info'
+        }).subscribe({
+          next: () => {
+            this.matching = false;
+            this.assignSuccess = 'All pending emergencies auto-assigned successfully!';
+            this.loadAllData();
+            setTimeout(() => { this.assignSuccess = ''; }, 4000);
+          }
+        });
+      },
+      error: (err) => {
+        console.error(err);
+        this.matching = false;
+      }
+    });
   }
 
   smartMatch(): void {
+    const emergency = this.selectedEmergency;
+    const original = this.originalEmergencies.find(
+      x => (x.requestId || `ER-${x.id.toString().padStart(4, '0')}`) === this.selectedEmergencyId
+    );
+
+    if (!emergency || !original) return;
+
     this.matching = true;
     setTimeout(() => {
-      this.matching = false;
-      
-      // Update selected emergency status or volunteer assignments
-      const emergency = this.selectedEmergency;
-      if (emergency && emergency.status === 'Awaiting Assignment') {
-        emergency.status = 'Assigned';
-      }
+      // Find the best volunteer based on rating or skills matching
+      const recommended = this.recommendedVolunteers;
+      const bestVol = recommended.length > 0 ? recommended[0] : null;
 
-      this.assignSuccess = 'AI Smart Matching complete — Lisa Chen recommended & assigned!';
-      
-      // Add a log to recent allocations
-      this.recentAllocations.unshift({
-        id: Date.now(),
-        message: `AI recommended Lisa Chen assigned to ${emergency?.id ?? 'emergency'}`,
-        time: this.getCurrentTimeString(),
-        type: 'volunteer'
+      const volunteerName = bestVol ? bestVol.name : 'Lisa Chen';
+      original.status = 'Assigned';
+      original.assignedVolunteer = volunteerName;
+
+      this.emergencyService.updateRequest(original.id, original).subscribe({
+        next: () => {
+          this.allocationService.createAllocation({
+            message: `AI recommended ${volunteerName} assigned to ${emergency.id}`,
+            time: this.getCurrentTimeString(),
+            type: 'volunteer'
+          }).subscribe({
+            next: () => {
+              this.matching = false;
+              this.assignSuccess = `AI Smart Matching complete — ${volunteerName} recommended & assigned!`;
+              this.loadAllData();
+              setTimeout(() => { this.assignSuccess = ''; }, 4000);
+            }
+          });
+        },
+        error: (err) => {
+          console.error(err);
+          this.matching = false;
+        }
       });
-
-      setTimeout(() => { this.assignSuccess = ''; }, 4000);
     }, 1500);
   }
 
   assignVolunteer(v: Volunteer): void {
     const emergency = this.selectedEmergency;
-    if (!emergency) return;
+    const original = this.originalEmergencies.find(
+      x => (x.requestId || `ER-${x.id.toString().padStart(4, '0')}`) === this.selectedEmergencyId
+    );
 
-    this.assignSuccess = `${v.name} has been successfully assigned to ${emergency.title} (${emergency.id})!`;
-    emergency.status = 'Assigned';
+    if (!emergency || !original) return;
 
-    this.recentAllocations.unshift({
-      id: Date.now(),
-      message: `${v.name} assigned to ${emergency.id} (${emergency.title})`,
-      time: this.getCurrentTimeString(),
-      type: 'volunteer'
+    original.status = 'Assigned';
+    original.assignedVolunteer = v.name;
+
+    this.emergencyService.updateRequest(original.id, original).subscribe({
+      next: () => {
+        this.allocationService.createAllocation({
+          message: `${v.name} assigned to ${emergency.id} (${emergency.title})`,
+          time: this.getCurrentTimeString(),
+          type: 'volunteer'
+        }).subscribe({
+          next: () => {
+            this.assignSuccess = `${v.name} has been successfully assigned to ${emergency.title} (${emergency.id})!`;
+            this.loadAllData();
+            setTimeout(() => { this.assignSuccess = ''; }, 4000);
+          }
+        });
+      },
+      error: (err) => console.error('Error assigning volunteer:', err)
     });
-
-    setTimeout(() => { this.assignSuccess = ''; }, 4000);
   }
 
   assignShelter(s: Shelter): void {
     const emergency = this.selectedEmergency;
-    if (!emergency) return;
+    const originalShelter = this.originalShelters.find(x => x.shelterId === s.id);
 
-    this.assignSuccess = `${s.name} linked as active relief shelter for ${emergency.title}!`;
-    
-    // Decrement beds free just for visual interaction
-    if (s.bedsFree > 0) {
-      s.bedsFree--;
+    if (!emergency || !originalShelter) return;
+
+    if (originalShelter.occupiedBeds >= originalShelter.totalCapacity) {
+      alert('This shelter is already full!');
+      return;
     }
 
-    this.recentAllocations.unshift({
-      id: Date.now(),
-      message: `${s.name} linked to response for ${emergency.id}`,
-      time: this.getCurrentTimeString(),
-      type: 'shelter'
-    });
+    // Increment occupied beds in the database
+    originalShelter.occupiedBeds++;
 
-    setTimeout(() => { this.assignSuccess = ''; }, 4000);
+    this.shelterService.updateShelter(originalShelter.shelterId, {
+      shelterName: originalShelter.name,
+      address: originalShelter.address,
+      totalCapacity: originalShelter.totalCapacity,
+      occupiedBeds: originalShelter.occupiedBeds,
+      latitude: originalShelter.latitude,
+      longitude: originalShelter.longitude,
+      wifi: originalShelter.wifi,
+      power: originalShelter.electricity,
+      water: originalShelter.water
+    }).subscribe({
+      next: () => {
+        this.allocationService.createAllocation({
+          message: `${s.name} linked to response for ${emergency.id}`,
+          time: this.getCurrentTimeString(),
+          type: 'shelter'
+        }).subscribe({
+          next: () => {
+            this.assignSuccess = `${s.name} linked as active relief shelter for ${emergency.title}!`;
+            this.loadAllData();
+            setTimeout(() => { this.assignSuccess = ''; }, 4000);
+          }
+        });
+      },
+      error: (err) => console.error('Error linking shelter:', err)
+    });
   }
 
   dispatchResource(item: ResourceItem): void {
     const emergency = this.selectedEmergency;
-    if (!emergency) return;
+    const originalItem = this.originalInventory.find(x => x.id === item.id);
 
-    // Parse and decrement count for realistic action
-    const currentVal = parseInt(item.count.replace(/,/g, ''), 10);
-    const dispatchAmt = currentVal > 500 ? 200 : 50;
-    if (currentVal >= dispatchAmt) {
-      const newVal = currentVal - dispatchAmt;
-      item.count = newVal.toLocaleString();
+    if (!emergency || !originalItem) return;
+
+    const dispatchAmt = originalItem.count > 500 ? 200 : 50;
+    if (originalItem.count < dispatchAmt) {
+      alert('Insufficient stock to dispatch!');
+      return;
     }
 
-    this.assignSuccess = `Dispatched ${dispatchAmt} units of ${item.label} to ${emergency.title}!`;
+    // Decrement count and increment allocated
+    originalItem.count -= dispatchAmt;
+    originalItem.allocated += dispatchAmt;
 
-    this.recentAllocations.unshift({
-      id: Date.now(),
-      message: `${item.label} (${dispatchAmt} units) dispatched to ${emergency.id}`,
-      time: this.getCurrentTimeString(),
-      type: 'resource'
+    this.inventoryService.updateInventory(originalItem.id, originalItem).subscribe({
+      next: () => {
+        this.allocationService.createAllocation({
+          message: `${originalItem.name} (${dispatchAmt} units) dispatched to ${emergency.id}`,
+          time: this.getCurrentTimeString(),
+          type: 'resource'
+        }).subscribe({
+          next: () => {
+            this.assignSuccess = `Dispatched ${dispatchAmt} units of ${originalItem.name} to ${emergency.title}!`;
+            this.loadAllData();
+            setTimeout(() => { this.assignSuccess = ''; }, 4000);
+          }
+        });
+      },
+      error: (err) => console.error('Error dispatching resource:', err)
     });
-
-    setTimeout(() => { this.assignSuccess = ''; }, 4000);
   }
 
   getCurrentTimeString(): string {

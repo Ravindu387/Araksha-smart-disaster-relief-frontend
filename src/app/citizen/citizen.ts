@@ -1,15 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { CitizenService } from '../Common/services/citizen.service';
+import { EmergencyRequestService } from '../Common/services/emergency-request.service';
 import { OnInit } from '@angular/core';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
-
-import { EmergencyRequestService } from '../Common/services/emergency-request.service';
-import { EmergencyRequest as EmergencyRequestDto } from '../Common/models/emergency-request.model';
 
 interface EmergencyRequest {
   id: string;
@@ -39,36 +37,56 @@ interface ShelterInfo {
 })
 export class Citizen implements OnInit {
   citizen: CitizenModel | null = null;
+  
   constructor(
-  private citizenService: CitizenService,
-  private emergencyRequestService: EmergencyRequestService
-) {}
+    private citizenService: CitizenService,
+    private emergencyService: EmergencyRequestService,
+    private cdr: ChangeDetectorRef
+  ) {}
+  
   ngOnInit(): void {
-  this.loadCitizen();
-}
-loadCitizen(): void {
+    this.loadCitizen();
+    this.loadRequests();
+  }
+  
+  loadCitizen(): void {
+    this.citizenService.getCitizenById(1).subscribe({
+      next: (data: CitizenModel) => {
+        this.citizen = data;
+        this.contactPhone = data.phoneNumber;
+        console.log('Citizen Loaded', data);
+        // Refresh requests with citizen name loaded
+        this.loadRequests();
+        this.cdr.detectChanges();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error Loading Citizen', error);
+      }
+    });
+  }
 
-  this.citizenService.getCitizenById(1).subscribe({
+  loadRequests(): void {
+    this.emergencyService.getAllRequests().subscribe({
+      next: (requests) => {
+        const citizenName = this.citizen?.fullName || 'Alice Smith';
+        const filtered = requests.filter(r => r.citizenName === citizenName);
+        if (filtered.length > 0) {
+          this.myRequests = filtered.map(r => ({
+            id: r.requestId,
+            type: `${r.emergencyType || 'General'} Emergency`,
+            date: r.requestTime ? new Date(r.requestTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            status: r.status === 'Completed' ? 'Resolved' : (r.status === 'Assigned' || r.status === 'In Progress' ? 'In Progress' : 'Pending'),
+            responder: r.assignedVolunteer || '—',
+            location: r.location,
+            description: `${r.emergencyType} assistance requested.`
+          }));
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error fetching emergency requests:', err)
+    });
+  }
 
-    next: (data: CitizenModel) => {
-
-      this.citizen = data;
-
-      this.contactPhone = data.phoneNumber;
-
-      console.log('Citizen Loaded', data);
-
-    },
-
-    error: (error: HttpErrorResponse) => {
-
-      console.error('Error Loading Citizen', error);
-
-    }
-
-  });
-
-}
   // Modal State
   showModal = false;
   currentStep = 1;
@@ -76,12 +94,12 @@ loadCitizen(): void {
   //citizen profile
   showProfile = false;
   toggleProfile(): void {
-  this.showProfile = !this.showProfile;
-}
+    this.showProfile = !this.showProfile;
+  }
 
-closeProfile(): void {
-  this.showProfile = false;
-}
+  closeProfile(): void {
+    this.showProfile = false;
+  }
 
   // Form Fields
   selectedType = '';
@@ -164,70 +182,30 @@ closeProfile(): void {
   }
 
   submitRequest(): void {
+    const reqId = 'ER-' + Math.floor(2800 + Math.random() * 100);
+    const newRequestDto = {
+      id: 0,
+      requestId: reqId,
+      citizenName: this.citizen?.fullName || 'Alice Smith',
+      emergencyType: this.selectedType,
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      location: this.location,
+      assignedVolunteer: '',
+      requestTime: new Date().toISOString()
+    };
 
-  const request: EmergencyRequestDto = {
-
-    id: 0,
-
-    requestId: 'ER-' + Date.now(),
-
-    citizenName: this.citizen?.fullName ?? 'Unknown Citizen',
-
-    emergencyType: this.selectedType,
-
-    priority: 'High',
-
-    status: 'Pending',
-
-    location: this.location,
-
-    assignedVolunteer: '',
-
-    requestTime: ''
-
-  };
-
-  this.emergencyRequestService.addRequest(request).subscribe({
-
-    next: (savedRequest) => {
-
-      // Show immediately in Citizen page
-
-      this.myRequests.unshift({
-
-        id: savedRequest.requestId,
-
-        type: savedRequest.emergencyType,
-
-        date: new Date(savedRequest.requestTime).toISOString().split('T')[0],
-
-        status: 'Pending',
-
-        responder: '—',
-
-        location: savedRequest.location,
-
-        description: this.description
-
-      });
-
-      alert('Emergency Request Submitted Successfully');
-
-      this.showModal = false;
-
-    },
-
-    error: (err) => {
-
-      console.error(err);
-
-      alert('Failed to submit emergency request.');
-
-    }
-
-  });
-
-}
+    this.emergencyService.addRequest(newRequestDto).subscribe({
+      next: () => {
+        this.loadRequests();
+        this.showModal = false;
+      },
+      error: (err) => {
+        console.error('Error submitting request:', err);
+        alert('Failed to submit emergency request.');
+      }
+    });
+  }
 
   scrollToSection(id: string): void {
     const element = document.getElementById(id);

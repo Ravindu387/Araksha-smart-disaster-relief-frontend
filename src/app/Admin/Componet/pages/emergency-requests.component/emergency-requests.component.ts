@@ -45,59 +45,49 @@ export class EmergencyRequestsComponent implements OnInit {
 ngOnInit(): void {
     this.loadRequests();
 }
-private loadRequests(): void {
+  private loadRequests(): void {
+    this.emergencyRequestService.getAllRequests().subscribe({
+      next: (data: any[]) => {
+        this.requests = data.map(r => {
+          let timeFormatted = '—';
+          if (r.requestTime) {
+            const dateObj = new Date(r.requestTime);
+            if (!isNaN(dateObj.getTime())) {
+              timeFormatted = dateObj.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            }
+          }
 
-  this.emergencyRequestService.getAllRequests().subscribe({
+          return {
+            id: `ER-${r.id.toString().padStart(4, '0')}`,
+            initials: this.generateInitials(r.citizenName),
+            citizen: r.citizenName || 'Unknown Citizen',
+            type: r.emergencyType || 'General',
+            priority: r.priority || 'Medium',
+            status: r.status || 'Pending',
+            location: r.location || 'Unknown Location',
+            volunteer: r.assignedVolunteer || '—',
+            time: timeFormatted
+          };
+        });
+        this.cdr.detectChanges();
+      },
+      error: err => console.error(err)
+    });
+  }
 
-    next: (data: any[]) => {
-
-      this.requests = data.map(r => ({
-
-        id: `ER-${r.id.toString().padStart(4,'0')}`,
-
-        initials: this.generateInitials(r.citizenName),
-
-        citizen: r.citizenName,
-
-        type: r.emergencyType,
-
-        priority: r.priority,
-
-        status: r.status,
-
-        location: r.location,
-
-        volunteer: r.assignedVolunteer || '—',
-
-        time: new Date(r.requestTime).toLocaleTimeString([],{
-
-          hour:'2-digit',
-
-          minute:'2-digit'
-
-        })
-
-      }));
-
-      this.cdr.detectChanges();
-
-    },
-
-    error: err => console.error(err)
-
-  });
-
-}
-private generateInitials(name: string): string {
-
+  private generateInitials(name: string): string {
+    if (!name) return '??';
     return name
       .split(' ')
+      .filter(Boolean)
       .map(n => n[0])
       .join('')
-      .substring(0,2)
+      .substring(0, 2)
       .toUpperCase();
-
-}
+  }
 
   searchQuery = '';
   typeFilter = 'All';

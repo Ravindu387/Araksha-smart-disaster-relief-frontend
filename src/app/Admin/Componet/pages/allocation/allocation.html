@@ -179,7 +179,7 @@
           </div>
 
           <div class="flex flex-col gap-2">
-            @for (v of volunteers; track v.name) {
+            @for (v of recommendedVolunteers; track v.name) {
               <button
                 type="button"
                 (click)="assignVolunteer(v)"
@@ -187,13 +187,13 @@
                 <div class="flex items-center gap-3">
                   <!-- Avatar -->
                   <div
-                    class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0"
+                    class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0 bg-indigo-500"
                     [class.bg-[#3b82f6]]="v.name === 'Lisa Chen'"
                     [class.bg-[#64748b]]="v.name === 'Michael Davis'"
                     [class.bg-[#6366f1]]="v.name === 'Sarah Connor'"
                     [class.bg-[#0ea5e9]]="v.name === 'Diana Foster'"
                   >
-                    {{ v.name.split(' ').map(n => n[0]).join('').slice(0, 2) }}
+                    {{ (v.name || '??').split(' ').map(n => n[0]).join('').slice(0, 2) }}
                   </div>
                   <div>
                     <div class="flex items-center">

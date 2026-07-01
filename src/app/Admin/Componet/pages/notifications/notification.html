@@ -44,6 +44,7 @@
         <div
           *ngFor="let notif of filteredNotifications; let last = last"
           class="flex items-start gap-5 px-6 py-5 bg-white border-b border-gray-100 hover:bg-slate-50/50 transition-colors cursor-pointer"
+          (click)="markAsRead(notif.id)"
         >
          
           <div class="flex items-center justify-center w-3 shrink-0 mt-2.5">
@@ -144,7 +145,7 @@
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          <p class="text-sm">No notifications in this category.</p>
+          <p class="text-sm">No unread notifications.</p>
         </div>
       </ng-template>
 

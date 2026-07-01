@@ -73,8 +73,10 @@ export class VolunteersComponent implements OnInit {
   }
 
   private generateInitials(name: string): string {
+    if (!name) return '??';
     return name
       .split(' ')
+      .filter(Boolean)
       .map(x => x.charAt(0))
       .join('')
       .substring(0, 2)

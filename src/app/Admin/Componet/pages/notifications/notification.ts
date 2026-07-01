@@ -106,11 +106,13 @@ export class NotificationsComponent implements OnInit {
   }
 
   get filteredNotifications(): NotificationItem[] {
+    const unreadNotifications = this.notifications.filter((n) => !n.read);
+    
     if (this.activeTab === 'all') {
-      return this.notifications;
+      return unreadNotifications;
     }
 
-    return this.notifications.filter(
+    return unreadNotifications.filter(
       (n) => n.category === this.activeTab
     );
   }
