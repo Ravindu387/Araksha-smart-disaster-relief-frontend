@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - npm install
+  build:
+    commands:
+      - npm run build --configuration=production
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'dist/araksha-smart-disaster-relief-frontend'
