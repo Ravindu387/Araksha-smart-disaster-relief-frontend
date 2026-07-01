@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Icon } from '../../../../Common/icon/icon';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
@@ -56,8 +57,13 @@ export class Dashboard implements OnInit {
     private emergencyRequestService: EmergencyRequestService,
     private volunteerService: VolunteerService,
     private shelterService: ShelterService,
-    private inventoryService: InventoryService
+    private inventoryService: InventoryService,
+    private router: Router
   ) {}
+
+  goToEmergencyRequests(): void {
+    this.router.navigate(['/emergency-requests']);
+  }
 
   ngOnInit(): void {
     this.loadAllData();

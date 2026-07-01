@@ -486,4 +486,145 @@
     </div>
   }
 
+  <!-- View Volunteer Profile Modal -->
+  @if (viewModalOpen()) {
+    @let v = selectedVolunteer();
+    @if (v) {
+      <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in" (click)="closeViewModal()">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 relative m-4" (click)="$event.stopPropagation()">
+          <!-- Close Button -->
+          <button
+            type="button"
+            (click)="closeViewModal()"
+            class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-sm bg-transparent border-0 cursor-pointer">
+            ✕
+          </button>
+
+          <!-- Avatar & Header -->
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-lg font-black {{ v.avatarColor }}">
+              {{ v.initials }}
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-900 leading-tight">{{ v.name }}</h3>
+              <p class="text-xs font-bold mt-1" [ngClass]="{
+                'text-emerald-600': v.status === 'Available',
+                'text-blue-600': v.status === 'On Duty',
+                'text-slate-500': v.status === 'Off Duty'
+              }">
+                {{ v.status }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Stats/Properties -->
+          <div class="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-5">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Rating</span>
+              <div class="flex items-center gap-0.5 mt-1">
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <svg class="w-3.5 h-3.5" [ngClass]="star <= (v.rating || 5) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'" viewBox="0 0 24 24">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                  </svg>
+                }
+              </div>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Tasks Done</span>
+              <span class="text-sm font-black text-slate-800 mt-1 block">{{ v.tasks || 0 }} completed</span>
+            </div>
+            <div class="col-span-2 border-t border-slate-200/60 pt-3">
+              <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Phone Number</span>
+              <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ v.phone || 'N/A' }}</span>
+            </div>
+            <div class="col-span-2 border-t border-slate-200/60 pt-3">
+              <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Location</span>
+              <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ v.location || 'Unknown' }}</span>
+            </div>
+          </div>
+
+          <!-- Skills -->
+          <div class="mb-6">
+            <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-2">Skills / Capabilities</span>
+            <div class="flex flex-wrap gap-1.5">
+              @for (skill of v.skills; track skill) {
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
+                  {{ skill }}
+                </span>
+              } @empty {
+                <span class="text-xs font-semibold text-slate-400 italic">No skills registered</span>
+              }
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <button
+            type="button"
+            (click)="closeViewModal()"
+            class="w-full text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-250 py-2.5 rounded-xl cursor-pointer">
+            Close Profile
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Assign Volunteer to Request Modal -->
+  @if (assignModalOpen()) {
+    @let v = selectedVolunteerForAssign();
+    @if (v) {
+      <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in" (click)="closeAssignModal()">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 relative m-4" (click)="$event.stopPropagation()">
+          <!-- Close Button -->
+          <button
+            type="button"
+            (click)="closeAssignModal()"
+            class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-sm bg-transparent border-0 cursor-pointer">
+            ✕
+          </button>
+
+          <h3 class="text-lg font-black text-slate-900 leading-tight mb-1">Assign {{ v.name }}</h3>
+          <p class="text-xs text-slate-400 mb-5 font-semibold">Select an active emergency request to assign this volunteer.</p>
+
+          <!-- Request Dropdown selection -->
+          <div class="flex flex-col gap-4 mb-6">
+            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+              <span>SELECT ACTIVE EMERGENCY REQUEST</span>
+              <select
+                [(ngModel)]="selectedRequestIdForAssign"
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
+              >
+                <option value="" disabled selected>Select an active request...</option>
+                @for (req of activeRequests; track req.id) {
+                  <option [value]="req.id">
+                    {{ req.requestId }} - {{ req.emergencyType }} ({{ req.priority }}) at {{ req.location }}
+                  </option>
+                } @empty {
+                  <option value="" disabled>No active requests available</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              (click)="closeAssignModal()"
+              class="flex-1 text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-250 py-2.5 rounded-xl cursor-pointer">
+              Cancel
+            </button>
+            <button
+              type="button"
+              (click)="assignVolunteerSubmit()"
+              [disabled]="!selectedRequestIdForAssign"
+              class="flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors py-2.5 rounded-xl shadow-md cursor-pointer">
+              Confirm Assignment
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
 </div>

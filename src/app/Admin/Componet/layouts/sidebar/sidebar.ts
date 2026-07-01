@@ -4,6 +4,7 @@ import { interval, Subscription } from 'rxjs';
 import { Icon } from '../../../../Common/icon/icon';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { NotificationService } from '../../../../Common/services/notification.service';
+import { SettingsService } from '../../../../Common/services/settings.service';
 
 interface NavItem {
   label: string;
@@ -33,15 +34,22 @@ export class Sidebar implements OnInit, OnDestroy {
 
   private emergencyService = inject(EmergencyRequestService);
   private notificationService = inject(NotificationService);
+  private settingsService = inject(SettingsService);
   private cdr = inject(ChangeDetectorRef);
   private pollingSub?: Subscription;
+
+  adminName = 'Admin Kumar';
+  adminRole = 'System Admin';
+  adminInitials = 'AK';
 
   constructor(private router: Router) {}
 
   ngOnInit(): void {
     this.loadCounts();
+    this.loadAdminProfile();
     this.pollingSub = interval(5000).subscribe(() => {
       this.loadCounts();
+      this.loadAdminProfile();
     });
   }
 
@@ -79,6 +87,22 @@ export class Sidebar implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Error fetching notification count:', err)
+    });
+  }
+
+  loadAdminProfile(): void {
+    this.settingsService.getSettings().subscribe({
+      next: (data) => {
+        if (data) {
+          const first = data.firstName || 'Admin';
+          const last = data.lastName || 'Kumar';
+          this.adminName = `${first} ${last}`;
+          this.adminRole = data.jobTitle || 'System Admin';
+          this.adminInitials = (first.charAt(0) + (last ? last.charAt(0) : '')).toUpperCase();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => console.error('Error loading admin profile in sidebar:', err)
     });
   }
 
