@@ -18,7 +18,7 @@ export class CitizenService {
   }
 
   getCitizenByEmail(email: string): Observable<Citizen> {
-    return this.http.get<Citizen>(`${this.apiUrl}/by-email/${email}`);
+    return this.http.get<Citizen>(`${this.apiUrl}/email/${email}`);
   }
 
   getAllCitizens(): Observable<Citizen[]> {

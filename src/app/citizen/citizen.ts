@@ -68,19 +68,40 @@ export class Citizen implements OnInit {
   }
   
   loadCitizen(): void {
-    const email = localStorage.getItem('email') || 'citizen@araksha.com';
-    this.citizenService.getCitizenByEmail(email).subscribe({
+    const email = localStorage.getItem('email');
+    if (email) {
+      console.log('Fetching citizen profile by email:', email);
+      this.citizenService.getCitizenByEmail(email).subscribe({
+        next: (data: CitizenModel) => {
+          this.citizen = data;
+          this.contactPhone = data.phoneNumber || '';
+          console.log('Citizen Loaded by email', data);
+          this.loadRequests();
+          this.loadNotifications();
+          this.cdr.detectChanges();
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Error Loading Citizen by email, falling back to ID 1', error);
+          this.loadCitizenById(1);
+        }
+      });
+    } else {
+      this.loadCitizenById(1);
+    }
+  }
+
+  private loadCitizenById(id: number): void {
+    this.citizenService.getCitizenById(id).subscribe({
       next: (data: CitizenModel) => {
         this.citizen = data;
-        this.contactPhone = data.phoneNumber;
-        console.log('Citizen Loaded', data);
-        // Refresh requests and notifications with citizen info loaded
+        this.contactPhone = data.phoneNumber || '';
+        console.log('Citizen Loaded by ID', data);
         this.loadRequests();
         this.loadNotifications();
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Error Loading Citizen', error);
+        console.error('Error Loading Citizen by ID', error);
       }
     });
   }
