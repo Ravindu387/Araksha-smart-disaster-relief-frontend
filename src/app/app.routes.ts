@@ -3,6 +3,9 @@ import { Routes } from '@angular/router';
 import { LandingPage } from './Common/landing-page/landing-page';
 import { Login } from './Common/login/login';
 import { SignupComponent } from './Common/signup/signup';
+import { ForgotPasswordComponent } from './Common/forgot-password/forgot-password';
+import { VerifyOtpComponent } from './Common/verify-otp/verify-otp';
+import { ResetPasswordComponent } from './Common/reset-password/reset-password';
 import { VolunteerDashboardComponent } from './Volunteers/Component/volunteer-dashboard/volunteer-dashboard';
 
 import { AdminLayout } from './Admin/Componet/layouts/admin-layout/admin-layout';
@@ -19,16 +22,29 @@ import { LiveTracking } from './Admin/Componet/pages/live-tracking/live-tracking
 import { Settings } from './Admin/Componet/pages/settings/settings';
 import { Citizen } from './citizen/citizen';
 
+import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'LandingPage', pathMatch: 'full' },
 
   { path: 'LandingPage', component: LandingPage },
   { path: 'login', component: Login },
   { path: 'signup', component: SignupComponent },
-  { path: 'volunteerhub', component: VolunteerDashboardComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'verify-otp', component: VerifyOtpComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
+  {
+    path: 'volunteerhub',
+    component: VolunteerDashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'VOLUNTEER' }
+  },
 
   {
     path: 'citizen',
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'CITIZEN' },
     children: [
       { path: 'dashboard', component: Citizen },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -38,6 +54,8 @@ export const routes: Routes = [
   {
     path: '',
     component: AdminLayout,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'ADMIN' },
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'emergency-requests', component: EmergencyRequestsComponent },
@@ -52,5 +70,5 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: 'LandingPage' },
 ];

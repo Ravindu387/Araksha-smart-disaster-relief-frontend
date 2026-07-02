@@ -26,6 +26,9 @@ export class SignupComponent {
   selectedRole: Role | null = null;
   isSubmitting = false;
   errorMessage = '';
+  emailInvalid = false;
+  confirmPassword = '';
+  passwordMismatch = false;
 
   user: SignupModel = {
     firstName: '',
@@ -65,6 +68,9 @@ export class SignupComponent {
   selectRole(role: Role) {
     this.selectedRole = role;
     this.errorMessage = '';
+    this.emailInvalid = false;
+    this.passwordMismatch = false;
+    this.confirmPassword = '';
   }
 
   nextStep() {
@@ -72,10 +78,22 @@ export class SignupComponent {
       this.errorMessage = 'Please select a role.';
       return;
     }
-    if (!this.user.firstName || !this.user.lastName || !this.user.email) {
+    if (!this.user.firstName || !this.user.lastName) {
       this.errorMessage = 'Please fill in all required fields.';
       return;
     }
+    if (!this.user.email) {
+      this.errorMessage = 'Please enter your email address.';
+      this.emailInvalid = true;
+      return;
+    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(this.user.email)) {
+      this.errorMessage = 'Please enter a valid email address';
+      this.emailInvalid = true;
+      return;
+    }
+    this.emailInvalid = false;
     this.errorMessage = '';
     this.step = 2;
   }
@@ -95,6 +113,13 @@ export class SignupComponent {
       return;
     }
 
+    if (this.user.password !== this.confirmPassword) {
+      this.errorMessage = 'Passwords do not match';
+      this.passwordMismatch = true;
+      return;
+    }
+
+    this.passwordMismatch = false;
     this.isSubmitting = true;
     this.errorMessage = '';
 
