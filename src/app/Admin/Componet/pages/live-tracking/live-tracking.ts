@@ -392,6 +392,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
       marker.on('click', () => {
         this.selectMarker(vol, 'Volunteer');
+        this.fetchVolunteerMultiRoute(vol);
         this.cdr.detectChanges();
       });
       this.markersGroup.addLayer(marker);
@@ -589,6 +590,42 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  fetchVolunteerMultiRoute(vol: any) {
+    if (this.currentRouteLine) {
+      this.currentRouteLine.remove();
+      this.currentRouteLine = null;
+    }
+    if (this.detourRouteLine) {
+      this.detourRouteLine.remove();
+      this.detourRouteLine = null;
+    }
+
+    const assigned = this.incidents.filter(i => 
+      i.details && i.details.includes('Assigned Volunteer: ' + vol.name) && i.status === 'Active'
+    );
+
+    if (assigned.length === 0) return;
+
+    const incidentIds = assigned.map(i => parseInt(i.id.replace('inc-', ''))).filter(id => !isNaN(id));
+    if (incidentIds.length === 0) return;
+
+    this.mapsService.getMultiRoute(vol.lat, vol.lng, incidentIds).pipe(
+      catchError(err => {
+        console.error('Failed to load multi-stop route:', err);
+        return of(null);
+      })
+    ).subscribe(route => {
+      if (route && this.map && route.coordinates && route.coordinates.length > 0) {
+        const latLngs = route.coordinates.map((c: any) => [c.latitude, c.longitude]);
+        this.currentRouteLine = L.polyline(latLngs, {
+          color: '#06b6d4',
+          weight: 6,
+          opacity: 0.85
+        }).addTo(this.map);
+      }
+    });
   }
 
   private updatePopup(inc: any, marker: any) {

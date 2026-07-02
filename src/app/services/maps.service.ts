@@ -96,4 +96,25 @@ export class MapsService {
   getHazardZones(): Observable<HazardZone[]> {
     return this.http.get<HazardZone[]>(`${this.baseWeatherUrl}/hazards`);
   }
+
+  registerAidItem(item: any): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/aid/register`, item);
+  }
+
+  getAidMatches(lat: number, lng: number, type: string): Observable<any[]> {
+    const params = new HttpParams()
+      .set('lat', lat.toString())
+      .set('lng', lng.toString())
+      .set('type', type);
+    return this.http.get<any[]>(`${environment.apiUrl}/aid/matches`, { params });
+  }
+
+  getMultiRoute(startLat: number, startLng: number, incidentIds: number[]): Observable<RouteResponse> {
+    const ids = incidentIds.join(',');
+    const params = new HttpParams()
+      .set('startLat', startLat.toString())
+      .set('startLng', startLng.toString())
+      .set('incidentIds', ids);
+    return this.http.get<RouteResponse>(`${this.baseMapsUrl}/multi-route`, { params });
+  }
 }

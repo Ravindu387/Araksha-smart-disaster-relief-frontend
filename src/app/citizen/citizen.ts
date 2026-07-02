@@ -490,6 +490,7 @@ export class Citizen implements OnInit, OnDestroy {
       .openPopup();
 
     map.flyTo([coords.lat, coords.lng], 11, { animate: true, duration: 1.2 });
+    this.loadNeighborAidMatches(coords.lat, coords.lng);
   }
 
   showMyLocationOnMap(): void {
@@ -521,6 +522,103 @@ export class Citizen implements OnInit, OnDestroy {
       this.shelterMapInstance.remove();
       this.shelterMapInstance = null;
     }
+    if (this.neighborRouteLine) {
+      this.neighborRouteLine.remove();
+    }
+    if (this.neighborMarkersLayer) {
+      this.neighborMarkersLayer.remove();
+    }
+  }
+
+  neighborAidMatches: any[] = [];
+  neighborMarkersLayer: any = null;
+  neighborRouteLine: any = null;
+
+  loadNeighborAidMatches(lat: number, lng: number): void {
+    if (!this.neighborMarkersLayer && this.shelterMapInstance) {
+      this.neighborMarkersLayer = L.layerGroup().addTo(this.shelterMapInstance);
+    }
+
+    this.mapsService.getAidMatches(lat, lng, 'NEED').subscribe({
+      next: (offers) => {
+        this.mapsService.getAidMatches(lat, lng, 'OFFER').subscribe({
+          next: (needs) => {
+            this.neighborAidMatches = [
+              ...offers.map(o => ({ ...o, matchType: 'OFFER' })), 
+              ...needs.map(n => ({ ...n, matchType: 'NEED' }))
+            ];
+            this.plotNeighborAidOnMap();
+          }
+        });
+      }
+    });
+  }
+
+  plotNeighborAidOnMap(): void {
+    if (!this.neighborMarkersLayer) return;
+    this.neighborMarkersLayer.clearLayers();
+
+    this.neighborAidMatches.forEach(item => {
+      const emoji = item.matchType === 'OFFER' ? '🎁' : '🙋';
+      const color = item.matchType === 'OFFER' ? '#10b981' : '#8b5cf6';
+      const border = item.matchType === 'OFFER' ? '#a7f3d0' : '#ddd6fe';
+
+      const icon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `<div style="background:${color};border:2px solid ${border};color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${emoji}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([item.latitude, item.longitude], { icon })
+        .addTo(this.neighborMarkersLayer);
+
+      const popupHtml = `
+        <div style="font-family:sans-serif;min-width:160px;padding:4px 2px;line-height:1.4;">
+          <strong style="font-size:12px;color:#1e293b">${item.matchType === 'OFFER' ? '🎁 Neighbor Offer' : '🙋 Neighbor Need'}</strong><br/>
+          <span style="font-size:11px;font-weight:bold;color:#4b5563;">${item.itemType}</span><br/>
+          <span style="font-size:10px;color:#64748b;">${item.description || 'No description'}</span><br/>
+          <div style="margin-top: 4px; font-size:10px; font-weight:600; color:#3b82f6;">📞 ${item.contactPhone}</div>
+          <button id="btn-neighbor-route-${item.id}" style="margin-top:6px;width:100%;border:none;background:#3b82f6;color:white;font-size:10px;font-weight:600;padding:4px 8px;border-radius:4px;cursor:pointer;">Show Directions</button>
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml);
+
+      marker.on('popupopen', () => {
+        const btn = document.getElementById(`btn-neighbor-route-${item.id}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            this.drawNeighborRoute(item.latitude, item.longitude);
+          });
+        }
+      });
+    });
+  }
+
+  drawNeighborRoute(targetLat: number, targetLng: number): void {
+    if (this.neighborRouteLine) {
+      this.neighborRouteLine.remove();
+      this.neighborRouteLine = null;
+    }
+
+    const citizenAddr = this.mapAddressBuilt || this.citizen?.address || this.location;
+    const citizenCoords = citizenAddr ? this.geocodeAddress(citizenAddr) : { lat: 6.9271, lng: 79.8612 };
+
+    this.mapsService.getRoute(citizenCoords.lat, citizenCoords.lng, targetLat, targetLng).subscribe({
+      next: (route) => {
+        if (route && this.shelterMapInstance && route.coordinates && route.coordinates.length > 0) {
+          const latLngs = route.coordinates.map((c: any) => [c.latitude, c.longitude]);
+          this.neighborRouteLine = L.polyline(latLngs, {
+            color: '#3b82f6',
+            weight: 5,
+            opacity: 0.85,
+            dashArray: '6, 6'
+          }).addTo(this.shelterMapInstance);
+        }
+      },
+      error: (err) => console.error('Failed to trace route to neighbor:', err)
+    });
   }
 
   // ── Data Loading ──────────────────────────────────────────────────────────
