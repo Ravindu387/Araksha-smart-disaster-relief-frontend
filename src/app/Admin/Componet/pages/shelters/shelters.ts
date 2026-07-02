@@ -1,8 +1,13 @@
-import { Component, OnInit, ChangeDetectorRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Shelter } from '../../../../Common/models/shelter.model';
+import { SearchService } from '../../../../Common/services/search.service';
 import { ShelterService } from '../../../../services/shelter';
+import { FileUploadService } from '../../../../Common/services/file-upload.service';
 
 declare const L: any;
 
@@ -14,13 +19,25 @@ type FilterType = 'All' | 'Available' | 'Limited' | 'Full';
   imports: [CommonModule, FormsModule],
   templateUrl: './shelters.html'
 })
-export class SheltersComponent implements OnInit, AfterViewInit {
+export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
 
   shelters: Shelter[] = [];
 
   searchQuery = '';
   activeFilter: FilterType = 'All';
+  sortField = 'name';
+  sortDir: 'asc' | 'desc' = 'asc';
 
+  // ── Pagination state ──────────────────────────────────────────────────────
+  currentPage = 0;           // 0-based
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+
+  // ── Filtered result ───────────────────────────────────────────────────────
+  filteredShelters: Shelter[] = [];
+
+  // ── Modal Form fields ─────────────────────────────────────────────────────
   registerModalOpen = false;
   newShelterName = '';
   newShelterAddress = '';
@@ -37,18 +54,66 @@ export class SheltersComponent implements OnInit, AfterViewInit {
     'Vavuniya', 'Mannar', 'Mullaitivu', 'Kilinochchi', 'Ampara'
   ];
 
+  // ── File Upload state ─────────────────────────────────────────────────────
+  shelterImageFile: File | null = null;
+  shelterImageUrl = '';
+  shelterImageProgress = 0;
+  shelterImageError = '';
+
+  // ── Map ───────────────────────────────────────────────────────────────────
   private map: any;
   private markersGroup: any;
 
-  constructor(private shelterService: ShelterService, private cdr: ChangeDetectorRef) {}
+  // ── Internal ──────────────────────────────────────────────────────────────
+  private searchSubject = new Subject<void>();
+  private subscriptions = new Subscription();
+
+  constructor(
+    private shelterService: ShelterService,
+    private fileUploadService: FileUploadService,
+    private searchService: SearchService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
+    // Wire debounced search
+    this.subscriptions.add(
+      this.searchSubject.pipe(
+        debounceTime(300),
+        distinctUntilChanged()
+      ).subscribe(() => {
+        this.currentPage = 0;
+        this.loadSearchPage();
+      })
+    );
+
+    // Wire global header search service subscription
+    this.subscriptions.add(
+      this.searchService.searchQuery$.subscribe(q => {
+        if (this.searchQuery !== q) {
+          this.searchQuery = q;
+          this.searchSubject.next();
+        }
+      })
+    );
+
+    // Load full list for map
     this.loadShelters();
+    // Load search results
+    this.loadSearchPage();
   }
 
   ngAfterViewInit(): void {
     this.initMap();
   }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  // ── Load helpers ──────────────────────────────────────────────────────────
 
   loadShelters(): void {
     this.shelterService.getAll().subscribe({
@@ -60,6 +125,100 @@ export class SheltersComponent implements OnInit, AfterViewInit {
       error: (err: any) => console.error('Failed to load shelters', err)
     });
   }
+
+  private loadSearchPage(): void {
+    const sort = `${this.sortField},${this.sortDir}`;
+
+    this.shelterService.searchShelters({
+      keyword: this.searchQuery.trim() || undefined,
+      status:  this.activeFilter === 'All' ? undefined : this.activeFilter,
+      page:    this.currentPage,
+      size:    this.pageSize,
+      sort
+    }).subscribe({
+      next: (page) => {
+        this.filteredShelters = page.content;
+        this.totalPages    = page.totalPages;
+        this.totalElements = page.totalElements;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Shelter search error', err)
+    });
+  }
+
+  // ── File Selection & Upload Handlers ──────────────────────────────────────
+
+  onShelterImageSelected(event: any): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.shelterImageFile = files[0];
+      this.shelterImageError = '';
+      this.shelterImageProgress = 0;
+      this.uploadShelterImage();
+    }
+  }
+
+  uploadShelterImage(): void {
+    if (!this.shelterImageFile) return;
+
+    this.fileUploadService.uploadFile(this.shelterImageFile, 'ADMIN').subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          this.shelterImageProgress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          this.shelterImageUrl = event.body.fileUrl;
+          this.shelterImageProgress = 100;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        this.shelterImageProgress = 0;
+        this.shelterImageError = err.error?.error || 'Failed to upload image';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  removeShelterImage(): void {
+    this.shelterImageFile = null;
+    this.shelterImageUrl = '';
+    this.shelterImageProgress = 0;
+    this.shelterImageError = '';
+  }
+
+  // ── Search / filter triggers ──────────────────────────────────────────────
+
+  onSearchChange(): void {
+    this.searchSubject.next();
+  }
+
+  setFilter(filter: FilterType): void {
+    this.activeFilter = filter;
+    this.currentPage  = 0;
+    this.loadSearchPage();
+  }
+
+  setSortField(field: string, dir: 'asc' | 'desc' = 'asc'): void {
+    this.sortField   = field;
+    this.sortDir     = dir;
+    this.currentPage = 0;
+    this.loadSearchPage();
+  }
+
+  // ── Pagination ────────────────────────────────────────────────────────────
+
+  setPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.loadSearchPage();
+    }
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  // ── Stat card getters (from full list) ────────────────────────────────────
 
   get totalCapacity(): number {
     return this.shelters.reduce((sum, s) => sum + (s.capacity ?? 0), 0);
@@ -73,20 +232,7 @@ export class SheltersComponent implements OnInit, AfterViewInit {
     return this.totalCapacity - this.totalOccupied;
   }
 
-  get filteredShelters(): Shelter[] {
-    return this.shelters.filter(s => {
-      const matchesFilter = this.activeFilter === 'All' || s.status === this.activeFilter;
-      const q = this.searchQuery.trim().toLowerCase();
-      const matchesSearch = !q ||
-        s.name.toLowerCase().includes(q) ||
-        s.address.toLowerCase().includes(q);
-      return matchesFilter && matchesSearch;
-    });
-  }
-
-  setFilter(filter: FilterType): void {
-    this.activeFilter = filter;
-  }
+  // ── Utility methods ───────────────────────────────────────────────────────
 
   getOccupancyPercent(shelter: Shelter): number {
     if (!shelter.capacity) return 0;
@@ -96,28 +242,32 @@ export class SheltersComponent implements OnInit, AfterViewInit {
   getStatusClass(status: string): string {
     switch (status) {
       case 'Available': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
-      case 'Limited': return 'bg-amber-50 text-amber-600 border-amber-200';
-      case 'Full': return 'bg-rose-50 text-rose-600 border-rose-200';
-      default: return 'bg-slate-50 text-slate-600 border-slate-200';
+      case 'Limited':   return 'bg-amber-50 text-amber-600 border-amber-200';
+      case 'Full':      return 'bg-rose-50 text-rose-600 border-rose-200';
+      default:          return 'bg-slate-50 text-slate-600 border-slate-200';
     }
   }
 
   getBarColor(status: string): string {
     switch (status) {
       case 'Available': return 'bg-emerald-500';
-      case 'Limited': return 'bg-amber-500';
-      case 'Full': return 'bg-rose-500';
-      default: return 'bg-slate-400';
+      case 'Limited':   return 'bg-amber-500';
+      case 'Full':      return 'bg-rose-500';
+      default:          return 'bg-slate-400';
     }
   }
 
+  // ── Register modal ────────────────────────────────────────────────────────
+
   openRegisterModal(): void {
     this.registerModalOpen = true;
+    this.removeShelterImage();
   }
 
   closeRegisterModal(): void {
     this.registerModalOpen = false;
     this.resetForm();
+    this.removeShelterImage();
   }
 
   registerShelterSubmit(): void {
@@ -133,7 +283,6 @@ export class SheltersComponent implements OnInit, AfterViewInit {
     let lat = 6.9271;
     let lng = 79.8612;
 
-    // Detect from manually entered coords or parse address / dropdown
     if (this.newShelterLatitude && this.newShelterLongitude) {
       lat = this.newShelterLatitude;
       lng = this.newShelterLongitude;
@@ -156,19 +305,20 @@ export class SheltersComponent implements OnInit, AfterViewInit {
       occupied: this.newShelterOccupied ?? 0,
       amenities: amenitiesArray,
       latitude: lat,
-      longitude: lng
+      longitude: lng,
+      shelterImageUrl: this.shelterImageUrl || undefined
     };
 
     this.shelterService.create(payload).subscribe({
       next: (created) => {
         this.shelters = [...this.shelters, created];
         this.renderMapMarkers();
-        
-        // Pan the map to show the newly added shelter location immediately
+
         if (this.map) {
           this.map.setView([lat, lng], 12, { animate: true });
         }
-        
+
+        this.loadSearchPage();
         this.closeRegisterModal();
       },
       error: (err: any) => console.error('Failed to register shelter', err)
@@ -189,32 +339,32 @@ export class SheltersComponent implements OnInit, AfterViewInit {
   private getCoordsFromAddress(address: string): { lat: number, lng: number } {
     const n = address.toLowerCase();
     const regions: { [key: string]: { lat: number, lng: number } } = {
-      'colombo': { lat: 6.9271, lng: 79.8612 },
-      'kandy': { lat: 7.2906, lng: 80.6337 },
-      'galle': { lat: 6.0367, lng: 80.2170 },
-      'jaffna': { lat: 9.6615, lng: 80.0144 },
-      'gampaha': { lat: 7.0873, lng: 80.0164 },
-      'kalutara': { lat: 6.5854, lng: 79.9607 },
-      'matara': { lat: 5.9549, lng: 80.5550 },
-      'hambantota': { lat: 6.1249, lng: 81.1185 },
-      'negombo': { lat: 7.2089, lng: 79.8373 },
-      'batticaloa': { lat: 7.7170, lng: 81.7000 },
-      'trincomalee': { lat: 8.5873, lng: 81.2152 },
-      'anuradhapura': { lat: 8.3114, lng: 80.4037 },
-      'polonnaruwa': { lat: 7.9403, lng: 81.0188 },
-      'kurunegala': { lat: 7.4863, lng: 80.3623 },
-      'puttalam': { lat: 8.0333, lng: 79.8333 },
-      'ratnapura': { lat: 6.6828, lng: 80.3992 },
-      'kegalle': { lat: 7.2513, lng: 80.3464 },
-      'badulla': { lat: 6.9934, lng: 81.0550 },
-      'moneragala': { lat: 6.8724, lng: 81.3507 },
-      'nuwara eliya': { lat: 6.9497, lng: 80.7891 },
-      'matale': { lat: 7.4675, lng: 80.6234 },
-      'vavuniya': { lat: 8.7542, lng: 80.4982 },
-      'mannar': { lat: 8.9810, lng: 79.9044 },
-      'mullaitivu': { lat: 9.2671, lng: 80.8142 },
-      'kilinochchi': { lat: 9.3803, lng: 80.3992 },
-      'ampara': { lat: 7.2833, lng: 81.6667 }
+      'colombo':       { lat: 6.9271,  lng: 79.8612 },
+      'kandy':         { lat: 7.2906,  lng: 80.6337 },
+      'galle':         { lat: 6.0367,  lng: 80.2170 },
+      'jaffna':        { lat: 9.6615,  lng: 80.0144 },
+      'gampaha':       { lat: 7.0873,  lng: 80.0164 },
+      'kalutara':      { lat: 6.5854,  lng: 79.9607 },
+      'matara':        { lat: 5.9549,  lng: 80.5550 },
+      'hambantota':    { lat: 6.1249,  lng: 81.1185 },
+      'negombo':       { lat: 7.2089,  lng: 79.8373 },
+      'batticaloa':    { lat: 7.7170,  lng: 81.7000 },
+      'trincomalee':   { lat: 8.5873,  lng: 81.2152 },
+      'anuradhapura':  { lat: 8.3114,  lng: 80.4037 },
+      'polonnaruwa':   { lat: 7.9403,  lng: 81.0188 },
+      'kurunegala':    { lat: 7.4863,  lng: 80.3623 },
+      'puttalam':      { lat: 8.0333,  lng: 79.8333 },
+      'ratnapura':     { lat: 6.6828,  lng: 80.3992 },
+      'kegalle':       { lat: 7.2513,  lng: 80.3464 },
+      'badulla':       { lat: 6.9934,  lng: 81.0550 },
+      'moneragala':    { lat: 6.8724,  lng: 81.3507 },
+      'nuwara eliya':  { lat: 6.9497,  lng: 80.7891 },
+      'matale':        { lat: 7.4675,  lng: 80.6234 },
+      'vavuniya':      { lat: 8.7542,  lng: 80.4982 },
+      'mannar':        { lat: 8.9810,  lng: 79.9044 },
+      'mullaitivu':    { lat: 9.2671,  lng: 80.8142 },
+      'kilinochchi':   { lat: 9.3803,  lng: 80.3992 },
+      'ampara':        { lat: 7.2833,  lng: 81.6667 }
     };
 
     const foundRegion = Object.keys(regions).find(region => n.includes(region));
@@ -230,6 +380,8 @@ export class SheltersComponent implements OnInit, AfterViewInit {
     return { lat: 6.9271, lng: 79.8612 };
   }
 
+  // ── Map ───────────────────────────────────────────────────────────────────
+
   private initMap() {
     if (typeof L === 'undefined') {
       console.warn('Leaflet is not loaded yet');
@@ -237,7 +389,7 @@ export class SheltersComponent implements OnInit, AfterViewInit {
     }
 
     this.map = L.map('shelterMap', {
-      center: [7.8731, 80.7718], 
+      center: [7.8731, 80.7718],
       zoom: 7.5,
       zoomControl: true
     });
@@ -263,7 +415,7 @@ export class SheltersComponent implements OnInit, AfterViewInit {
       let lng = s.longitude;
 
       if (!lat || !lng || lat < 5.0 || lat > 10.0 || lng < 79.0 || lng > 83.0) {
-        return; // skip rendering if no coordinates are present or invalid
+        return;
       }
 
       let colorClass = 'bg-emerald-500 border-emerald-300';
@@ -285,7 +437,7 @@ export class SheltersComponent implements OnInit, AfterViewInit {
       });
 
       const marker = L.marker([lat, lng], { icon: shelterIcon });
-      
+
       marker.bindPopup(`
         <div style="font-family: sans-serif; padding: 2px;">
           <h4 style="margin: 0 0 4px 0; font-weight: bold; font-size: 13px;">${s.name}</h4>
@@ -294,7 +446,7 @@ export class SheltersComponent implements OnInit, AfterViewInit {
           <div style="margin-top: 5px; font-size: 10px; color: #888;">Status: ${s.status}</div>
         </div>
       `);
-      
+
       this.markersGroup.addLayer(marker);
     });
   }

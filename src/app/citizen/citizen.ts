@@ -2,10 +2,12 @@ import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpEventType } from '@angular/common/http';
 
 import { CitizenService } from '../Common/services/citizen.service';
 import { EmergencyRequestService } from '../Common/services/emergency-request.service';
 import { ShelterService } from '../services/shelter';
+import { FileUploadService } from '../Common/services/file-upload.service';
 import { Shelter } from '../Common/models/shelter.model';
 import { NotificationService, NotificationItem } from '../Common/services/notification.service';
 import { OnInit } from '@angular/core';
@@ -23,6 +25,8 @@ interface EmergencyRequest {
   trackingMessage?: string;
   location: string;
   description: string;
+  disasterImageUrl?: string;
+  documentUrl?: string;
 }
 
 interface ShelterInfo {
@@ -99,55 +103,66 @@ export class Citizen implements OnInit, OnDestroy {
     ) {
       return { lat: s.latitude, lng: s.longitude };
     }
-    return this.geocodeAddress(s.address);
+    return this.getCoordsFromAddress(s.address || s.name);
   }
 
-  /** Geocode any Sri Lanka address string to coordinates */
-  private geocodeAddress(address: string): { lat: number; lng: number } | null {
-    if (!address) return null;
+  private getCoordsFromAddress(address: string): { lat: number; lng: number } | null {
     const n = address.toLowerCase();
-    const found = Object.keys(this.sriLankaCoords).find(k => n.includes(k));
-    if (found) {
-      const base = this.sriLankaCoords[found];
-      // Small random offset so overlapping shelters in same city spread slightly
+    const foundRegion = Object.keys(this.sriLankaCoords).find(region => n.includes(region));
+    if (foundRegion) {
+      const base = this.sriLankaCoords[foundRegion];
       return {
-        lat: base.lat + (Math.random() - 0.5) * 0.015,
-        lng: base.lng + (Math.random() - 0.5) * 0.015,
+        lat: base.lat + (Math.random() - 0.5) * 0.02,
+        lng: base.lng + (Math.random() - 0.5) * 0.02
       };
     }
     return null;
   }
 
-  // ── Sri Lanka location dropdowns ──────────────────────────────────────────
-  sriLankaProvinces = [
-    'Western Province', 'Central Province', 'Southern Province',
-    'Northern Province', 'Eastern Province', 'North Western Province',
-    'North Central Province', 'Uva Province', 'Sabaragamuwa Province'
+  private geocodeAddress(address: string): { lat: number; lng: number } {
+    const resolved = this.getCoordsFromAddress(address);
+    return resolved || { lat: 6.9271, lng: 79.8612 };
+  }
+
+  private haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // ── Sri Lanka Provinces & Districts configuration ────────────────────────
+  readonly sriLankaProvinces: string[] = [
+    'Western', 'Central', 'Southern', 'Northern', 'Eastern',
+    'North Western', 'North Central', 'Uva', 'Sabaragamuwa'
   ];
 
-  sriLankaDistrictMap: Record<string, string[]> = {
-    'Western Province':       ['Colombo', 'Gampaha', 'Kalutara'],
-    'Central Province':       ['Kandy', 'Matale', 'Nuwara Eliya'],
-    'Southern Province':      ['Galle', 'Matara', 'Hambantota'],
-    'Northern Province':      ['Jaffna', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Kilinochchi'],
-    'Eastern Province':       ['Trincomalee', 'Batticaloa', 'Ampara'],
-    'North Western Province': ['Kurunegala', 'Puttalam'],
-    'North Central Province': ['Anuradhapura', 'Polonnaruwa'],
-    'Uva Province':           ['Badulla', 'Monaragala'],
-    'Sabaragamuwa Province':  ['Ratnapura', 'Kegalle']
+  readonly provinceDistricts: Record<string, string[]> = {
+    'Western':      ['Colombo', 'Gampaha', 'Kalutara'],
+    'Central':      ['Kandy', 'Matale', 'Nuwara Eliya'],
+    'Southern':     ['Galle', 'Matara', 'Hambantota'],
+    'Northern':     ['Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu'],
+    'Eastern':      ['Trincomalee', 'Batticaloa', 'Ampara'],
+    'North Western':['Kurunegala', 'Puttalam'],
+    'North Central':['Anuradhapura', 'Polonnaruwa'],
+    'Uva':          ['Badulla', 'Moneragala'],
+    'Sabaragamuwa': ['Ratnapura', 'Kegalle']
   };
 
   selectedProvince = '';
   selectedDistrict = '';
   filteredDistricts: string[] = [];
-  locationCity = '';
+  locationCity   = '';
   locationStreet = '';
 
   onProvinceChange(): void {
     this.selectedDistrict = '';
-    this.filteredDistricts = this.selectedProvince
-      ? (this.sriLankaDistrictMap[this.selectedProvince] || [])
-      : [];
+    this.filteredDistricts = this.selectedProvince ? this.provinceDistricts[this.selectedProvince] : [];
     this.buildLocation();
   }
 
@@ -157,91 +172,69 @@ export class Citizen implements OnInit, OnDestroy {
 
   buildLocation(): void {
     const parts = [
-      this.locationStreet,
-      this.locationCity,
+      this.locationStreet.trim(),
+      this.locationCity.trim(),
       this.selectedDistrict,
-      this.selectedProvince,
+      this.selectedProvince ? this.selectedProvince + ' Province' : '',
       'Sri Lanka'
-    ].filter(p => p && p.trim().length > 0);
+    ].filter(Boolean);
     this.location = parts.join(', ');
   }
 
-  // ── Shelter Map Modal ─────────────────────────────────────────────────────
+  // ── Map search states ─────────────────────────────────────────────────────
   showShelterMap = false;
+  mapProvince = '';
+  mapDistrict = '';
+  mapCity = '';
+  mapAddressBuilt = '';
+  mapFilteredDistricts: string[] = [];
+  mapLoadingError = false;
+
   private shelterMapInstance: any = null;
   private citizenMarker: any = null;
   private shelterMarkersLayer: any = null;
-  mapLoadingError = false;
 
-  // ── Address entry INSIDE the map modal ───────────────────────────────────
-  mapProvince = '';
-  mapDistrict = '';
-  mapCity     = '';
-  mapFilteredDistricts: string[] = [];
-  mapAddressBuilt = '';
-  mapSearching = false;
+  readonly sriLankaProvincesForMap: string[] = this.sriLankaProvinces;
+  readonly mapProvinceDistricts: Record<string, string[]> = this.provinceDistricts;
 
   onMapProvinceChange(): void {
     this.mapDistrict = '';
-    this.mapCity     = '';
-    this.mapFilteredDistricts = this.mapProvince
-      ? (this.sriLankaDistrictMap[this.mapProvince] || [])
-      : [];
+    this.mapFilteredDistricts = this.mapProvince ? this.mapProvinceDistricts[this.mapProvince] : [];
     this.buildMapAddress();
   }
 
-  onMapDistrictChange(): void { this.buildMapAddress(); }
+  onMapDistrictChange(): void {
+    this.buildMapAddress();
+  }
 
   buildMapAddress(): void {
     const parts = [
-      this.mapCity,
+      this.mapCity.trim(),
       this.mapDistrict,
-      this.mapProvince,
+      this.mapProvince ? this.mapProvince + ' Province' : '',
       'Sri Lanka'
-    ].filter(p => p && p.trim().length > 0);
+    ].filter(Boolean);
     this.mapAddressBuilt = parts.join(', ');
   }
 
   updateMapLocation(): void {
     if (!this.shelterMapInstance || !this.mapAddressBuilt) return;
-    this.mapSearching = true;
     this.plotCitizenLocation(this.shelterMapInstance, this.mapAddressBuilt);
     this.updateShelterDistances(this.mapAddressBuilt);
-    this.mapSearching = false;
   }
 
-  /** Haversine formula – returns distance in km */
-  private haversineKm(
-    lat1: number, lng1: number,
-    lat2: number, lng2: number
-  ): number {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  /** Recalculate and update shelter card distances from given address */
-  private updateShelterDistances(address: string): void {
-    const citizenCoords = this.geocodeAddress(address);
-    if (!citizenCoords) return;
+  private updateShelterDistances(centerAddress: string): void {
+    const centerCoords = this.geocodeAddress(centerAddress);
+    if (!centerCoords) return;
 
     this.shelters = this.backendShelters.map(s => {
       const coords = this.resolveShelterCoords(s);
-      let distStr = '—';
-      if (coords) {
-        const km = this.haversineKm(
-          citizenCoords.lat, citizenCoords.lng,
-          coords.lat, coords.lng
-        );
-        distStr = km < 1
-          ? Math.round(km * 1000) + ' m away'
-          : km.toFixed(1) + ' km away';
-      }
+      let distStr = coords
+        ? (() => {
+            const km = this.haversineKm(centerCoords.lat, centerCoords.lng, coords.lat, coords.lng);
+            return km < 1 ? Math.round(km * 1000) + ' m away' : km.toFixed(1) + ' km away';
+          })()
+        : '— km away';
       return {
         id: 'SH-' + (s.id || ''),
         name: s.name,
@@ -260,43 +253,48 @@ export class Citizen implements OnInit, OnDestroy {
       };
       return toNum(a.distance) - toNum(b.distance);
     });
-
     this.cdr.detectChanges();
   }
 
-  // ── Selected shelter detail panel ─────────────────────────────────────────
-  selectedShelterDetail: (ShelterInfo & { address?: string; amenities?: string[] }) | null = null;
-
-  openShelterDetail(shelter: ShelterInfo): void {
-    const raw = this.backendShelters.find(s => 'SH-' + (s.id || '') === shelter.id);
-    this.selectedShelterDetail = {
-      ...shelter,
-      address: raw?.address || '',
-      amenities: raw?.amenities || []
-    };
+  // ── Shelter details inside map ──────────────────────────────────────────
+  selectedShelterDetail: any = null;
+  openShelterDetail(sh: any): void {
+    const realShelter = this.backendShelters.find(s => ('SH-' + s.id) === sh.id);
+    if (realShelter) {
+      this.selectedShelterDetail = {
+        name: realShelter.name,
+        address: realShelter.address,
+        bedsFree: (realShelter.capacity || 0) - (realShelter.occupied || 0),
+        status: realShelter.status || 'Available',
+        distance: sh.distance,
+        amenities: realShelter.amenities
+      };
+    } else {
+      this.selectedShelterDetail = sh;
+    }
   }
-
   closeShelterDetail(): void { this.selectedShelterDetail = null; }
 
   openShelterMap(): void {
     this.showShelterMap = true;
-    this.mapLoadingError = false;
-    // Pre-fill map address from citizen profile if available
-    if (this.citizen?.address && !this.mapAddressBuilt) {
-      this.mapAddressBuilt = this.citizen.address;
-      // Try to extract district from stored address
-      const addr = this.citizen.address.toLowerCase();
-      for (const [prov, districts] of Object.entries(this.sriLankaDistrictMap)) {
-        for (const dist of districts) {
-          if (addr.includes(dist.toLowerCase())) {
-            this.mapProvince = prov;
-            this.mapDistrict = dist;
-            this.mapFilteredDistricts = districts;
-            break;
-          }
+    this.mapProvince = '';
+    this.mapDistrict = '';
+    this.mapCity = '';
+    this.mapAddressBuilt = '';
+    this.mapFilteredDistricts = [];
+    if (this.citizen) {
+      const addr = this.citizen.address || '';
+      const lowerAddr = addr.toLowerCase();
+      const provMatch = this.sriLankaProvinces.find(p => lowerAddr.includes(p.toLowerCase()));
+      if (provMatch) {
+        this.mapProvince = provMatch;
+        this.mapFilteredDistricts = this.mapProvinceDistricts[provMatch];
+        const distMatch = this.mapFilteredDistricts.find(d => lowerAddr.includes(d.toLowerCase()));
+        if (distMatch) {
+          this.mapDistrict = distMatch;
         }
-        if (this.mapDistrict) break;
       }
+      this.buildMapAddress();
     }
     setTimeout(() => this.initShelterMap(), 350);
   }
@@ -324,7 +322,6 @@ export class Citizen implements OnInit, OnDestroy {
     const map = L.map('citizenShelterMap', { zoomControl: true }).setView([7.8731, 80.7718], 8);
     this.shelterMapInstance = map;
 
-    // High-quality CARTO light tiles (same as Admin panel)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
@@ -333,13 +330,13 @@ export class Citizen implements OnInit, OnDestroy {
 
     this.shelterMarkersLayer = L.layerGroup().addTo(map);
 
-    // ── Plot backend shelters ─────────────────────────────────────────────
+    // Plot backend shelters
     this.renderBackendSheltersOnMap(map);
 
-    // ── Plot static volunteer positions ──────────────────────────────────
+    // Plot static volunteer positions
     this.renderVolunteersOnMap(map);
 
-    // ── Show citizen's entered location on map ────────────────────────────
+    // Show citizen's entered location on map
     const addrToPlot = this.mapAddressBuilt || this.location;
     if (addrToPlot && addrToPlot.trim().length > 3) {
       this.plotCitizenLocation(map, addrToPlot);
@@ -461,7 +458,6 @@ export class Citizen implements OnInit, OnDestroy {
     });
   }
 
-  /** Plot citizen's entered address as a pulsing red pin on the map */
   private plotCitizenLocation(map: any, address: string): void {
     const coords = this.geocodeAddress(address);
     if (!coords) return;
@@ -490,11 +486,9 @@ export class Citizen implements OnInit, OnDestroy {
         </div>`)
       .openPopup();
 
-    // Pan to citizen's location with animation
     map.flyTo([coords.lat, coords.lng], 11, { animate: true, duration: 1.2 });
   }
 
-  /** Called from HTML when citizen clicks "Show My Location on Map" inside the map modal */
   showMyLocationOnMap(): void {
     if (!this.shelterMapInstance || !this.location) return;
     this.plotCitizenLocation(this.shelterMapInstance, this.location);
@@ -506,6 +500,7 @@ export class Citizen implements OnInit, OnDestroy {
     private emergencyService: EmergencyRequestService,
     private shelterService: ShelterService,
     private notificationService: NotificationService,
+    private fileUploadService: FileUploadService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -618,6 +613,8 @@ export class Citizen implements OnInit, OnDestroy {
             responder: r.assignedVolunteer || '—',
             location: r.location,
             description: `${r.emergencyType} assistance requested.`,
+            disasterImageUrl: r.disasterImageUrl,
+            documentUrl: r.documentUrl,
             trackingMessage: r.status === 'In Progress'
               ? `${r.assignedVolunteer || 'Volunteer'} en route to your location`
               : undefined
@@ -634,7 +631,6 @@ export class Citizen implements OnInit, OnDestroy {
       next: (shelters) => {
         this.backendShelters = shelters; // store full model for map use
         if (shelters && shelters.length > 0) {
-          // If citizen address is known, compute real distances; else placeholder
           const citizenAddr = this.mapAddressBuilt || this.citizen?.address || this.location;
           const citizenCoords = citizenAddr ? this.geocodeAddress(citizenAddr) : null;
 
@@ -707,29 +703,20 @@ export class Citizen implements OnInit, OnDestroy {
     'Tornado', 'Medical Emergency', 'Landslide', 'Other'
   ];
 
-  myRequests: EmergencyRequest[] = [
-    {
-      id: 'ER-2830',
-      type: 'Flood Emergency',
-      date: '2025-06-05',
-      status: 'Resolved',
-      responder: 'Tom Harris',
-      location: 'Colombo, Western Province, Sri Lanka',
-      description: 'Basement flooding rescue needed'
-    },
-    {
-      id: 'ER-2847',
-      type: 'Flood Emergency',
-      date: '2025-06-07',
-      status: 'In Progress',
-      responder: 'James Wright',
-      trackingMessage: 'James Wright en route · ETA 8 min',
-      location: 'Kandy, Central Province, Sri Lanka',
-      description: 'Minor flooding in the backyard'
-    }
-  ];
+  myRequests: EmergencyRequest[] = [];
 
   shelters: ShelterInfo[] = [];
+
+  // ── File Upload state ─────────────────────────────────────────────────────
+  disasterImageFile: File | null = null;
+  disasterImageUrl = '';
+  disasterImageProgress = 0;
+  disasterImageError = '';
+
+  supportingDocFile: File | null = null;
+  supportingDocUrl = '';
+  supportingDocProgress = 0;
+  supportingDocError = '';
 
   // ── Modal Actions ─────────────────────────────────────────────────────────
   openReportModal(): void {
@@ -744,12 +731,96 @@ export class Citizen implements OnInit, OnDestroy {
     this.selectedDistrict = '';
     this.filteredDistricts = [];
     this.contactPhone = this.citizen?.phoneNumber ?? '';
+    this.removeDisasterImage();
+    this.removeSupportingDoc();
   }
 
-  closeModal(): void { this.showModal = false; }
+  closeModal(): void { 
+    this.showModal = false; 
+    this.removeDisasterImage();
+    this.removeSupportingDoc();
+  }
 
   openSosConfirm(): void  { this.showSosConfirm = true; }
   closeSosConfirm(): void { this.showSosConfirm = false; }
+
+  // ── File Selection & Upload Handlers ──────────────────────────────────────
+
+  onDisasterImageSelected(event: any): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.disasterImageFile = files[0];
+      this.disasterImageError = '';
+      this.disasterImageProgress = 0;
+      this.uploadDisasterImage();
+    }
+  }
+
+  uploadDisasterImage(): void {
+    if (!this.disasterImageFile) return;
+
+    this.fileUploadService.uploadFile(this.disasterImageFile, this.citizen?.fullName).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          this.disasterImageProgress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          this.disasterImageUrl = event.body.fileUrl;
+          this.disasterImageProgress = 100;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        this.disasterImageProgress = 0;
+        this.disasterImageError = err.error?.error || 'Failed to upload image';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  removeDisasterImage(): void {
+    this.disasterImageFile = null;
+    this.disasterImageUrl = '';
+    this.disasterImageProgress = 0;
+    this.disasterImageError = '';
+  }
+
+  onSupportingDocSelected(event: any): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.supportingDocFile = files[0];
+      this.supportingDocError = '';
+      this.supportingDocProgress = 0;
+      this.uploadSupportingDoc();
+    }
+  }
+
+  uploadSupportingDoc(): void {
+    if (!this.supportingDocFile) return;
+
+    this.fileUploadService.uploadFile(this.supportingDocFile, this.citizen?.fullName).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          this.supportingDocProgress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          this.supportingDocUrl = event.body.fileUrl;
+          this.supportingDocProgress = 100;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        this.supportingDocProgress = 0;
+        this.supportingDocError = err.error?.error || 'Failed to upload document';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  removeSupportingDoc(): void {
+    this.supportingDocFile = null;
+    this.supportingDocUrl = '';
+    this.supportingDocProgress = 0;
+    this.supportingDocError = '';
+  }
 
   sendQuickSos(): void {
     this.sosLoading = true;
@@ -806,7 +877,9 @@ export class Citizen implements OnInit, OnDestroy {
       status: 'Pending' as const,
       location: this.location,
       assignedVolunteer: '',
-      requestTime: new Date().toISOString()
+      requestTime: new Date().toISOString(),
+      disasterImageUrl: this.disasterImageUrl || undefined,
+      documentUrl: this.supportingDocUrl || undefined
     };
     this.emergencyService.addRequest(newRequestDto).subscribe({
       next: () => {
@@ -818,6 +891,8 @@ export class Citizen implements OnInit, OnDestroy {
           responder: '—',
           location: this.location,
           description: this.description,
+          disasterImageUrl: this.disasterImageUrl || undefined,
+          documentUrl: this.supportingDocUrl || undefined,
           trackingMessage: undefined
         });
         this.showModal = false;

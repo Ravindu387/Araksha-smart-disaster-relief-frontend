@@ -213,6 +213,18 @@
                   <div>
                     <h3 class="font-bold text-slate-800 text-sm">{{ req.type }}</h3>
                     <span class="text-xs text-slate-400 mt-1 block">{{ req.date }}</span>
+                    @if (req.disasterImageUrl) {
+                      <div class="mt-2.5 w-24 h-16 rounded-xl overflow-hidden border border-slate-150 shadow-sm">
+                        <a [href]="req.disasterImageUrl" target="_blank" class="block w-full h-full">
+                          <img [src]="req.disasterImageUrl" alt="Disaster Image" class="w-full h-full object-cover hover:scale-105 transition duration-200" />
+                        </a>
+                      </div>
+                    }
+                    @if (req.documentUrl) {
+                      <a [href]="req.documentUrl" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline mt-2">
+                        📎 View Document
+                      </a>
+                    }
                   </div>
                   <span class="text-xs text-slate-400 font-medium shrink-0 mt-1">{{ req.responder }}</span>
                 </div>
@@ -478,18 +490,116 @@
                 </div>
               </div>
             }
-
-            <!-- STEP 2: PROVIDE DESCRIPTION -->
             @if (currentStep === 2) {
-              <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Can you provide more details?</label>
-                <p class="text-xs text-slate-400">Describe the situation, any immediate hazards, or number of people needing assistance.</p>
-                <textarea 
-                  [(ngModel)]="description"
-                  rows="4"
-                  placeholder="e.g. Water is rising in the living room and blocking the doorway..."
-                  class="w-full p-3 border border-slate-200 rounded-xl text-xs outline-none bg-white text-slate-800 focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 resize-none font-medium"
-                ></textarea>
+              <div class="space-y-3">
+
+
+                <div class="space-y-2">
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Can you provide more details?</label>
+                  <p class="text-xs text-slate-400">Describe the situation, any immediate hazards, or number of people needing assistance.</p>
+                  <textarea 
+                    [(ngModel)]="description"
+                    rows="4"
+                    placeholder="e.g. Water is rising in the living room and blocking the doorway..."
+                    class="w-full p-3 border border-slate-200 rounded-xl text-xs outline-none bg-white text-slate-800 focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 resize-none font-medium"
+                  ></textarea>
+                </div>
+
+                <!-- Disaster Image Upload -->
+                <div class="flex flex-col gap-1.5 text-[11px] font-bold text-slate-500">
+                  <span>DISASTER IMAGES</span>
+                  <div class="flex items-center gap-3">
+                    @if (disasterImageUrl) {
+                      <img [src]="disasterImageUrl" alt="Preview" class="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+                    } @else {
+                      <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-dashed border-slate-200">📷</div>
+                    }
+                    <div class="flex-1 flex flex-col gap-1">
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg"
+                        (change)="onDisasterImageSelected($event)"
+                        class="hidden"
+                        #disasterImageInput
+                      />
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          (click)="disasterImageInput.click()"
+                          class="text-[10px] font-bold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
+                        >
+                          Select Image
+                        </button>
+                        @if (disasterImageUrl) {
+                          <button
+                            type="button"
+                            (click)="removeDisasterImage()"
+                            class="text-[10px] font-bold px-3 py-1.5 bg-red-50 text-red-650 rounded-lg hover:bg-red-100 border border-red-100 transition cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        }
+                      </div>
+                      <p class="text-[9px] text-slate-400 font-semibold mt-0.5">JPEG, JPG, PNG up to 5MB</p>
+                    </div>
+                  </div>
+                  @if (disasterImageProgress > 0 && disasterImageProgress < 100) {
+                    <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden mt-1">
+                      <div class="bg-blue-600 h-full rounded-full transition-all duration-350" [style.width.%]="disasterImageProgress"></div>
+                    </div>
+                  }
+                  @if (disasterImageError) {
+                    <p class="text-[9px] text-red-600 font-bold mt-1">⚠️ {{ disasterImageError }}</p>
+                  }
+                </div>
+
+                <!-- Supporting Documents Upload -->
+                <div class="flex flex-col gap-1.5 text-[11px] font-bold text-slate-500">
+                  <span>SUPPORTING DOCUMENTS</span>
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-dashed border-slate-200">📂</div>
+                    <div class="flex-1 flex flex-col gap-1">
+                      <input
+                        type="file"
+                        accept="application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        (change)="onSupportingDocSelected($event)"
+                        class="hidden"
+                        #supportingDocInput
+                      />
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          (click)="supportingDocInput.click()"
+                          class="text-[10px] font-bold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
+                        >
+                          Select Doc
+                        </button>
+                        @if (supportingDocUrl) {
+                          <button
+                            type="button"
+                            (click)="removeSupportingDoc()"
+                            class="text-[10px] font-bold px-3 py-1.5 bg-red-50 text-red-650 rounded-lg hover:bg-red-100 border border-red-100 transition cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        }
+                      </div>
+                      @if (supportingDocFile) {
+                        <span class="text-[9px] text-emerald-650 font-bold mt-0.5">✓ {{ supportingDocFile.name }}</span>
+                      } @else {
+                        <p class="text-[9px] text-slate-400 font-semibold mt-0.5">PDF, DOC, DOCX up to 5MB</p>
+                      }
+                    </div>
+                  </div>
+                  @if (supportingDocProgress > 0 && supportingDocProgress < 100) {
+                    <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden mt-1">
+                      <div class="bg-blue-600 h-full rounded-full transition-all duration-350" [style.width.%]="supportingDocProgress"></div>
+                    </div>
+                  }
+                  @if (supportingDocError) {
+                    <p class="text-[9px] text-red-600 font-bold mt-1">⚠️ {{ supportingDocError }}</p>
+                  }
+                </div>
               </div>
             }
 

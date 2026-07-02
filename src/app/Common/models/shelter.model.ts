@@ -9,6 +9,7 @@ export interface Shelter {
   latitude?: number;
   longitude?: number;
   lastUpdated?: string;
+  shelterImageUrl?: string;
 }
 
 // Shape the backend actually sends/receives (amenities as comma-separated string)
@@ -23,4 +24,5 @@ export interface ShelterDTO {
   latitude?: number;
   longitude?: number;
   lastUpdated?: string;
-}
+  shelterImageUrl?: string;
+}

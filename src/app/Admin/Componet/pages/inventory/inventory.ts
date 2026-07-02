@@ -1,15 +1,18 @@
 import {
   Component,
   OnInit,
-  AfterViewInit,
   OnDestroy,
+  AfterViewInit,
   ViewChild,
   ElementRef,
   ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { InventoryService } from '../../../../Common/services/inventory.service';
+import { SearchService } from '../../../../Common/services/search.service';
 import {
   Chart,
   BarController,
@@ -52,16 +55,27 @@ export class InventoryItem {
 export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
-  private inventoryService: InventoryService,
-  private cdr: ChangeDetectorRef
-) {}
+    private inventoryService: InventoryService,
+    private searchService: SearchService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   @ViewChild('inventoryChart') chartCanvas!: ElementRef<HTMLCanvasElement>;
   private chart: Chart | null = null;
 
+  // ── Search / Filter state (same names — template bindings intact) ─────────
   searchQuery = '';
   selectedCategory = 'All';
+  selectedStockStatus = '';      // '' | 'available' | 'low' | 'out'
+  sortField = 'name';
+  sortDir: 'asc' | 'desc' = 'asc';
   syncing = false;
+
+  // ── Pagination state (server-side) ────────────────────────────────────────
+  currentPage = 0;               // 0-based
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
 
   addModalOpen = false;
 
@@ -77,9 +91,22 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     'All', 'Food', 'Water', 'Medicine', 'Supplies', 'Shelter', 'Equipment', 'Hygiene',
   ];
 
+  stockStatusOptions = [
+    { label: 'All Stock',   value: '' },
+    { label: 'Available',   value: 'available' },
+    { label: 'Low Stock',   value: 'low' },
+    { label: 'Out of Stock',value: 'out' },
+  ];
+
+  /** All inventory items (unfiltered) — used for chart and low-stock banner. */
   inventoryItems: InventoryItem[] = [];
 
+  /** Current filtered+paginated page from server. */
   filteredItems: InventoryItem[] = [];
+
+  // ── Internal ──────────────────────────────────────────────────────────────
+  private searchSubject = new Subject<void>();
+  private subscriptions = new Subscription();
 
   /* ── Getters ── */
   get lowStockItems(): InventoryItem[] {
@@ -93,6 +120,10 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   get lowStockNames(): string {
     return this.lowStockItems.map(i => i.name).join(', ');
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
   /* ── Chart config ── */
@@ -155,8 +186,32 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   /* ── Lifecycle ── */
   ngOnInit(): void {
+    // Wire debounced search
+    this.subscriptions.add(
+      this.searchSubject.pipe(
+        debounceTime(300),
+        distinctUntilChanged()
+      ).subscribe(() => {
+        this.currentPage = 0;
+        this.loadSearchPage();
+      })
+    );
+
+    // Wire global header search service subscription
+    this.subscriptions.add(
+      this.searchService.searchQuery$.subscribe(q => {
+        if (this.searchQuery !== q) {
+          this.searchQuery = q;
+          this.searchSubject.next();
+        }
+      })
+    );
+
+    // Load all items for chart + low-stock banner
     this.loadInventory();
-}
+    // Load first search page
+    this.loadSearchPage();
+  }
 
   ngAfterViewInit(): void {
     this.buildChart();
@@ -164,72 +219,154 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    this.subscriptions.unsubscribe();
   }
+
+  /* ── Load helpers ── */
+
+  /** Loads ALL inventory for chart and low-stock banner. */
   loadInventory(): void {
 
-  this.inventoryService.getAllInventory().subscribe({
+    this.inventoryService.getAllInventory().subscribe({
 
-    next: (data: any[]) => {
+      next: (data: any[]) => {
 
-      this.inventoryItems = data.map(item => {
+        this.inventoryItems = data.map(item => {
 
-        const colors = this.getCategoryColors(item.category);
+          const colors = this.getCategoryColors(item.category);
 
-        const percentage =
-          item.total > 0
-            ? Math.round((item.count / item.total) * 100)
-            : 0;
+          const percentage =
+            item.total > 0
+              ? Math.round((item.count / item.total) * 100)
+              : 0;
 
-        return {
+          return {
 
-          id: String(item.id),
+            id: String(item.id),
 
-          name: item.name,
+            name: item.name,
 
-          category: item.category,
+            category: item.category,
 
-          count: Number(item.count).toLocaleString(),
+            count: Number(item.count).toLocaleString(),
 
-          total: Number(item.total).toLocaleString(),
+            total: Number(item.total).toLocaleString(),
 
-          unit: item.unit,
+            unit: item.unit,
 
-          percentage,
+            percentage,
 
-          trend: 'Updated',
+            trend: 'Updated',
 
-          trendUp: true,
+            trendUp: true,
 
-          allocated: Number(item.allocated).toLocaleString(),
+            allocated: Number(item.allocated).toLocaleString(),
 
-          min: Number(item.minStock).toLocaleString(),
+            min: Number(item.minStock).toLocaleString(),
 
-          lowStock: item.count < item.minStock,
+            lowStock: item.count < item.minStock,
 
-          ringColor: colors.ring,
+            ringColor: colors.ring,
 
-          dotColor: colors.dot,
+            dotColor: colors.dot,
 
-          barColor: colors.bar
+            barColor: colors.bar
 
-        };
+          };
 
-      });
+        });
 
-      this.applyFilter();
-      
-      this.cdr.detectChanges();
+        this.updateChart();
+
+        this.cdr.detectChanges();
 
 
-    },
+      },
 
-    error: err => console.error(err)
+      error: err => console.error(err)
 
-  });
+    });
 
-}
+  }
 
-  /* ── Chart init ── */
+  /** Loads the current search page from the server. */
+  private loadSearchPage(): void {
+    const sort = `${this.sortField},${this.sortDir}`;
+
+    this.inventoryService.searchInventory({
+      keyword:     this.searchQuery.trim() || undefined,
+      category:    this.selectedCategory === 'All' ? undefined : this.selectedCategory,
+      stockStatus: this.selectedStockStatus || undefined,
+      page:        this.currentPage,
+      size:        this.pageSize,
+      sort
+    }).subscribe({
+      next: (page) => {
+        this.filteredItems = page.content.map((item: any) => {
+          const colors = this.getCategoryColors(item.category);
+          const percentage = item.total > 0
+            ? Math.round((item.count / item.total) * 100) : 0;
+          return {
+            id: String(item.id),
+            name: item.name,
+            category: item.category,
+            count: Number(item.count).toLocaleString(),
+            total: Number(item.total).toLocaleString(),
+            unit: item.unit,
+            percentage,
+            trend: 'Updated',
+            trendUp: true,
+            allocated: Number(item.allocated).toLocaleString(),
+            min: Number(item.minStock).toLocaleString(),
+            lowStock: item.count < item.minStock,
+            ringColor: colors.ring,
+            dotColor: colors.dot,
+            barColor: colors.bar
+          };
+        });
+        this.totalPages    = page.totalPages;
+        this.totalElements = page.totalElements;
+        this.updateChart();
+        this.cdr.detectChanges();
+      },
+      error: err => console.error('Inventory search error', err)
+    });
+  }
+
+  /* ── Filter / search triggers ── */
+
+  filterCategory(category: string): void {
+    this.selectedCategory = category;
+    this.currentPage = 0;
+    this.loadSearchPage();
+  }
+
+  onSearch(): void {
+    this.searchSubject.next();
+  }
+
+  onStockStatusChange(): void {
+    this.currentPage = 0;
+    this.loadSearchPage();
+  }
+
+  setSortField(field: string, dir: 'asc' | 'desc' = 'asc'): void {
+    this.sortField   = field;
+    this.sortDir     = dir;
+    this.currentPage = 0;
+    this.loadSearchPage();
+  }
+
+  /* ── Pagination ── */
+
+  setPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.loadSearchPage();
+    }
+  }
+
+  /* ── Chart ── */
   private buildChart(): void {
     const ctx = this.chartCanvas?.nativeElement.getContext('2d');
     if (!ctx) return;
@@ -245,9 +382,9 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     if (!this.chart) return;
 
     const labels = this.filteredItems.map(item => item.name);
-    const currentStock = this.filteredItems.map(item => Number(String(item.count || '').replace(/,/g, '')) || 0);
+    const currentStock   = this.filteredItems.map(item => Number(String(item.count   || '').replace(/,/g, '')) || 0);
     const allocatedStock = this.filteredItems.map(item => Number(String(item.allocated || '').replace(/,/g, '')) || 0);
-    const minThreshold = this.filteredItems.map(item => Number(String(item.min || '').replace(/,/g, '')) || 0);
+    const minThreshold   = this.filteredItems.map(item => Number(String(item.min     || '').replace(/,/g, '')) || 0);
 
     this.chart.data.labels = labels;
     this.chart.data.datasets[0].data = currentStock;
@@ -257,40 +394,23 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     this.chart.update();
   }
 
-  /* ── Filter / search ── */
-  filterCategory(category: string): void {
-    this.selectedCategory = category;
-    this.applyFilter();
-  }
-
-  onSearch(): void {
-    this.applyFilter();
-  }
-
-  private applyFilter(): void {
-    const q = this.searchQuery.toLowerCase();
-    this.filteredItems = this.inventoryItems.filter(
-      item =>
-        (this.selectedCategory === 'All' || item.category === this.selectedCategory) &&
-        (item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q))
-    );
-    this.updateChart();
-  }
-
+  /* ── Sync button ── */
   syncInventory(): void {
 
     this.syncing = true;
 
     this.loadInventory();
+    this.loadSearchPage();
 
     setTimeout(() => {
 
         this.syncing = false;
 
-    },1000);
+    }, 1000);
 
-}
+  }
 
+  /* ── Add modal ── */
   openAddModal(): void {
     this.addModalOpen = true;
   }
@@ -310,7 +430,7 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
     this.newItemAllocated = '0';
   }
 
- addStockSubmit(): void {
+  addStockSubmit(): void {
 
     const body = {
 
@@ -334,11 +454,12 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
         next: () => {
 
-            alert("Inventory Added Successfully");
+            alert('Inventory Added Successfully');
 
             this.closeAddModal();
 
             this.loadInventory();
+            this.loadSearchPage();
 
         },
 
@@ -346,32 +467,25 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
 
             console.error(err);
 
-            alert("Failed to save inventory");
+            alert('Failed to save inventory');
 
         }
 
     });
 
-}
+  }
 
+  /* ── Category colors (unchanged) ── */
   private getCategoryColors(category: string) {
     switch (category) {
-      case 'Food':
-        return { ring: 'border-amber-500 text-amber-500', dot: 'bg-amber-500', bar: 'bg-amber-500' };
-      case 'Water':
-        return { ring: 'border-blue-500 text-blue-500', dot: 'bg-blue-500', bar: 'bg-blue-600' };
-      case 'Medicine':
-        return { ring: 'border-rose-500 text-rose-500', dot: 'bg-rose-500', bar: 'bg-rose-500' };
-      case 'Supplies':
-        return { ring: 'border-purple-600 text-purple-600', dot: 'bg-purple-600', bar: 'bg-purple-600' };
-      case 'Shelter':
-        return { ring: 'border-emerald-500 text-emerald-500', dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
-      case 'Equipment':
-        return { ring: 'border-amber-500 text-amber-500', dot: 'bg-amber-500', bar: 'bg-amber-500' };
-      case 'Hygiene':
-        return { ring: 'border-teal-500 text-teal-500', dot: 'bg-teal-500', bar: 'bg-teal-500' };
-      default:
-        return { ring: 'border-slate-500 text-slate-500', dot: 'bg-slate-500', bar: 'bg-slate-500' };
+      case 'Food':      return { ring: 'border-amber-500 text-amber-500',   dot: 'bg-amber-500',   bar: 'bg-amber-500' };
+      case 'Water':     return { ring: 'border-blue-500 text-blue-500',     dot: 'bg-blue-500',    bar: 'bg-blue-600' };
+      case 'Medicine':  return { ring: 'border-rose-500 text-rose-500',     dot: 'bg-rose-500',    bar: 'bg-rose-500' };
+      case 'Supplies':  return { ring: 'border-purple-600 text-purple-600', dot: 'bg-purple-600',  bar: 'bg-purple-600' };
+      case 'Shelter':   return { ring: 'border-emerald-500 text-emerald-500',dot: 'bg-emerald-500',bar: 'bg-emerald-500' };
+      case 'Equipment': return { ring: 'border-amber-500 text-amber-500',   dot: 'bg-amber-500',   bar: 'bg-amber-500' };
+      case 'Hygiene':   return { ring: 'border-teal-500 text-teal-500',     dot: 'bg-teal-500',    bar: 'bg-teal-500' };
+      default:          return { ring: 'border-slate-500 text-slate-500',   dot: 'bg-slate-500',   bar: 'bg-slate-500' };
     }
   }
 }

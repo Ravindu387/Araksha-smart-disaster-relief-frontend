@@ -18,4 +18,8 @@ export interface EmergencyRequest {
 
   requestTime: string;
 
-}
+  disasterImageUrl?: string;
+
+  documentUrl?: string;
+
+}

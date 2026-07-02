@@ -16,6 +16,10 @@ export interface Volunteer {
 
   phone: string;
 
+  profilePhotoUrl?: string;
+
+  idVerificationDocUrl?: string;
+
   // UI only
   displayId?: string;
 
@@ -23,4 +27,4 @@ export interface Volunteer {
 
   avatarColor: string;
 
-}
+}

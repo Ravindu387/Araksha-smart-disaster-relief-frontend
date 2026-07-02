@@ -465,9 +465,104 @@
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
             />
           </label>
+
+          <!-- Profile Photo Upload -->
+          <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+            <span>PROFILE PHOTO</span>
+            <div class="flex items-center gap-3">
+              @if (profilePhotoUrl) {
+                <img [src]="profilePhotoUrl" alt="Preview" class="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+              } @else {
+                <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 border border-dashed border-slate-300">🖼️</div>
+              }
+              <div class="flex-1 flex flex-col gap-1">
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  (change)="onProfilePhotoSelected($event)"
+                  class="hidden"
+                  #profilePhotoInput
+                />
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    (click)="profilePhotoInput.click()"
+                    class="text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
+                  >
+                    Select Photo
+                  </button>
+                  @if (profilePhotoUrl) {
+                    <button
+                      type="button"
+                      (click)="removeProfilePhoto()"
+                      class="text-xs font-semibold px-3 py-1.5 bg-red-50 text-red-650 rounded-lg hover:bg-red-100 border border-red-100 transition cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  }
+                </div>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">JPEG, JPG, PNG up to 5MB</p>
+              </div>
+            </div>
+            @if (profilePhotoProgress > 0 && profilePhotoProgress < 100) {
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div class="bg-blue-600 h-full rounded-full transition-all duration-350" [style.width.%]="profilePhotoProgress"></div>
+              </div>
+            }
+            @if (profilePhotoError) {
+              <p class="text-[10px] text-red-600 font-bold mt-1">⚠️ {{ profilePhotoError }}</p>
+            }
+          </div>
+
+          <!-- ID Document Upload -->
+          <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+            <span>ID VERIFICATION DOCUMENT</span>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 border border-dashed border-slate-300">📄</div>
+              <div class="flex-1 flex flex-col gap-1">
+                <input
+                  type="file"
+                  accept="application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  (change)="onIdVerificationDocSelected($event)"
+                  class="hidden"
+                  #idVerificationDocInput
+                />
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    (click)="idVerificationDocInput.click()"
+                    class="text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
+                  >
+                    Select Document
+                  </button>
+                  @if (idVerificationDocUrl) {
+                    <button
+                      type="button"
+                      (click)="removeIdVerificationDoc()"
+                      class="text-xs font-semibold px-3 py-1.5 bg-red-50 text-red-650 rounded-lg hover:bg-red-100 border border-red-100 transition cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  }
+                </div>
+                @if (idVerificationDocFile) {
+                  <span class="text-[10px] text-emerald-650 font-bold mt-0.5">✓ {{ idVerificationDocFile.name }}</span>
+                } @else {
+                  <p class="text-[10px] text-slate-400 font-semibold mt-0.5">PDF, DOC, DOCX up to 5MB</p>
+                }
+              </div>
+            </div>
+            @if (idVerificationDocProgress > 0 && idVerificationDocProgress < 100) {
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div class="bg-blue-600 h-full rounded-full transition-all duration-350" [style.width.%]="idVerificationDocProgress"></div>
+              </div>
+            }
+            @if (idVerificationDocError) {
+              <p class="text-[10px] text-red-600 font-bold mt-1">⚠️ {{ idVerificationDocError }}</p>
+            }
+          </div>
         </div>
 
-        <!-- Buttons -->
         <div class="flex items-center gap-3 mt-6">
           <button
             type="button"
@@ -502,9 +597,13 @@
 
           <!-- Avatar & Header -->
           <div class="flex items-center gap-4 mb-6">
-            <div class="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-lg font-black {{ v.avatarColor }}">
-              {{ v.initials }}
-            </div>
+            @if (v.profilePhotoUrl) {
+              <img [src]="v.profilePhotoUrl" alt="Avatar" class="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0" />
+            } @else {
+              <div class="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-lg font-black {{ v.avatarColor }}">
+                {{ v.initials }}
+              </div>
+            }
             <div>
               <h3 class="text-lg font-black text-slate-900 leading-tight">{{ v.name }}</h3>
               <p class="text-xs font-bold mt-1" [ngClass]="{
@@ -541,6 +640,21 @@
               <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Location</span>
               <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ v.location || 'Unknown' }}</span>
             </div>
+            @if (v.idVerificationDocUrl) {
+              <div class="col-span-2 border-t border-slate-200/60 pt-3">
+                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Verification Document</span>
+                <a
+                  [href]="v.idVerificationDocUrl"
+                  target="_blank"
+                  class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 mt-1 transition cursor-pointer select-none"
+                >
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Download / View ID Document
+                </a>
+              </div>
+            }
           </div>
 
           <!-- Skills -->

@@ -1,5 +1,10 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { SearchService } from '../../../../Common/services/search.service';
+
+
 import {
   Chart,
   LineController,
@@ -84,7 +89,7 @@ interface Volunteer {
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './reports.html',
   styleUrls: ['./reports.css']
 })
@@ -107,6 +112,13 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   stats: StatCard[] = [];
   disasters: DisasterCategory[] = [];
   volunteers: Volunteer[] = [];
+
+  // ── Volunteer Search & Filters ────────────────────────────────────────────
+  volSearchQuery: string = '';
+  volRatingFilter: number = 0;
+  volTasksFilter: number = 0;
+  volSortField: 'tasks' | 'rating' | 'name' = 'tasks';
+  rawVolunteers: Volunteer[] = [];
 
   // ── Chart instances (kept so we can destroy/update them) ─────────────────
   private trendsChartInstance: Chart | null = null;
@@ -163,6 +175,9 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
+  private searchService = inject(SearchService);
+  private searchSub = new Subscription();
+
   constructor(private reportsService: ReportsService) {}
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -172,6 +187,16 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     // Load data for the default tab ("Last 30 Days") when the page opens
     this.loadDataForPeriod(this.activeTab);
+
+    // Sync global search with reports volunteer list search
+    this.searchSub.add(
+      this.searchService.searchQuery$.subscribe((q: string) => {
+        if (this.volSearchQuery !== q) {
+          this.volSearchQuery = q;
+          this.applyVolunteerFilter();
+        }
+      })
+    );
   }
 
   ngAfterViewInit(): void {
@@ -185,7 +210,9 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.trendsChartInstance?.destroy();
     this.breakdownChartInstance?.destroy();
     this.responseChartInstance?.destroy();
+    this.searchSub.unsubscribe();
   }
+
 
   // ─────────────────────────────────────────────────────────────────────────
   // PUBLIC METHODS (called from the HTML template)
@@ -252,13 +279,15 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         // ── Map volunteers ──────────────────────────────────────────────
         // Backend sends: rank, name, avgResponseMinutes, tasksCompleted, rating
         // We add:        avgResponse formatted string ("28 min avg response")
-        this.volunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
+        this.rawVolunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
           rank:        v.rank,
           name:        v.name,
           avgResponse: `${v.avgResponseMinutes} min avg response`,
           tasks:       v.tasksCompleted,
           rating:      v.rating
         }));
+
+        this.applyVolunteerFilter();
 
         // ── Cache trends for chart updates ─────────────────────────────
         this.currentTrendsData = {
@@ -293,6 +322,44 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
   }
+
+  /**
+   * Applies client-side search query, rating, and task completed filters
+   * to the top volunteers list, then sorts the resulting list.
+   */
+  applyVolunteerFilter(): void {
+    let filtered = [...this.rawVolunteers];
+
+    // 1. Search Query (Name)
+    const q = this.volSearchQuery.toLowerCase().trim();
+    if (q) {
+      filtered = filtered.filter(v => v.name.toLowerCase().includes(q));
+    }
+
+    // 2. Rating Filter
+    if (this.volRatingFilter > 0) {
+      filtered = filtered.filter(v => v.rating >= this.volRatingFilter);
+    }
+
+    // 3. Tasks Completed Filter
+    if (this.volTasksFilter > 0) {
+      filtered = filtered.filter(v => v.tasks >= this.volTasksFilter);
+    }
+
+    // 4. Sorting
+    filtered.sort((a, b) => {
+      if (this.volSortField === 'rating') {
+        return b.rating - a.rating; // Descending
+      } else if (this.volSortField === 'name') {
+        return a.name.localeCompare(b.name); // Alphabetical
+      } else {
+        return b.tasks - a.tasks; // Tasks completed - Descending (default)
+      }
+    });
+
+    this.volunteers = filtered;
+  }
+
 
   /**
    * Maps backend disaster categories to UI model objects.

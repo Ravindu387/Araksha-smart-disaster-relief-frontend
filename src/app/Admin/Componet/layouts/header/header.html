@@ -23,8 +23,8 @@
   </div>
 
   <!-- Search -->
-  <div class="hidden md:flex flex-1 max-w-md mx-8">
-    <div class="relative w-full">
+  <div class="hidden md:flex flex-1 max-w-md mx-8 relative">
+    <div class="relative w-full z-50">
       <app-icon
         name="search"
         class="w-[18px] h-[18px] text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -32,12 +32,63 @@
 
       <input
         type="text"
-        placeholder="Search emergencies, volunteers..."
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange($event)"
+        (focus)="onSearchFocus()"
+        (keydown)="onSearchKeyDown($event)"
+        placeholder="Advanced Search/Filtering..."
         aria-label="Global search"
         class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
       />
     </div>
+
+    <!-- Dropdown Suggestions Menu -->
+    <div
+      *ngIf="showSearchSuggestions && filteredFeatures.length > 0"
+      class="absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl max-h-[380px] overflow-y-auto z-50 p-2.5 space-y-1 animate-in fade-in slide-in-from-top-3 duration-200"
+    >
+      <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex justify-between items-center">
+        <span>Suggested Pages & Features</span>
+        <span class="text-slate-300 normal-case font-normal text-[9px]">Press Enter to open</span>
+      </div>
+
+      <button
+        *ngFor="let feat of filteredFeatures; let i = index"
+        (click)="selectFeature(feat); $event.stopPropagation()"
+        class="w-full flex items-center justify-between text-left p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+        [class.bg-slate-50]="i === activeSuggestionIndex"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <app-icon [name]="feat.icon" class="w-4 h-4"></app-icon>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+              {{ feat.name }}
+              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 text-[8px] font-extrabold uppercase">
+                {{ feat.category }}
+              </span>
+            </h4>
+            <p class="text-[10px] text-slate-400 mt-0.5 leading-normal max-w-[300px] truncate">
+              {{ feat.description }}
+            </p>
+          </div>
+        </div>
+
+        <svg class="w-4 h-4 text-slate-300 hover:text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Backdrop to close dropdown -->
+    <div
+      *ngIf="showSearchSuggestions && filteredFeatures.length > 0"
+      class="fixed inset-0 z-40 bg-transparent"
+      (click)="closeSuggestions()"
+    ></div>
   </div>
+
 
   <!-- Right Side -->
   <div class="flex items-center gap-3 shrink-0">

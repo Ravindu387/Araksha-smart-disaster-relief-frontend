@@ -153,7 +153,63 @@
       <div class="lg:col-span-5">
         <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm h-full">
           <h3 class="text-sm font-bold text-slate-900">Top Volunteer Performance</h3>
-          <p class="text-xs text-slate-400 mt-0.5 mb-6">Ranked by tasks completed</p>
+          <p class="text-xs text-slate-400 mt-0.5 mb-4">Ranked by tasks completed</p>
+
+          <!-- Search & Filter Controls -->
+          <div class="flex flex-col gap-2.5 mb-5 select-none">
+            <!-- Search Input -->
+            <div class="relative">
+              <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input
+                type="text"
+                [(ngModel)]="volSearchQuery"
+                (ngModelChange)="applyVolunteerFilter()"
+                placeholder="Search volunteers..."
+                class="w-full pl-8.5 pr-4 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+              />
+            </div>
+            
+            <!-- Filters & Sort Grid -->
+            <div class="grid grid-cols-3 gap-2">
+              <!-- Rating Filter -->
+              <select
+                [(ngModel)]="volRatingFilter"
+                (ngModelChange)="applyVolunteerFilter()"
+                class="px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[10px] font-bold text-slate-500 outline-none focus:border-blue-400 transition bg-white"
+              >
+                <option [value]="0">All Ratings</option>
+                <option [value]="4.8">4.8+ ★</option>
+                <option [value]="4.5">4.5+ ★</option>
+                <option [value]="4.0">4.0+ ★</option>
+              </select>
+
+              <!-- Tasks Filter -->
+              <select
+                [(ngModel)]="volTasksFilter"
+                (ngModelChange)="applyVolunteerFilter()"
+                class="px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[10px] font-bold text-slate-500 outline-none focus:border-blue-400 transition bg-white"
+              >
+                <option [value]="0">All Tasks</option>
+                <option [value]="30">30+ Tasks</option>
+                <option [value]="20">20+ Tasks</option>
+                <option [value]="10">10+ Tasks</option>
+              </select>
+
+              <!-- Sort Field -->
+              <select
+                [(ngModel)]="volSortField"
+                (ngModelChange)="applyVolunteerFilter()"
+                class="px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-[10px] font-bold text-slate-500 outline-none focus:border-blue-400 transition bg-white"
+              >
+                <option value="tasks">Sort: Tasks</option>
+                <option value="rating">Sort: Rating</option>
+                <option value="name">Sort: Name</option>
+              </select>
+            </div>
+          </div>
+
           
           <div class="space-y-5">
             <div *ngFor="let vol of volunteers" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
