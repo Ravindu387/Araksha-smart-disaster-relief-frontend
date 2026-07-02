@@ -5,6 +5,7 @@ import { Icon } from '../../../../Common/icon/icon';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { NotificationService } from '../../../../Common/services/notification.service';
 import { SettingsService } from '../../../../Common/services/settings.service';
+import { AuthService } from '../../../../core/service/auth.service';
 
 interface NavItem {
   label: string;
@@ -35,6 +36,7 @@ export class Sidebar implements OnInit, OnDestroy {
   private emergencyService = inject(EmergencyRequestService);
   private notificationService = inject(NotificationService);
   private settingsService = inject(SettingsService);
+  private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private pollingSub?: Subscription;
 
@@ -107,7 +109,15 @@ export class Sidebar implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.router.navigate(['/LandingPage']);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/LandingPage']);
+      },
+      error: (err) => {
+        console.error('Logout error:', err);
+        this.router.navigate(['/LandingPage']);
+      }
+    });
   }
 
   close(): void {

@@ -165,7 +165,9 @@
         </div>
 
         <input [(ngModel)]="user.email" name="email" placeholder="Email Address"
-          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          [class.border-red-500]="emailInvalid"
+          [class.bg-red-50]="emailInvalid">
 
         <input [(ngModel)]="user.phone" name="phone" placeholder="Phone Number"
           class="border rounded-lg px-3 py-2 w-full mt-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
@@ -217,6 +219,15 @@
               <span>At least one special character (e.g. !@#$%^&*)</span>
             </div>
           </div>
+        </div>
+
+        <!-- CONFIRM PASSWORD -->
+        <div class="mt-4">
+          <label class="text-xs font-medium">Confirm Password</label>
+          <input [(ngModel)]="confirmPassword" name="confirmPassword" type="password"
+            class="border rounded-lg px-3 py-2 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            [class.border-red-500]="passwordMismatch"
+            [class.bg-red-50]="passwordMismatch">
         </div>
 
         <!-- TERMS -->
