@@ -230,6 +230,23 @@ export class Citizen implements OnInit, OnDestroy {
     const centerCoords = this.geocodeAddress(centerAddress);
     if (!centerCoords) return;
 
+    this.mapsService.getNearbyShelters(centerCoords.lat, centerCoords.lng).subscribe({
+      next: (shelterDTOs) => {
+        if (shelterDTOs && shelterDTOs.length > 0) {
+          const closest = shelterDTOs[0];
+          if (closest.redirectionTarget) {
+            this.showRedirectionWarningOnMap(
+              closest.name, 
+              closest.latitude, closest.longitude,
+              closest.redirectionTarget, 
+              closest.redirectLat || 0, closest.redirectLng || 0
+            );
+          }
+        }
+      },
+      error: (err) => console.error('Failed to load redirection shelter alerts:', err)
+    });
+
     this.shelters = this.backendShelters.map(s => {
       const coords = this.resolveShelterCoords(s);
       let distStr = coords
@@ -528,6 +545,55 @@ export class Citizen implements OnInit, OnDestroy {
     if (this.neighborMarkersLayer) {
       this.neighborMarkersLayer.remove();
     }
+    if (this.redirectionRouteLine) {
+      this.redirectionRouteLine.remove();
+    }
+  }
+
+  redirectionRouteLine: any = null;
+
+  showRedirectionWarningOnMap(
+    fromName: string, fromLat: number, fromLng: number,
+    toName: string, toLat: number, toLng: number
+  ) {
+    if (this.redirectionRouteLine) {
+      this.redirectionRouteLine.remove();
+      this.redirectionRouteLine = null;
+    }
+
+    if (!this.shelterMapInstance) return;
+
+    this.mapsService.getRoute(fromLat, fromLng, toLat, toLng).subscribe({
+      next: (route) => {
+        if (route && this.shelterMapInstance && route.coordinates && route.coordinates.length > 0) {
+          const latLngs = route.coordinates.map((c: any) => [c.latitude, c.longitude]);
+          this.redirectionRouteLine = L.polyline(latLngs, {
+            color: '#f97316',
+            weight: 6,
+            opacity: 0.9,
+            dashArray: '8, 8'
+          }).addTo(this.shelterMapInstance);
+
+          const redirectIcon = L.divIcon({
+            className: 'custom-leaflet-marker',
+            html: `<div style="background:#f97316;color:white;border:2px solid #ffedd5;border-radius:6px;padding:3px 6px;font-size:10px;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,0.2)">👉 Redirect to ${toName}</div>`,
+            iconSize: [140, 24],
+            iconAnchor: [70, 12]
+          });
+
+          L.marker([toLat, toLng], { icon: redirectIcon })
+            .addTo(this.neighborMarkersLayer || this.shelterMapInstance)
+            .bindPopup(`
+              <div style="font-family:sans-serif;padding:2px;width:160px;line-height:1.4;">
+                <strong style="color:#d97706;font-size:12px;">⚠️ Capacity Redirection</strong><br/>
+                <span style="font-size:11px;color:#4b5563;">Closest shelter <b>${fromName}</b> is full. Please proceed to <b>${toName}</b>.</span>
+              </div>
+            `)
+            .openPopup();
+        }
+      },
+      error: (err) => console.error('Failed to trace redirection path:', err)
+    });
   }
 
   neighborAidMatches: any[] = [];

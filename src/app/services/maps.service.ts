@@ -28,6 +28,9 @@ export interface NearbyShelter {
   status: string;
   latitude: number;
   longitude: number;
+  redirectionTarget?: string;
+  redirectLat?: number;
+  redirectLng?: number;
 }
 
 export interface NearestVolunteer {
@@ -116,5 +119,10 @@ export class MapsService {
       .set('startLng', startLng.toString())
       .set('incidentIds', ids);
     return this.http.get<RouteResponse>(`${this.baseMapsUrl}/multi-route`, { params });
+  }
+
+  auditShelterCapacity(id: number, occupied: number): Observable<any> {
+    const params = new HttpParams().set('occupied', occupied.toString());
+    return this.http.post<any>(`${environment.apiUrl}/shelters/${id}/audit`, {}, { params });
   }
 }
