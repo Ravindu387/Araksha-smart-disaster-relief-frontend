@@ -21,6 +21,8 @@ import { ReportsComponent } from './Admin/Componet/pages/reports/reports';
 import { LiveTracking } from './Admin/Componet/pages/live-tracking/live-tracking';
 import { Settings } from './Admin/Componet/pages/settings/settings';
 import { Citizen } from './citizen/citizen';
+import { SchedulerComponent } from './Admin/Componet/pages/scheduler/scheduler';
+
 
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
@@ -67,6 +69,7 @@ export const routes: Routes = [
       { path: 'notifications', component: NotificationsComponent },
       { path: 'reports', component: ReportsComponent },
       { path: 'settings', component: Settings },
+      { path: 'scheduler', component: SchedulerComponent },
     ],
   },
 
