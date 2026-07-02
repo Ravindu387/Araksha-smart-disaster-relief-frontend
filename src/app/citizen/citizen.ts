@@ -13,6 +13,8 @@ import { NotificationService, NotificationItem } from '../Common/services/notifi
 import { OnInit } from '@angular/core';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
+import { WeatherService } from '../services/weather.service';
+import { MapsService } from '../services/maps.service';
 
 declare const L: any;
 
@@ -63,6 +65,7 @@ export class Citizen implements OnInit, OnDestroy {
 
   // Raw shelters from backend (full model with lat/lng)
   backendShelters: Shelter[] = [];
+  weatherInfo: any = null;
 
   // ── Sri Lanka coordinate lookup (shared with Admin) ───────────────────────
   private readonly sriLankaCoords: Record<string, { lat: number; lng: number }> = {
@@ -501,7 +504,9 @@ export class Citizen implements OnInit, OnDestroy {
     private shelterService: ShelterService,
     private notificationService: NotificationService,
     private fileUploadService: FileUploadService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private weatherService: WeatherService,
+    private mapsService: MapsService
   ) {}
 
   ngOnInit(): void {
@@ -528,6 +533,7 @@ export class Citizen implements OnInit, OnDestroy {
           this.contactPhone = data.phoneNumber || '';
           this.loadRequests();
           this.loadNotifications();
+          this.loadWeatherForCitizen();
           this.cdr.detectChanges();
         },
         error: (error: HttpErrorResponse) => {
@@ -547,12 +553,26 @@ export class Citizen implements OnInit, OnDestroy {
         this.contactPhone = data.phoneNumber || '';
         this.loadRequests();
         this.loadNotifications();
+        this.loadWeatherForCitizen();
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
         console.error('Error loading citizen by ID', error);
       }
     });
+  }
+
+  loadWeatherForCitizen(): void {
+    if (this.citizen && this.citizen.address) {
+      const city = this.citizen.address.split(',')[0] || 'Colombo';
+      this.weatherService.getWeatherByCity(city).subscribe({
+        next: (info) => {
+          this.weatherInfo = info;
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error('Failed to load citizen weather:', err)
+      });
+    }
   }
 
   isLocalAlert(notification: NotificationItem): boolean {
@@ -632,38 +652,52 @@ export class Citizen implements OnInit, OnDestroy {
         this.backendShelters = shelters; // store full model for map use
         if (shelters && shelters.length > 0) {
           const citizenAddr = this.mapAddressBuilt || this.citizen?.address || this.location;
-          const citizenCoords = citizenAddr ? this.geocodeAddress(citizenAddr) : null;
+          const citizenCoords = citizenAddr ? this.geocodeAddress(citizenAddr) : { lat: 6.9271, lng: 79.8612 };
 
-          this.shelters = shelters.map(s => {
-            const coords = this.resolveShelterCoords(s);
-            let distStr = citizenCoords && coords
-              ? (() => {
-                  const km = this.haversineKm(
-                    citizenCoords.lat, citizenCoords.lng,
-                    coords.lat, coords.lng
-                  );
-                  return km < 1
-                    ? Math.round(km * 1000) + ' m away'
-                    : km.toFixed(1) + ' km away';
-                })()
-              : '— km away';
-            return {
-              id: 'SH-' + (s.id || ''),
-              name: s.name,
-              distance: distStr,
-              status: s.status || 'Available',
-              bedsFree: (s.capacity || 0) - (s.occupied || 0),
-              lat: s.latitude,
-              lng: s.longitude
-            };
-          }).sort((a, b) => {
-            const toNum = (d: string) => {
-              const m = d.match(/([\d.]+)/);
-              if (!m) return 9999;
-              const v = parseFloat(m[1]);
-              return d.includes(' m ') ? v / 1000 : v;
-            };
-            return toNum(a.distance) - toNum(b.distance);
+          this.mapsService.getNearbyShelters(citizenCoords.lat, citizenCoords.lng).subscribe({
+            next: (nearbyList) => {
+              this.shelters = nearbyList.map(s => ({
+                id: 'SH-' + s.shelterId,
+                name: s.name,
+                distance: s.distanceKm < 1 ? Math.round(s.distanceKm * 1000) + ' m away' : s.distanceKm.toFixed(1) + ' km away',
+                status: s.status,
+                bedsFree: s.capacity - s.occupied,
+                lat: s.latitude,
+                lng: s.longitude
+              }));
+              this.cdr.detectChanges();
+            },
+            error: (err) => {
+              console.error('Distance matrix call failed, falling back to local calculation:', err);
+              // Fallback to local haversine
+              this.shelters = shelters.map(s => {
+                const coords = this.resolveShelterCoords(s);
+                let distStr = citizenCoords && coords
+                  ? (() => {
+                      const km = this.haversineKm(citizenCoords.lat, citizenCoords.lng, coords.lat, coords.lng);
+                      return km < 1 ? Math.round(km * 1000) + ' m away' : km.toFixed(1) + ' km away';
+                    })()
+                  : '— km away';
+                return {
+                  id: 'SH-' + (s.id || ''),
+                  name: s.name,
+                  distance: distStr,
+                  status: s.status || 'Available',
+                  bedsFree: (s.capacity || 0) - (s.occupied || 0),
+                  lat: s.latitude,
+                  lng: s.longitude
+                };
+              }).sort((a, b) => {
+                const toNum = (d: string) => {
+                  const m = d.match(/([\d.]+)/);
+                  if (!m) return 9999;
+                  const v = parseFloat(m[1]);
+                  return d.includes(' m ') ? v / 1000 : v;
+                };
+                return toNum(a.distance) - toNum(b.distance);
+              });
+              this.cdr.detectChanges();
+            }
           });
         }
         this.cdr.detectChanges();

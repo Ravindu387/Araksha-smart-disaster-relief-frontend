@@ -6,6 +6,8 @@ import { ShelterService } from '../../../../services/shelter';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { NotificationService } from '../../../../Common/services/notification.service';
 import { forkJoin, catchError, of } from 'rxjs';
+import { WeatherService } from '../../../../services/weather.service';
+import { MapsService } from '../../../../services/maps.service';
 
 declare const L: any;
 
@@ -46,8 +48,11 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private readonly emergencyRequestService = inject(EmergencyRequestService);
   private readonly notificationService = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly weatherService = inject(WeatherService);
+  private readonly mapsService = inject(MapsService);
 
   private coordsMap = new Map<string, { lat: number, lng: number }>();
+  private currentRouteLine: any = null;
 
   ngOnInit() {
     this.updateTime();
@@ -306,21 +311,12 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
       const marker = L.marker([inc.lat, inc.lng], { icon: incidentIcon });
       
-      const popupHtml = `
-        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Incident</span>
-            <span style="font-size: 9px; font-weight: bold; color: #ef4444;">${inc.severity}</span>
-          </div>
-          <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${inc.title}</h4>
-          <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${inc.location}</p>
-          <div style="font-size: 10px; color: #475569; background: #f8fafc; padding: 4px; border-radius: 6px; border: 1px solid #f1f5f9;">${inc.details}</div>
-        </div>
-      `;
+      const popupHtml = this.buildIncidentPopupHtml(inc);
       marker.bindPopup(popupHtml);
 
       marker.on('click', () => {
         this.selectMarker(inc, 'Incident');
+        this.fetchIncidentDataAndDrawRoute(inc, marker);
         this.cdr.detectChanges();
       });
       this.markersGroup.addLayer(marker);
@@ -401,6 +397,10 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
   clearSelection() {
     this.selectedMarker = null;
+    if (this.currentRouteLine) {
+      this.currentRouteLine.remove();
+      this.currentRouteLine = null;
+    }
   }
 
   locateMarker(id: string, type: string) {
@@ -415,6 +415,134 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     setTimeout(() => {
       this.focusedMarkerId = null;
     }, 3000);
+  }
+
+  fetchIncidentDataAndDrawRoute(inc: any, marker: any) {
+    const reqId = parseInt(inc.id.replace('inc-', ''));
+    if (isNaN(reqId)) return;
+
+    if (this.currentRouteLine) {
+      this.currentRouteLine.remove();
+      this.currentRouteLine = null;
+    }
+
+    this.weatherService.getWeatherByCoords(inc.lat, inc.lng).pipe(
+      catchError(err => {
+        console.error('Failed to load weather for incident:', err);
+        return of(null);
+      })
+    ).subscribe(weather => {
+      if (weather) {
+        inc.weather = weather;
+        if (this.selectedMarker && this.selectedMarker.id === inc.id) {
+          this.selectedMarker.weather = weather;
+        }
+        this.updatePopup(inc, marker);
+      }
+
+      this.mapsService.getNearestVolunteer(reqId).pipe(
+        catchError(err => {
+          console.error('Failed to load nearest volunteer for incident:', err);
+          return of(null);
+        })
+      ).subscribe(volunteer => {
+        if (volunteer && volunteer.volunteerId) {
+          inc.recommendedVolunteer = volunteer;
+          if (this.selectedMarker && this.selectedMarker.id === inc.id) {
+            this.selectedMarker.recommendedVolunteer = volunteer;
+          }
+          this.updatePopup(inc, marker);
+
+          this.mapsService.getRoute(volunteer.latitude, volunteer.longitude, inc.lat, inc.lng).pipe(
+            catchError(err => {
+              console.error('Failed to load route for incident:', err);
+              return of(null);
+            })
+          ).subscribe(route => {
+            if (route) {
+              inc.route = route;
+              if (this.selectedMarker && this.selectedMarker.id === inc.id) {
+                this.selectedMarker.route = route;
+              }
+              this.updatePopup(inc, marker);
+
+              if (this.map && route.coordinates && route.coordinates.length > 0) {
+                const latLngs = route.coordinates.map((c: any) => [c.latitude, c.longitude]);
+                this.currentRouteLine = L.polyline(latLngs, {
+                  color: '#ef4444',
+                  weight: 5,
+                  opacity: 0.85,
+                  dashArray: '4, 8'
+                }).addTo(this.map);
+              }
+            }
+          });
+        }
+      });
+    });
+  }
+
+  private updatePopup(inc: any, marker: any) {
+    const html = this.buildIncidentPopupHtml(inc);
+    marker.setPopupContent(html);
+  }
+
+  private buildIncidentPopupHtml(inc: any): string {
+    let weatherSection = '';
+    if (inc.weather) {
+      weatherSection = `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0; font-size: 10px; font-weight: bold; color: #475569; text-transform: uppercase;">⛅ Weather Info</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; font-size: 10px; color: #475569;">
+            <div>🌡️ <b>${inc.weather.temperature.toFixed(1)}°C</b></div>
+            <div>💧 Hum: <b>${inc.weather.humidity}%</b></div>
+            <div>💨 Wind: <b>${inc.weather.windSpeed} km/h</b></div>
+            <div>🌧️ Rain: <b>${inc.weather.rainProbability}%</b></div>
+          </div>
+          ${inc.weather.warnings && inc.weather.warnings !== 'None' ? `
+            <div style="margin-top: 4px; padding: 4px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 4px; font-size: 9px; color: #c53030; font-weight: 500;">
+              ⚠️ ${inc.weather.warnings}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    let volunteerSection = '';
+    if (inc.recommendedVolunteer) {
+      const vol = inc.recommendedVolunteer;
+      const eta = inc.route ? `${inc.route.durationMinutes.toFixed(0)} mins` : `${vol.durationMinutes.toFixed(0)} mins`;
+      const dist = inc.route ? `${inc.route.distanceKm.toFixed(1)} km` : `${vol.distanceKm.toFixed(1)} km`;
+
+      volunteerSection = `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0; font-size: 10px; font-weight: bold; color: #0891b2; text-transform: uppercase;">🏃 Recommended Volunteer</p>
+          <div style="margin-top: 4px; font-size: 11px; color: #1e293b; font-weight: 600;">${vol.name}</div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: #64748b;">
+            <span>📞 ${vol.phone}</span>
+            <span>⭐ ${vol.rating}</span>
+          </div>
+          <div style="margin-top: 4px; display: flex; justify-content: space-between; font-size: 10px; background: #ecfeff; border: 1px solid #c5f6fa; padding: 4px; border-radius: 4px; color: #0891b2; font-weight: 500;">
+            <span>📏 Dist: ${dist}</span>
+            <span>⏱️ ETA: ${eta}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="font-family: sans-serif; padding: 2px; width: 220px; line-height: 1.4;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Incident</span>
+          <span style="font-size: 9px; font-weight: bold; color: #ef4444;">${inc.severity}</span>
+        </div>
+        <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${inc.title}</h4>
+        <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${inc.location}</p>
+        <div style="font-size: 10px; color: #475569; background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px solid #f1f5f9;">${inc.details}</div>
+        ${weatherSection}
+        ${volunteerSection}
+      </div>
+    `;
   }
 
   private findMarkerById(id: string, type: string) {
