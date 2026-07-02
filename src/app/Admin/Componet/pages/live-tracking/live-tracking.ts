@@ -169,7 +169,10 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
             status: v.status || 'Active',
             targetIncidentId: '', 
             phone: v.phone || '+94 77 000 0000',
-            team: v.location || 'Sector A'
+            team: v.location || 'Sector A',
+            rating: v.rating || 5.0,
+            tasks: v.tasks || 0,
+            skills: v.skills || []
           };
         });
 
@@ -380,12 +383,31 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
       const marker = L.marker([vol.lat, vol.lng], { icon: volunteerIcon });
       
+      const badges: string[] = [];
+      if (vol.tasks >= 10) badges.push('Logistics Expert');
+      if (vol.rating >= 4.8) badges.push('Community Hero');
+      if (vol.skills && vol.skills.includes('Medical')) badges.push('First Responder');
+
+      const badgesHtml = badges.map(b => 
+        `<span style="font-size: 8px; font-weight: bold; background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 4px; border: 1px solid #bae6fd; margin-right: 2px; margin-bottom: 2px; display: inline-block;">${b}</span>`
+      ).join('');
+
       const popupHtml = `
-        <div style="font-family: sans-serif; padding: 2px; width: 180px;">
-          <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.1); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.2);">Volunteer</span>
-          <h4 style="margin: 6px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${vol.name}</h4>
-          <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748b;">Specialty: ${vol.role}</p>
-          <p style="margin: 0; font-size: 10px; color: #64748b;">📞 ${vol.phone}</p>
+        <div style="font-family: sans-serif; padding: 2px; width: 190px; line-height: 1.4;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.1); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.2);">Volunteer</span>
+            <span style="font-size: 9px; font-weight: bold; color: #0891b2;">⭐ ${vol.rating.toFixed(1)}</span>
+          </div>
+          <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${vol.name}</h4>
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${vol.team} · Specialty: <b>${vol.role}</b></p>
+          <div style="margin-bottom: 6px; display: flex; flex-wrap: wrap;">
+            ${badgesHtml || '<span style="font-size: 8px; color: #94a3b8;">No badges earned yet</span>'}
+          </div>
+          <div style="margin-top: 4px; font-size: 10px; background: #f8fafc; border: 1px solid #f1f5f9; padding: 4px; border-radius: 4px; color: #475569; display: flex; justify-content: space-between;">
+            <span>Tasks Completed:</span>
+            <span style="font-weight: bold;">${vol.tasks}</span>
+          </div>
+          <p style="margin: 6px 0 0 0; font-size: 10px; color: #64748b;">📞 ${vol.phone}</p>
         </div>
       `;
       marker.bindPopup(popupHtml);
