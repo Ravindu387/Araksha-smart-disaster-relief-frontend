@@ -45,7 +45,7 @@ export class Login {
         const role = localStorage.getItem('role');
 
         if (role === 'ADMIN') {
-          this.router.navigate(['/admin-dashboard']);
+          this.router.navigate(['/dashboard']);
         } else if (role === 'CITIZEN') {
           this.router.navigate(['/citizen/dashboard']);
         } else {
