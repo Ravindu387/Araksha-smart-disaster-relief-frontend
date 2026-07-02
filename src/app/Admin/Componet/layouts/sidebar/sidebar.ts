@@ -154,7 +154,10 @@ export class Sidebar implements OnInit, OnDestroy {
     },
     {
       title: 'System',
-      items: [{ label: 'Settings', route: '/settings', icon: 'settings' }],
+      items: [
+        { label: 'Scheduler', route: '/scheduler', icon: 'settings' },
+        { label: 'Settings', route: '/settings', icon: 'settings' }
+      ],
     },
   ];
 }
