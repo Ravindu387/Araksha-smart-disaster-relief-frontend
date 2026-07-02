@@ -54,7 +54,10 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private coordsMap = new Map<string, { lat: number, lng: number }>();
   private currentRouteLine: any = null;
   private detourRouteLine: any = null;
+  private traversedRouteLine: any = null;
   private hazardsGroup: any = null;
+  private broadcastCircle: any = null;
+  private broadcastMarker: any = null;
 
   ngOnInit() {
     this.updateTime();
@@ -78,8 +81,17 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     if (this.detourRouteLine) {
       this.detourRouteLine.remove();
     }
+    if (this.traversedRouteLine) {
+      this.traversedRouteLine.remove();
+    }
     if (this.hazardsGroup) {
       this.hazardsGroup.remove();
+    }
+    if (this.broadcastCircle) {
+      this.broadcastCircle.remove();
+    }
+    if (this.broadcastMarker) {
+      this.broadcastMarker.remove();
     }
   }
 
@@ -126,9 +138,15 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       const newLat = Math.max(5.9, Math.min(9.9, v.lat + dLat));
       const newLng = Math.max(79.5, Math.min(82.0, v.lng + dLng));
 
-      this.coordsMap.set(v.id, { lat: newLat, lng: newLng });
+      const updatedVol = { ...v, lat: newLat, lng: newLng };
 
-      return { ...v, lat: newLat, lng: newLng };
+      if (this.selectedMarker && (this.selectedMarker.id === v.id || 
+          (this.selectedMarker.recommendedVolunteer && 'vol-' + this.selectedMarker.recommendedVolunteer.volunteerId === v.id))) {
+        setTimeout(() => this.updateRouteProgress(updatedVol), 0);
+      }
+
+      this.coordsMap.set(v.id, { lat: newLat, lng: newLng });
+      return updatedVol;
     });
 
     this.renderMapMarkers();
@@ -296,6 +314,12 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
     this.markersGroup = L.layerGroup().addTo(this.map);
     this.hazardsGroup = L.layerGroup().addTo(this.map);
+
+    this.map.on('click', (e: any) => {
+      if (e.originalEvent.shiftKey) {
+        this.setupBroadcastZone(e.latlng.lat, e.latlng.lng);
+      }
+    });
 
     this.renderMapMarkers();
     this.loadHazardZones();
@@ -467,6 +491,10 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     if (this.detourRouteLine) {
       this.detourRouteLine.remove();
       this.detourRouteLine = null;
+    }
+    if (this.traversedRouteLine) {
+      this.traversedRouteLine.remove();
+      this.traversedRouteLine = null;
     }
   }
 
@@ -646,6 +674,134 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
           weight: 6,
           opacity: 0.85
         }).addTo(this.map);
+      }
+    });
+  }
+
+  updateRouteProgress(vol: any) {
+    if (!this.currentRouteLine || !this.selectedMarker || !this.selectedMarker.route) return;
+
+    const route = this.selectedMarker.route;
+    if (!route.coordinates || route.coordinates.length === 0) return;
+
+    let closestIdx = 0;
+    let minDist = 999999;
+    for (let i = 0; i < route.coordinates.length; i++) {
+      const pt = route.coordinates[i];
+      const dist = this.calculateDistance(vol.lat, vol.lng, pt.latitude, pt.longitude);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = i;
+      }
+    }
+
+    const traversed = route.coordinates.slice(0, closestIdx + 1).map((c: any) => [c.latitude, c.longitude]);
+    const remaining = route.coordinates.slice(closestIdx).map((c: any) => [c.latitude, c.longitude]);
+
+    if (this.traversedRouteLine) {
+      this.traversedRouteLine.remove();
+      this.traversedRouteLine = null;
+    }
+    if (traversed.length > 1) {
+      this.traversedRouteLine = L.polyline(traversed, {
+        color: '#94a3b8',
+        weight: 4,
+        opacity: 0.6
+      }).addTo(this.map);
+    }
+
+    if (this.currentRouteLine) {
+      this.currentRouteLine.remove();
+      this.currentRouteLine = null;
+    }
+    if (remaining.length > 1) {
+      this.currentRouteLine = L.polyline(remaining, {
+        color: this.selectedMarker.markerType === 'Volunteer' ? '#06b6d4' : '#ef4444',
+        weight: 5,
+        opacity: 0.85,
+        dashArray: '4, 8'
+      }).addTo(this.map);
+    }
+
+    this.mapsService.updateVolunteerProgress(parseInt(vol.id.replace('vol-', '')), vol.lat, vol.lng).subscribe({
+      error: (e) => console.error('Failed to log volunteer progress update:', e)
+    });
+  }
+
+  setupBroadcastZone(lat: number, lng: number) {
+    if (this.broadcastCircle) this.broadcastCircle.remove();
+    if (this.broadcastMarker) this.broadcastMarker.remove();
+
+    this.broadcastCircle = L.circle([lat, lng], {
+      color: '#f97316',
+      fillColor: '#fdba74',
+      fillOpacity: 0.25,
+      weight: 2,
+      radius: 5000
+    }).addTo(this.map);
+
+    const popupHtml = `
+      <div style="font-family:sans-serif;width:200px;padding:4px;line-height:1.4;">
+        <strong style="color:#ea580c;font-size:12px;">🚨 Broadcast Alert</strong><br/>
+        <span style="font-size:10px;color:#64748b;">Send radius alert to all citizens within <b>5km</b>.</span>
+        <div style="margin-top:6px;">
+          <input type="text" id="alert-broadcast-txt" placeholder="Enter emergency alert text..." style="width:100%;font-size:10px;padding:4px;border:1px solid #cbd5e1;border-radius:4px;box-sizing:border-box;" />
+        </div>
+        <button id="alert-broadcast-btn" style="margin-top:6px;width:100%;background:#f97316;color:white;font-size:10px;font-weight:bold;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;">Send Alert SMS</button>
+      </div>
+    `;
+
+    this.broadcastMarker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `<div style="background:#ea580c;color:white;border:2px solid white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3)">📢</div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      })
+    }).addTo(this.map).bindPopup(popupHtml).openPopup();
+
+    this.broadcastMarker.on('popupopen', () => {
+      const btn = document.getElementById('alert-broadcast-btn');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const txtEl = document.getElementById('alert-broadcast-txt') as HTMLInputElement;
+          if (txtEl && txtEl.value.trim().length > 0) {
+            this.sendRadiusBroadcast(lat, lng, 5.0, txtEl.value.trim());
+          }
+        });
+      }
+    });
+
+    this.broadcastMarker.on('popupclose', () => {
+      setTimeout(() => {
+        if (this.broadcastCircle) {
+          this.broadcastCircle.remove();
+          this.broadcastCircle = null;
+        }
+        if (this.broadcastMarker) {
+          this.broadcastMarker.remove();
+          this.broadcastMarker = null;
+        }
+      }, 5000);
+    });
+  }
+
+  sendRadiusBroadcast(lat: number, lng: number, radiusKm: number, message: string) {
+    this.mapsService.broadcastRadiusAlert(lat, lng, radiusKm, message).subscribe({
+      next: (res) => {
+        alert(res.message || 'Radius broadcast successful!');
+        if (this.broadcastCircle) {
+          this.broadcastCircle.remove();
+          this.broadcastCircle = null;
+        }
+        if (this.broadcastMarker) {
+          this.broadcastMarker.remove();
+          this.broadcastMarker = null;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to broadcast radius warning alert:', err);
+        alert('Failed to send alerts.');
       }
     });
   }

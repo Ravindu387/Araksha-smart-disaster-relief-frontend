@@ -125,4 +125,20 @@ export class MapsService {
     const params = new HttpParams().set('occupied', occupied.toString());
     return this.http.post<any>(`${environment.apiUrl}/shelters/${id}/audit`, {}, { params });
   }
+
+  updateVolunteerProgress(id: number, lat: number, lng: number): Observable<any> {
+    const params = new HttpParams()
+      .set('currentLat', lat.toString())
+      .set('currentLng', lng.toString());
+    return this.http.post<any>(`${environment.apiUrl}/volunteers/${id}/progress`, {}, { params });
+  }
+
+  broadcastRadiusAlert(lat: number, lng: number, radiusKm: number, message: string): Observable<any> {
+    const params = new HttpParams()
+      .set('lat', lat.toString())
+      .set('lng', lng.toString())
+      .set('radiusKm', radiusKm.toString())
+      .set('message', message);
+    return this.http.post<any>(`${environment.apiUrl}/alerts/broadcast`, {}, { params });
+  }
 }
