@@ -141,4 +141,12 @@ export class MapsService {
       .set('message', message);
     return this.http.post<any>(`${environment.apiUrl}/alerts/broadcast`, {}, { params });
   }
+
+  getRiskZones(): Observable<HazardZone[]> {
+    return this.http.get<HazardZone[]>(`${environment.apiUrl}/weather/risk-zones`);
+  }
+
+  getEmergencyReport(id: number): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/reports/emergency/${id}`);
+  }
 }

@@ -56,6 +56,8 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private detourRouteLine: any = null;
   private traversedRouteLine: any = null;
   private hazardsGroup: any = null;
+  private riskHeatmapGroup: any = null;
+  private isRiskHeatmapVisible: boolean = false;
   private broadcastCircle: any = null;
   private broadcastMarker: any = null;
 
@@ -86,6 +88,9 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.hazardsGroup) {
       this.hazardsGroup.remove();
+    }
+    if (this.riskHeatmapGroup) {
+      this.riskHeatmapGroup.remove();
     }
     if (this.broadcastCircle) {
       this.broadcastCircle.remove();
@@ -314,6 +319,31 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
     this.markersGroup = L.layerGroup().addTo(this.map);
     this.hazardsGroup = L.layerGroup().addTo(this.map);
+    this.riskHeatmapGroup = L.layerGroup();
+
+    // Toggle button control
+    const ToggleControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: (map: any) => {
+        const btn = L.DomUtil.create('button', 'leaflet-bar');
+        btn.innerHTML = '🌋 Toggle Risk Zones';
+        btn.style.background = '#fef3c7';
+        btn.style.color = '#b45309';
+        btn.style.border = '2px solid #f59e0b';
+        btn.style.padding = '5px 10px';
+        btn.style.fontSize = '10px';
+        btn.style.fontWeight = 'bold';
+        btn.style.borderRadius = '4px';
+        btn.style.cursor = 'pointer';
+
+        L.DomEvent.on(btn, 'click', (e: any) => {
+          L.DomEvent.stopPropagation(e);
+          this.toggleRiskHeatmap();
+        });
+        return btn;
+      }
+    });
+    new ToggleControl().addTo(this.map);
 
     this.map.on('click', (e: any) => {
       if (e.originalEvent.shiftKey) {
@@ -386,6 +416,19 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         this.fetchIncidentDataAndDrawRoute(inc, marker);
         this.cdr.detectChanges();
       });
+
+      marker.on('popupopen', () => {
+        const reportBtn = document.getElementById(`btn-incident-report-${inc.id}`);
+        if (reportBtn) {
+          reportBtn.addEventListener('click', () => {
+            const reqId = parseInt(inc.id.replace('inc-', ''));
+            if (!isNaN(reqId)) {
+              this.showEmergencyAuditReport(reqId);
+            }
+          });
+        }
+      });
+
       this.markersGroup.addLayer(marker);
     });
 
@@ -806,6 +849,120 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  toggleRiskHeatmap() {
+    if (!this.map || !this.riskHeatmapGroup) return;
+    this.isRiskHeatmapVisible = !this.isRiskHeatmapVisible;
+    if (this.isRiskHeatmapVisible) {
+      this.riskHeatmapGroup.addTo(this.map);
+      this.loadRiskZones();
+    } else {
+      this.riskHeatmapGroup.remove();
+    }
+  }
+
+  loadRiskZones() {
+    if (!this.map || !this.riskHeatmapGroup) return;
+    this.mapsService.getRiskZones().subscribe({
+      next: (zones) => {
+        this.riskHeatmapGroup.clearLayers();
+        zones.forEach(zone => {
+          const circle = L.circle([zone.latitude, zone.longitude], {
+            color: '#f97316',
+            fillColor: '#fdba74',
+            fillOpacity: 0.25,
+            weight: 2,
+            radius: zone.radiusKm * 1000
+          }).addTo(this.riskHeatmapGroup);
+
+          circle.bindPopup(`
+            <div style="font-family:sans-serif;width:160px;padding:2px;line-height:1.4;">
+              <strong style="color:#c2410c;font-size:11px;">⚠️ Risk Area</strong><br/>
+              <span style="font-size:11px;font-weight:bold;color:#4b5563;">${zone.name}</span><br/>
+              <span style="font-size:10px;color:#64748b;">${zone.description}</span><br/>
+              <span style="font-size:9px;font-weight:bold;color:#f97316;">Range: ${zone.radiusKm} km</span>
+            </div>
+          `);
+        });
+      },
+      error: (err) => console.error('Failed to load risk zones:', err)
+    });
+  }
+
+  showEmergencyAuditReport(id: number) {
+    this.mapsService.getEmergencyReport(id).subscribe({
+      next: (rep) => {
+        const reportHtml = `
+          <div style="font-family:sans-serif;width:260px;padding:6px;line-height:1.4;color:#1e293b;">
+            <div style="border-bottom:2px solid #1e293b;padding-bottom:4px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+              <strong style="font-size:13px;text-transform:uppercase;color:#1e293b;">Araksha Audit Report</strong>
+              <span style="font-size:8px;color:#64748b;">ID: REQ${rep.incidentId}</span>
+            </div>
+            <table style="width:100%;font-size:10px;border-collapse:collapse;">
+              <tr>
+                <td style="padding:3px 0;color:#64748b;">Emergency:</td>
+                <td style="padding:3px 0;font-weight:bold;text-align:right;">${rep.title}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 0;color:#64748b;">Location:</td>
+                <td style="padding:3px 0;text-align:right;">${rep.location}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 0;color:#64748b;">Severity:</td>
+                <td style="padding:3px 0;font-weight:bold;color:#ef4444;text-align:right;">${rep.severity}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 0;color:#64748b;">Status:</td>
+                <td style="padding:3px 0;font-weight:bold;color:#10b981;text-align:right;">${rep.status}</td>
+              </tr>
+              <tr style="border-top:1px solid #e2e8f0;">
+                <td style="padding:4px 0 2px 0;color:#64748b;font-weight:bold;">Volunteer Assigned:</td>
+                <td style="padding:4px 0 2px 0;font-weight:bold;text-align:right;color:#0f766e;">${rep.volunteerName}</td>
+              </tr>
+              <tr>
+                <td style="padding:2px 0;color:#64748b;">Volunteer Phone:</td>
+                <td style="padding:2px 0;text-align:right;">${rep.volunteerPhone}</td>
+              </tr>
+              <tr>
+                <td style="padding:2px 0;color:#64748b;">Avg Distance / Duration:</td>
+                <td style="padding:2px 0;text-align:right;font-weight:500;">${rep.distanceKm}km / ${rep.durationMinutes}m</td>
+              </tr>
+              <tr style="border-top:1px solid #e2e8f0;">
+                <td style="padding:4px 0;color:#64748b;font-weight:bold;" colspan="2">🎒 Allocated Logistics:</td>
+              </tr>
+              <tr>
+                <td style="padding:2px 0 2px 10px;color:#475569;">💦 Water Release:</td>
+                <td style="padding:2px 0;text-align:right;font-weight:bold;">${rep.waterAllocated} Liters</td>
+              </tr>
+              <tr>
+                <td style="padding:2px 0 2px 10px;color:#475569;">🍱 Ration Kits:</td>
+                <td style="padding:2px 0;text-align:right;font-weight:bold;">${rep.foodAllocated} kits</td>
+              </tr>
+              <tr>
+                <td style="padding:2px 0 2px 10px;color:#475569;">💊 Medical Supplies:</td>
+                <td style="padding:2px 0;text-align:right;font-weight:bold;">${rep.medicalAllocated} kits</td>
+              </tr>
+            </table>
+            <div style="margin-top:8px;padding-top:6px;border-top:1px dashed #cbd5e1;font-size:8px;color:#94a3b8;text-align:center;">
+              Araksha Disaster Relief System © ${rep.timestamp.substring(0,10)}
+            </div>
+            <button onclick="window.print()" style="margin-top:8px;width:100%;background:#1e293b;color:white;font-size:10px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">🖨️ Print Audit Details</button>
+          </div>
+        `;
+        
+        if (this.map) {
+          L.popup()
+            .setLatLng(this.map.getCenter())
+            .setContent(reportHtml)
+            .openOn(this.map);
+        }
+      },
+      error: (e) => {
+        console.error('Failed to generate audit report:', e);
+        alert('Could not compile audit report.');
+      }
+    });
+  }
+
   private updatePopup(inc: any, marker: any) {
     const html = this.buildIncidentPopupHtml(inc);
     marker.setPopupContent(html);
@@ -873,6 +1030,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${inc.title}</h4>
         <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${inc.location}</p>
         <div style="font-size: 10px; color: #475569; background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px solid #f1f5f9;">${inc.details}</div>
+        <button id="btn-incident-report-${inc.id}" style="margin-top: 8px; width: 100%; border: none; background: #1e293b; color: white; font-size: 10px; font-weight: bold; padding: 5px; border-radius: 4px; cursor: pointer;">📄 Control Audit Report</button>
         ${detourSection}
         ${weatherSection}
         ${volunteerSection}
