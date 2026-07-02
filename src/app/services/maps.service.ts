@@ -43,11 +43,20 @@ export interface NearestVolunteer {
   longitude: number;
 }
 
+export interface HazardZone {
+  name: string;
+  latitude: number;
+  longitude: number;
+  radiusKm: number;
+  description: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class MapsService {
   private baseMapsUrl = `${environment.apiUrl}/maps`;
+  private baseWeatherUrl = `${environment.apiUrl}/weather`;
 
   constructor(private http: HttpClient) {}
 
@@ -82,5 +91,9 @@ export class MapsService {
   getNearestVolunteer(requestId: number): Observable<NearestVolunteer> {
     const params = new HttpParams().set('requestId', requestId.toString());
     return this.http.get<NearestVolunteer>(`${this.baseMapsUrl}/nearest-volunteer`, { params });
+  }
+
+  getHazardZones(): Observable<HazardZone[]> {
+    return this.http.get<HazardZone[]>(`${this.baseWeatherUrl}/hazards`);
   }
 }

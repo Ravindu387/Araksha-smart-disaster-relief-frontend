@@ -53,6 +53,8 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
 
   private coordsMap = new Map<string, { lat: number, lng: number }>();
   private currentRouteLine: any = null;
+  private detourRouteLine: any = null;
+  private hazardsGroup: any = null;
 
   ngOnInit() {
     this.updateTime();
@@ -70,6 +72,15 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     if (this.timerId) clearInterval(this.timerId);
     if (this.dataIntervalId) clearInterval(this.dataIntervalId);
     this.stopSimulation();
+    if (this.currentRouteLine) {
+      this.currentRouteLine.remove();
+    }
+    if (this.detourRouteLine) {
+      this.detourRouteLine.remove();
+    }
+    if (this.hazardsGroup) {
+      this.hazardsGroup.remove();
+    }
   }
 
   private updateTime() {
@@ -281,8 +292,37 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     }).addTo(this.map);
 
     this.markersGroup = L.layerGroup().addTo(this.map);
+    this.hazardsGroup = L.layerGroup().addTo(this.map);
 
     this.renderMapMarkers();
+    this.loadHazardZones();
+  }
+
+  private loadHazardZones() {
+    if (!this.map || !this.hazardsGroup) return;
+    this.mapsService.getHazardZones().subscribe({
+      next: (zones) => {
+        this.hazardsGroup.clearLayers();
+        zones.forEach(zone => {
+          const circle = L.circle([zone.latitude, zone.longitude], {
+            color: '#ef4444',
+            fillColor: '#f87171',
+            fillOpacity: 0.2,
+            weight: 1.5,
+            radius: zone.radiusKm * 1000
+          }).addTo(this.hazardsGroup);
+
+          circle.bindPopup(`
+            <div style="font-family: sans-serif; padding: 2px; width: 160px;">
+              <strong style="color: #c53030; font-size: 11px;">⚠️ ${zone.name}</strong>
+              <p style="margin: 4px 0 0 0; font-size: 10px; color: #4b5563;">${zone.description}</p>
+              <div style="margin-top: 4px; font-size: 9px; font-weight: bold; color: #ef4444;">Range: ${zone.radiusKm} km</div>
+            </div>
+          `);
+        });
+      },
+      error: (err) => console.error('Failed to load active hazard overlays:', err)
+    });
   }
 
   private renderMapMarkers() {
@@ -401,6 +441,10 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       this.currentRouteLine.remove();
       this.currentRouteLine = null;
     }
+    if (this.detourRouteLine) {
+      this.detourRouteLine.remove();
+      this.detourRouteLine = null;
+    }
   }
 
   locateMarker(id: string, type: string) {
@@ -425,6 +469,12 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
       this.currentRouteLine.remove();
       this.currentRouteLine = null;
     }
+    if (this.detourRouteLine) {
+      this.detourRouteLine.remove();
+      this.detourRouteLine = null;
+    }
+    inc.hasDetour = false;
+    inc.detourReason = '';
 
     this.weatherService.getWeatherByCoords(inc.lat, inc.lng).pipe(
       catchError(err => {
@@ -474,6 +524,53 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
                   opacity: 0.85,
                   dashArray: '4, 8'
                 }).addTo(this.map);
+
+                // Calculate overlap with hazards
+                this.mapsService.getHazardZones().pipe(
+                  catchError(() => of([]))
+                ).subscribe(zones => {
+                  let intersectedHazard: any = null;
+                  for (const zone of zones) {
+                    for (const pt of route.coordinates) {
+                      const dist = this.calculateDistance(pt.latitude, pt.longitude, zone.latitude, zone.longitude);
+                      if (dist < zone.radiusKm) {
+                        intersectedHazard = zone;
+                        break;
+                      }
+                    }
+                    if (intersectedHazard) break;
+                  }
+
+                  if (intersectedHazard) {
+                    const startPt = route.coordinates[0];
+                    const endPt = route.coordinates[route.coordinates.length - 1];
+                    const dy = endPt.latitude - startPt.latitude;
+                    const dx = endPt.longitude - startPt.longitude;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    const px = len > 0 ? -dy / len : 0;
+                    const py = len > 0 ? dx / len : 1;
+                    const offsetDeg = intersectedHazard.radiusKm * 1.3 * 0.009;
+                    const waypointLat = intersectedHazard.latitude + py * offsetDeg;
+                    const waypointLng = intersectedHazard.longitude + px * offsetDeg;
+
+                    const detourLatLngs = [
+                      [startPt.latitude, startPt.longitude],
+                      [waypointLat, waypointLng],
+                      [endPt.latitude, endPt.longitude]
+                    ];
+
+                    this.detourRouteLine = L.polyline(detourLatLngs, {
+                      color: '#22c55e',
+                      weight: 5,
+                      opacity: 0.9,
+                      dashArray: '5, 5'
+                    }).addTo(this.map);
+
+                    inc.hasDetour = true;
+                    inc.detourReason = intersectedHazard.name;
+                    this.updatePopup(inc, marker);
+                  }
+                });
               }
             }
           });
@@ -482,12 +579,34 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
   private updatePopup(inc: any, marker: any) {
     const html = this.buildIncidentPopupHtml(inc);
     marker.setPopupContent(html);
   }
 
   private buildIncidentPopupHtml(inc: any): string {
+    let detourSection = '';
+    if (inc.hasDetour) {
+      detourSection = `
+        <div style="margin-top: 8px; padding: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 10px; color: #166534; line-height: 1.3;">
+          🛡️ <b>Detour Active</b><br/>
+          Safe path bypassing <b>${inc.detourReason}</b> visualized.
+        </div>
+      `;
+    }
+
     let weatherSection = '';
     if (inc.weather) {
       weatherSection = `
@@ -539,6 +658,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         <h4 style="margin: 4px 0 2px 0; font-weight: bold; font-size: 13px; color: #1e293b;">${inc.title}</h4>
         <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748b;">📍 ${inc.location}</p>
         <div style="font-size: 10px; color: #475569; background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px solid #f1f5f9;">${inc.details}</div>
+        ${detourSection}
         ${weatherSection}
         ${volunteerSection}
       </div>
