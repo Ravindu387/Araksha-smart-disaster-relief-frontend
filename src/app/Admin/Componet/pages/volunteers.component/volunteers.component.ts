@@ -49,7 +49,20 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   newVolunteerName = '';
   newVolunteerLocation = '';
   newVolunteerPhone = '';
-  newVolunteerSkills = '';
+  predefinedSkills = [
+    'Medical', 'First Aid', 'Water Rescue', 'Search & Rescue', 
+    'Construction', 'Logistics', 'Communications', 'Firefighting', 'General Support'
+  ];
+  selectedSkillsForNewVolunteer: string[] = [];
+
+  toggleNewVolunteerSkill(skill: string): void {
+    const idx = this.selectedSkillsForNewVolunteer.indexOf(skill);
+    if (idx >= 0) {
+      this.selectedSkillsForNewVolunteer.splice(idx, 1);
+    } else {
+      this.selectedSkillsForNewVolunteer.push(skill);
+    }
+  }
 
   // ── File Upload state ─────────────────────────────────────────────────────
   profilePhotoFile: File | null = null;
@@ -321,7 +334,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.newVolunteerName = '';
     this.newVolunteerLocation = '';
     this.newVolunteerPhone = '';
-    this.newVolunteerSkills = '';
+    this.selectedSkillsForNewVolunteer = [];
     this.removeProfilePhoto();
     this.removeIdVerificationDoc();
   }
@@ -346,10 +359,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
 
       location: this.newVolunteerLocation.trim() || 'Unknown',
 
-      skills: this.newVolunteerSkills
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean),
+      skills: [...this.selectedSkillsForNewVolunteer],
 
       status: 'Available',
 

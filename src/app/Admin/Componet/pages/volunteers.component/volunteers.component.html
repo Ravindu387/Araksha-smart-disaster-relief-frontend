@@ -456,15 +456,27 @@
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
             />
           </label>
-          <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
-            <span>SKILLS (Comma separated)</span>
-            <input
-              type="text"
-              [(ngModel)]="newVolunteerSkills"
-              placeholder="e.g. Logistics, Construction"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
-            />
-          </label>
+          <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+            <span>SKILLS</span>
+            <div class="flex flex-wrap gap-2 mt-1">
+              @for (skill of predefinedSkills; track skill) {
+                <button
+                  type="button"
+                  (click)="toggleNewVolunteerSkill(skill)"
+                  class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+                  [class.bg-blue-600]="selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.border-blue-600]="selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.text-white]="selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.bg-slate-50]="!selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.border-slate-200]="!selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.text-slate-600]="!selectedSkillsForNewVolunteer.includes(skill)"
+                  [class.hover:bg-slate-100]="!selectedSkillsForNewVolunteer.includes(skill)"
+                >
+                  {{ skill }}
+                </button>
+              }
+            </div>
+          </div>
 
           <!-- Profile Photo Upload -->
           <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">

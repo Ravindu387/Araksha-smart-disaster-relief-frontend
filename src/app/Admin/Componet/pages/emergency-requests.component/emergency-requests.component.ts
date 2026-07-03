@@ -7,6 +7,7 @@ import { SearchService } from '../../../../Common/services/search.service';
 
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { EmergencyRequest as EmergencyRequestDto } from '../../../../Common/models/emergency-request.model';
+import { Icon } from '../../../../Common/icon/icon';
 
 interface EmergencyRequest {
 
@@ -37,7 +38,7 @@ interface EmergencyRequest {
 @Component({
   selector: 'app-emergency-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icon],
   templateUrl: './emergency-requests.component.html',
   styleUrls: ['./emergency-requests.component.css']
 })
@@ -238,6 +239,24 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
         alert('Failed to resolve request.');
       }
     });
+  }
+
+  deleteRequest(item: EmergencyRequest): void {
+    if (confirm(`Are you sure you want to delete emergency request ${item.id}?`)) {
+      this.emergencyRequestService.deleteRequest(item.dbId).subscribe({
+        next: () => {
+          this.loadRequests();
+          this.loadSearchPage();
+        },
+        error: (err) => {
+          console.error('Error deleting request:', err);
+          // Fallback local update in case backend is offline/mock
+          this.requests = this.requests.filter(r => r.dbId !== item.dbId);
+          this.filteredRequests = this.filteredRequests.filter(r => r.dbId !== item.dbId);
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   // ── CSV export (unchanged) ────────────────────────────────────────────────

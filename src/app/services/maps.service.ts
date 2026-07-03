@@ -149,4 +149,12 @@ export class MapsService {
   getEmergencyReport(id: number): Observable<any> {
     return this.http.get<any>(`${environment.apiUrl}/reports/emergency/${id}`);
   }
+
+  getLowStockInventory(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/inventory/low-stock`);
+  }
+
+  getNationalWeatherAlerts(): Observable<string[]> {
+    return this.http.get<string[]>(`${environment.apiUrl}/weather/alerts/national`);
+  }
 }
