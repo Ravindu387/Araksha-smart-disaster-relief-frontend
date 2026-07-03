@@ -196,6 +196,9 @@ export class Citizen implements OnInit, OnDestroy {
   private shelterMapInstance: any = null;
   private citizenMarker: any = null;
   private shelterMarkersLayer: any = null;
+  detectedLat: number | null = null;
+  detectedLng: number | null = null;
+  private routeLine: any = null;
 
   readonly sriLankaProvincesForMap: string[] = this.sriLankaProvinces;
   readonly mapProvinceDistricts: Record<string, string[]> = this.provinceDistricts;
@@ -327,6 +330,10 @@ export class Citizen implements OnInit, OnDestroy {
       this.citizenMarker = null;
       this.shelterMarkersLayer = null;
     }
+    if (this.routeLine) {
+      this.routeLine.remove();
+      this.routeLine = null;
+    }
   }
 
   private initShelterMap(): void {
@@ -356,14 +363,126 @@ export class Citizen implements OnInit, OnDestroy {
     // Plot static volunteer positions
     this.renderVolunteersOnMap(map);
 
-    // Show citizen's entered location on map
-    const addrToPlot = this.mapAddressBuilt || this.location;
-    if (addrToPlot && addrToPlot.trim().length > 3) {
-      this.plotCitizenLocation(map, addrToPlot);
-      this.updateShelterDistances(addrToPlot);
-    }
+    // Show citizen's device location or profile location on map
+    this.getUserLocationForMap(map);
 
     setTimeout(() => map.invalidateSize(), 100);
+  }
+
+  getUserLocationForMap(map: any): void {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          const pulsingIcon = L.divIcon({
+            className: '',
+            html: `
+              <div style="position:relative;width:24px;height:24px">
+                <div style="position:absolute;top:0;left:0;width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,0.3);animation:pulse 1.5s infinite"></div>
+                <div style="position:absolute;top:4px;left:4px;width:16px;height:16px;border-radius:50%;background:#ef4444;border:3px solid white;box-shadow:0 2px 8px rgba(239,68,68,0.6)"></div>
+              </div>
+              <style>@keyframes pulse{0%{transform:scale(1);opacity:0.8}70%{transform:scale(2.2);opacity:0}100%{transform:scale(2.2);opacity:0}}</style>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          });
+
+          if (this.citizenMarker) {
+            this.citizenMarker.remove();
+          }
+          this.citizenMarker = L.marker([lat, lng], { icon: pulsingIcon, zIndexOffset: 1000 })
+            .addTo(map)
+            .bindPopup(`
+              <div style="font-family:sans-serif;padding:4px 2px">
+                <strong style="font-size:12px;color:#ef4444">📍 Detected Location</strong><br>
+                <span style="font-size:11px;color:#475569">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
+              </div>`)
+            .openPopup();
+
+          map.setView([lat, lng], 13);
+          this.mapAddressBuilt = 'GPS Coordinates: ' + lat.toFixed(4) + ', ' + lng.toFixed(4);
+
+          this.shelters = this.backendShelters.map(s => {
+            const coords = this.resolveShelterCoords(s);
+            let distStr = coords
+              ? (() => {
+                  const km = this.haversineKm(lat, lng, coords.lat, coords.lng);
+                  return km < 1 ? Math.round(km * 1000) + ' m away' : km.toFixed(1) + ' km away';
+                })()
+              : '— km away';
+            return {
+              id: 'SH-' + (s.id || ''),
+              name: s.name,
+              distance: distStr,
+              status: s.status || 'Available',
+              bedsFree: (s.capacity || 0) - (s.occupied || 0),
+              lat: s.latitude,
+              lng: s.longitude
+            };
+          }).sort((a, b) => {
+            const toNum = (d: string) => {
+              const m = d.match(/([\d.]+)/);
+              if (!m) return 9999;
+              const v = parseFloat(m[1]);
+              return d.includes(' m ') ? v / 1000 : v;
+            };
+            return toNum(a.distance) - toNum(b.distance);
+          });
+          this.cdr.detectChanges();
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+          const addrToPlot = this.citizen?.address || this.location || 'Colombo, Sri Lanka';
+          this.mapAddressBuilt = addrToPlot;
+          if (addrToPlot && addrToPlot.trim().length > 3) {
+            this.plotCitizenLocation(map, addrToPlot);
+            this.updateShelterDistances(addrToPlot);
+          }
+        }
+      );
+    } else {
+      const addrToPlot = this.citizen?.address || this.location || 'Colombo, Sri Lanka';
+      this.mapAddressBuilt = addrToPlot;
+      if (addrToPlot && addrToPlot.trim().length > 3) {
+        this.plotCitizenLocation(map, addrToPlot);
+        this.updateShelterDistances(addrToPlot);
+      }
+    }
+  }
+
+  useDeviceLocationForMap(): void {
+    if (this.shelterMapInstance) {
+      this.getUserLocationForMap(this.shelterMapInstance);
+    }
+  }
+
+  drawRouteToShelter(shelterLat: number, shelterLng: number): void {
+    if (!this.shelterMapInstance || !this.detectedLat || !this.detectedLng) return;
+
+    if (this.routeLine) {
+      this.routeLine.remove();
+    }
+
+    const points = [
+      [this.detectedLat, this.detectedLng],
+      [shelterLat, shelterLng]
+    ];
+
+    this.routeLine = L.polyline(points, {
+      color: '#2563eb',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '10, 10'
+    }).addTo(this.shelterMapInstance);
+
+    this.shelterMapInstance.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+  }
+
+  getGoogleMapsNavUrl(shelter: any): string {
+    const origin = this.detectedLat && this.detectedLng ? `${this.detectedLat},${this.detectedLng}` : '';
+    const dest = shelter.lat && shelter.lng ? `${shelter.lat},${shelter.lng}` : encodeURIComponent(shelter.address || shelter.name);
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`;
   }
 
   private makeCircleIcon(color: string, size = 16): any {
@@ -501,7 +620,7 @@ export class Citizen implements OnInit, OnDestroy {
       .addTo(map)
       .bindPopup(`
         <div style="font-family:sans-serif;padding:4px 2px">
-          <strong style="font-size:12px;color:#ef4444">📍 Your Location</strong><br>
+          <strong style="font-size:12px;color:#ef4444">📍 Detected Location</strong><br>
           <span style="font-size:11px;color:#475569">${address}</span>
         </div>`)
       .openPopup();

@@ -964,56 +964,21 @@ class="fixed inset-0 z-50 flex justify-end">
         <div class="px-5 py-3 bg-gradient-to-r from-slate-50 to-emerald-50 border-b border-slate-100 space-y-3">
 
           <!-- Address Input Row -->
-          <div class="flex flex-wrap items-end gap-2">
-            <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-1.5">
               <div class="w-6 h-6 rounded-lg bg-red-100 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </div>
-              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">Your Location:</span>
+              <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Detected Location</span>
             </div>
 
-            <!-- Province -->
-            <select
-              [(ngModel)]="mapProvince"
-              (ngModelChange)="onMapProvinceChange()"
-              class="flex-1 min-w-[130px] h-8 px-2 border border-slate-200 rounded-lg text-[11px] outline-none bg-white text-slate-700 focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400 font-medium"
-            >
-              <option value="">Province</option>
-              @for (p of sriLankaProvinces; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
-
-            <!-- District -->
-            <select
-              [(ngModel)]="mapDistrict"
-              (ngModelChange)="onMapDistrictChange()"
-              [disabled]="!mapProvince"
-              class="flex-1 min-w-[110px] h-8 px-2 border border-slate-200 rounded-lg text-[11px] outline-none bg-white text-slate-700 focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400 font-medium disabled:opacity-40"
-            >
-              <option value="">District</option>
-              @for (d of mapFilteredDistricts; track d) {
-                <option [value]="d">{{ d }}</option>
-              }
-            </select>
-
-            <!-- City -->
-            <input
-              type="text"
-              [(ngModel)]="mapCity"
-              (ngModelChange)="buildMapAddress()"
-              placeholder="City / Town"
-              class="flex-1 min-w-[100px] h-8 px-2 border border-slate-200 rounded-lg text-[11px] outline-none bg-white text-slate-700 focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400 font-medium"
-            />
-
-            <!-- Find button -->
+            <!-- GPS Location button -->
             <button
-              (click)="updateMapLocation()"
-              [disabled]="!mapAddressBuilt"
-              class="h-8 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white text-[11px] font-bold rounded-lg transition flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-sm"
+              (click)="useDeviceLocationForMap()"
+              class="h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg transition flex items-center gap-1.5 shadow-md cursor-pointer"
+              title="Detect device location using GPS"
             >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              Find Shelters
+              🎯 Detect GPS Location
             </button>
           </div>
 
@@ -1031,7 +996,7 @@ class="fixed inset-0 z-50 flex justify-end">
             <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>Limited</div>
             <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>Full</div>
             <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>Volunteer</div>
-            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 inline-block animate-pulse"></span>Your Location</div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 inline-block animate-pulse"></span>Detected Location</div>
             @if (backendShelters.length > 0) {
               <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold ml-auto">🏠 {{ backendShelters.length }} shelters from database</span>
             }
@@ -1048,7 +1013,7 @@ class="fixed inset-0 z-50 flex justify-end">
           <div class="border-t border-slate-100 bg-slate-50 px-4 py-3">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">
               Shelters
-              @if (mapAddressBuilt) { <span class="text-emerald-600"> — sorted by distance from your location</span> }
+              @if (mapAddressBuilt) { <span class="text-emerald-600"> — sorted by distance from detected location</span> }
             </p>
             <div class="flex gap-3 overflow-x-auto pb-1">
               @for (sh of shelters; track sh.id) {
@@ -1065,10 +1030,18 @@ class="fixed inset-0 z-50 flex justify-end">
                   </div>
                   <h4 class="text-xs font-bold text-slate-800 leading-tight">{{ sh.name }}</h4>
                   <span class="text-[10px] text-slate-500">🛏 {{ sh.bedsFree }} beds free</span>
-                  <button
-                    (click)="openShelterDetail(sh)"
-                    class="mt-1 w-full py-1 text-[10px] font-bold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition"
-                  >View Details</button>
+                  <div class="flex gap-1.5 mt-1">
+                    <button
+                      (click)="openShelterDetail(sh)"
+                      class="flex-1 py-1 text-[10px] font-bold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition cursor-pointer"
+                    >View Details</button>
+                    @if (sh.lat && sh.lng) {
+                      <button
+                        (click)="drawRouteToShelter(sh.lat, sh.lng)"
+                        class="flex-1 py-1 text-[10px] font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                      >Show Route</button>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -1170,10 +1143,25 @@ class="fixed inset-0 z-50 flex justify-end">
         </div>
 
         <!-- Footer -->
-        <div class="px-5 pb-5">
+        <div class="px-5 pb-5 space-y-2">
+          @if (selectedShelterDetail.lat && selectedShelterDetail.lng) {
+            <button
+              (click)="drawRouteToShelter(selectedShelterDetail.lat, selectedShelterDetail.lng); closeShelterDetail()"
+              class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10"
+            >
+              🚀 Show Route on Map
+            </button>
+          }
+          <a
+            [href]="getGoogleMapsNavUrl(selectedShelterDetail)"
+            target="_blank"
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10"
+          >
+            🗺 Navigate on Google Maps
+          </a>
           <button
             (click)="closeShelterDetail()"
-            class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition"
+            class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >Close</button>
         </div>
       </div>

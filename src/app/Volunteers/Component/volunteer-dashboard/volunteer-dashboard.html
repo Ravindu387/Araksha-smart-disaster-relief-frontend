@@ -117,65 +117,55 @@
 
         <!-- Right Column -->
         <div class="lg:col-span-7 flex flex-col gap-6">
-          <div *ngIf="selectedTask" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col gap-5">
-            <div class="bg-white p-6 shadow-sm overflow-hidden">
-              <div class="flex justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-800">Route to {{selectedTask.taskCode}}</h2>
-                <span class="text-[#2563eb] text-sm font-bold flex items-center gap-1">⚡ AI Route</span>
+          <!-- Live Map Card -->
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+              <h2 class="text-lg font-bold text-slate-800">Live Mapping System</h2>
+              <span class="text-[#2563eb] text-sm font-bold flex items-center gap-1">📡 Active Monitoring</span>
+            </div>
+            <!-- Leaflet Map Container -->
+            <div id="volunteer-map" class="h-80 w-full relative rounded-2xl overflow-hidden border border-slate-200 shadow-md z-0"></div>
+          </div>
+
+          <div *ngIf="selectedTask" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 flex flex-col gap-6">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-bold text-[#2563eb]">{{selectedTask.taskCode}}</p>
+                <h1 class="text-xl font-bold text-slate-800 mt-1">{{selectedTask.name}}</h1>
               </div>
-              <div class="h-56 bg-[#08182d] relative rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
-                <div class="absolute inset-0 opacity-20" style="background-image:linear-gradient(#4b6b8a 1px,transparent 1px),linear-gradient(90deg,#4b6b8a 1px,transparent 1px);background-size:35px 35px;"></div>
-                <div class="absolute left-1/4 bottom-8">
-                  🔵
-                  <div class="bg-white px-3 py-1 mt-1 rounded-lg text-xs font-bold shadow-md text-slate-800">You</div>
-                </div>
-                <div class="absolute right-1/4 top-12">
-                  🚨
-                  <div class="bg-white px-3 py-1 mt-1 rounded-lg text-xs font-bold shadow-md text-slate-800">{{selectedTask.taskCode}}</div>
-                </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold" [ngClass]="selectedTask.priorityColor">{{selectedTask.priority}}</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Citizen</p>
+                <b class="text-slate-800 text-sm">{{selectedTask.citizenName}}</b>
+              </div>
+              <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Contact</p>
+                <b class="text-[#2563eb] text-sm">{{selectedTask.contact}}</b>
               </div>
             </div>
 
-            <div class="px-6 pb-6 space-y-6">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-bold text-[#2563eb]">{{selectedTask.taskCode}}</p>
-                  <h1 class="text-xl font-bold text-slate-800 mt-1">{{selectedTask.name}}</h1>
-                </div>
-                <span class="px-3 py-1 rounded-full text-xs font-bold" [ngClass]="selectedTask.priorityColor">{{selectedTask.priority}}</span>
-              </div>
+            <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
+              <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Address</p>
+              <b class="text-slate-800 text-sm">{{selectedTask.location}}</b>
+            </div>
 
-              <div class="grid grid-cols-2 gap-4">
-                <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
-                  <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Citizen</p>
-                  <b class="text-slate-800 text-sm">{{selectedTask.citizenName}}</b>
-                </div>
-                <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
-                  <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Contact</p>
-                  <b class="text-[#2563eb] text-sm">{{selectedTask.contact}}</b>
-                </div>
-              </div>
-
-              <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-1">
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Address</p>
-                <b class="text-slate-800 text-sm">{{selectedTask.location}}</b>
-              </div>
-
-              <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Needs Assessment</h3>
-                <div class="flex gap-2 flex-wrap">
-                  <span *ngFor="let need of needs" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl text-xs font-bold">
-                    {{need}}
-                  </span>
-                </div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Needs Assessment</h3>
+              <div class="flex gap-2 flex-wrap">
+                <span *ngFor="let need of needs" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl text-xs font-bold">
+                  {{need}}
+                </span>
               </div>
             </div>
           </div>
 
-          <div *ngIf="!selectedTask" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-10 text-center flex flex-col items-center justify-center min-h-[350px]">
-            <span class="text-5xl mb-5 opacity-80">🛡️</span>
-            <p class="font-bold text-slate-800 text-lg mb-2">No Active Tasks Assigned</p>
-            <p class="text-sm text-slate-500 max-w-sm">Select an assigned task from the left list or accept a nearby open request to view live route navigation and needs assessment.</p>
+          <div *ngIf="!selectedTask" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-10 text-center flex flex-col items-center justify-center min-h-[200px]">
+            <span class="text-3xl mb-3 opacity-80">🛡️</span>
+            <p class="font-bold text-slate-800 text-base mb-1">No Active Tasks Assigned</p>
+            <p class="text-xs text-slate-500 max-w-sm">Select an assigned task from the left list or accept a nearby open request to view needs assessment.</p>
           </div>
 
           <div class="grid grid-cols-2 gap-6">

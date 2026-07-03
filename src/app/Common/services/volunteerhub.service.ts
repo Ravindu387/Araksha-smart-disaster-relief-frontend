@@ -66,4 +66,9 @@ export class VolunteerHubService {
   getAllEmergencyRequests(): Observable<EmergencyRequest[]> {
     return this.http.get<EmergencyRequest[]>(this.requestsApiUrl);
   }
+
+  // UPDATE EMERGENCY REQUEST
+  updateEmergencyRequest(id: number, request: EmergencyRequest): Observable<EmergencyRequest> {
+    return this.http.put<EmergencyRequest>(`${this.requestsApiUrl}/${id}`, request);
+  }
 }

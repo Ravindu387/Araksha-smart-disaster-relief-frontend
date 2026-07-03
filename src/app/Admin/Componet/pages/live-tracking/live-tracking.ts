@@ -5,9 +5,10 @@ import { VolunteerService } from '../../../../Common/services/volunteer.service'
 import { ShelterService } from '../../../../services/shelter';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { NotificationService } from '../../../../Common/services/notification.service';
-import { forkJoin, catchError, of } from 'rxjs';
+import { forkJoin, catchError, of, Subscription } from 'rxjs';
 import { WeatherService } from '../../../../services/weather.service';
 import { MapsService } from '../../../../services/maps.service';
+import { SearchService } from '../../../../Common/services/search.service';
 
 declare const L: any;
 
@@ -43,6 +44,8 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private map: any;
   private markersGroup: any;
 
+  private subscriptions = new Subscription();
+
   private readonly volunteerService = inject(VolunteerService);
   private readonly shelterService = inject(ShelterService);
   private readonly emergencyRequestService = inject(EmergencyRequestService);
@@ -50,6 +53,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly weatherService = inject(WeatherService);
   private readonly mapsService = inject(MapsService);
+  private readonly searchService = inject(SearchService);
 
   private coordsMap = new Map<string, { lat: number, lng: number }>();
   private currentRouteLine: any = null;
@@ -69,6 +73,16 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     this.loadAllData();
     this.dataIntervalId = setInterval(() => this.loadAllData(), 5000);
     this.startSimulation();
+
+    // Wire global header search service subscription
+    this.subscriptions.add(
+      this.searchService.searchQuery$.subscribe(q => {
+        if (this.searchQuery !== q) {
+          this.searchQuery = q;
+          this.cdr.detectChanges();
+        }
+      })
+    );
   }
 
   ngAfterViewInit() {
@@ -76,6 +90,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
+    this.subscriptions.unsubscribe();
     if (this.timerId) clearInterval(this.timerId);
     if (this.dataIntervalId) clearInterval(this.dataIntervalId);
     this.stopSimulation();
