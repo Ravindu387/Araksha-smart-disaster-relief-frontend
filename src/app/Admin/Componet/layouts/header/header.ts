@@ -7,6 +7,7 @@ import { Icon } from '../../../../Common/icon/icon';
 import { SettingsService } from '../../../../Common/services/settings.service';
 import { SearchService } from '../../../../Common/services/search.service';
 import { Subscription } from 'rxjs';
+import { NotificationService, NotificationItem } from '../../../../Common/services/notification.service';
 
 interface CommandOption {
   name: string;
@@ -32,12 +33,55 @@ export class Header implements OnInit, OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   currentSection = 'Dashboard';
-  notificationCount = 5;
   adminName = 'Admin Kumar';
   adminInitials = 'AK';
 
   showDropdown = false;
+  showNotificationDropdown = false;
   searchQuery = '';
+
+  notifications: NotificationItem[] = [
+    {
+      id: 4,
+      category: 'alerts',
+      severity: 'critical',
+      title: 'Flash Flood Warning',
+      badge: 'RED ALERT',
+      description: 'Water levels rising rapidly in Sector 4. Immediate evacuation recommended.',
+      time: '5 mins ago',
+      read: false
+    },
+    {
+      id: 3,
+      category: 'assignments',
+      severity: 'high',
+      title: 'New Rescue Mission Assigned',
+      badge: 'ASSIGNMENT',
+      description: 'Volunteer team Alpha-7 assigned to Shelter C.',
+      time: '15 mins ago',
+      read: false
+    },
+    {
+      id: 2,
+      category: 'inventory',
+      severity: 'info',
+      title: 'Low Water Stock',
+      badge: 'STOCK LOW',
+      description: 'Warehouse 2 is running below the minimum threshold of bottled water.',
+      time: '1 hr ago',
+      read: true
+    },
+    {
+      id: 1,
+      category: 'shelters',
+      severity: 'success',
+      title: 'Shelter B Capacity Updated',
+      badge: 'COMPLETED',
+      description: 'Additional beds added to Shelter B. Available capacity is now 50.',
+      time: '2 hrs ago',
+      read: true
+    }
+  ];
 
   showSearchSuggestions = false;
   activeSuggestionIndex = 0;
@@ -128,6 +172,7 @@ export class Header implements OnInit, OnDestroy {
 
   private settingsService = inject(SettingsService);
   private searchService = inject(SearchService);
+  private notificationService = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private sub = new Subscription();
 
@@ -136,6 +181,7 @@ export class Header implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadAdminProfile();
     this.updateSection(this.router.url);
+    this.loadNotifications();
 
     // Sync header query with the service
     this.sub.add(
@@ -240,12 +286,97 @@ export class Header implements OnInit, OnDestroy {
     this.toggleSidebar.emit();
   }
 
-  navigateToNotifications(): void {
+  get unreadNotificationsCount(): number {
+    return this.notifications.filter(n => !n.read).length;
+  }
+
+  toggleNotificationDropdown(): void {
+    this.showNotificationDropdown = !this.showNotificationDropdown;
+    if (this.showNotificationDropdown) {
+      this.showDropdown = false;
+    }
+  }
+
+  closeNotificationDropdown(): void {
+    this.showNotificationDropdown = false;
+  }
+
+  loadNotifications(): void {
+    this.notificationService.getNotifications().subscribe({
+      next: (data: any[]) => {
+        if (data && data.length > 0) {
+          const mapped = data.map((item) => ({
+            id: item.id,
+            category: item.category,
+            severity: item.severity,
+            title: item.title,
+            badge: item.badge,
+            description: item.description,
+            time: item.time,
+            read: item.read,
+          }));
+          this.notifications = mapped.sort((a, b) => b.id - a.id);
+        } else {
+          this.notifications.sort((a, b) => b.id - a.id);
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load notifications from service, using local fallback.', err);
+        this.notifications.sort((a, b) => b.id - a.id);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  markAsRead(id: number): void {
+    this.notificationService.markAsRead(id).subscribe({
+      next: () => {
+        this.notifications = this.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to mark as read on backend, updating locally.', err);
+        this.notifications = this.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  markAllRead(): void {
+    this.notificationService.markAllRead().subscribe({
+      next: () => {
+        this.notifications = this.notifications.map((n) => ({
+          ...n,
+          read: true,
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to mark all as read on backend, updating locally.', err);
+        this.notifications = this.notifications.map((n) => ({
+          ...n,
+          read: true,
+        }));
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  goToNotificationsPage(): void {
+    this.closeNotificationDropdown();
     this.router.navigate(['/notifications']);
   }
 
   toggleDropdown(): void {
     this.showDropdown = !this.showDropdown;
+    if (this.showDropdown) {
+      this.showNotificationDropdown = false;
+    }
   }
 
   closeDropdown(): void {

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { Icon } from '../../../../Common/icon/icon';
 import { EmergencyRequestService } from '../../../../Common/services/emergency-request.service';
 import { VolunteerService } from '../../../../Common/services/volunteer.service';
@@ -52,13 +53,16 @@ interface ActivityItem {
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
+export class Dashboard implements OnInit, OnDestroy {
+  private subscriptions = new Subscription();
+
   constructor(
     private emergencyRequestService: EmergencyRequestService,
     private volunteerService: VolunteerService,
     private shelterService: ShelterService,
     private inventoryService: InventoryService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   goToEmergencyRequests(): void {
@@ -71,71 +75,87 @@ export class Dashboard implements OnInit {
 
   private loadAllData(): void {
     // 1. Emergency Requests
-    this.emergencyRequestService.getAllRequests().subscribe({
-      next: (requests) => {
-        this.stats[0].value = requests.length.toLocaleString();
-        
-        const activeCount = requests.filter(r => r.status !== 'Completed').length;
-        this.stats[1].value = activeCount.toString();
+    this.subscriptions.add(
+      this.emergencyRequestService.getAllRequests().subscribe({
+        next: (requests) => {
+          this.stats[0].value = requests.length.toLocaleString();
+          
+          const activeCount = requests.filter(r => r.status !== 'Completed').length;
+          this.stats[1].value = activeCount.toString();
 
-        const todayStr = new Date().toDateString();
-        const requestsToday = requests.filter(r => r.requestTime && new Date(r.requestTime).toDateString() === todayStr).length;
-        this.stats[0].trendLabel = `+${requestsToday} today`;
+          const todayStr = new Date().toDateString();
+          const requestsToday = requests.filter(r => r.requestTime && new Date(r.requestTime).toDateString() === todayStr).length;
+          this.stats[0].trendLabel = `+${requestsToday} today`;
 
-        const pendingCount = requests.filter(r => r.status === 'Pending').length;
-        this.stats[1].trendLabel = `${pendingCount} pending`;
+          const pendingCount = requests.filter(r => r.status === 'Pending').length;
+          this.stats[1].trendLabel = `${pendingCount} pending`;
 
-        this.updateChartData(requests);
-        this.updateStatusSlices(requests);
-        this.updateRecentActivity(requests);
-      },
-      error: err => console.error('Error fetching emergency requests:', err)
-    });
+          this.updateChartData(requests);
+          this.updateStatusSlices(requests);
+          this.updateRecentActivity(requests);
+          this.cdr.detectChanges();
+        },
+        error: err => console.error('Error fetching emergency requests:', err)
+      })
+    );
 
     // 2. Volunteers
-    this.volunteerService.getAllVolunteers().subscribe({
-      next: (volunteers) => {
-        const onlineCount = volunteers.filter(v => v.status === 'Available' || v.status === 'On Duty').length;
-        const totalCount = volunteers.length;
-        this.stats[2].value = onlineCount.toLocaleString();
-        this.stats[2].trendLabel = `${onlineCount} on duty / ${totalCount} total`;
-      },
-      error: err => console.error('Error fetching volunteers:', err)
-    });
+    this.subscriptions.add(
+      this.volunteerService.getAllVolunteers().subscribe({
+        next: (volunteers) => {
+          const onlineCount = volunteers.filter(v => v.status === 'Available' || v.status === 'On Duty').length;
+          const totalCount = volunteers.length;
+          this.stats[2].value = onlineCount.toLocaleString();
+          this.stats[2].trendLabel = `${onlineCount} on duty / ${totalCount} total`;
+          this.cdr.detectChanges();
+        },
+        error: err => console.error('Error fetching volunteers:', err)
+      })
+    );
 
     // 3. Shelters
-    this.shelterService.getShelters().subscribe({
-      next: (shelters) => {
-        const totalCapacity = shelters.reduce((sum: number, s: any) => sum + (s.capacity ?? 0), 0);
-        const totalOccupied = shelters.reduce((sum: number, s: any) => sum + (s.occupied ?? 0), 0);
-        const occupancyPercent = totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
-        
-        this.stats[3].value = `${occupancyPercent}%`;
-        this.stats[3].trendLabel = `${totalOccupied.toLocaleString()} / ${totalCapacity.toLocaleString()}`;
-      },
-      error: err => console.error('Error fetching shelters:', err)
-    });
+    this.subscriptions.add(
+      this.shelterService.getShelters().subscribe({
+        next: (shelters) => {
+          const totalCapacity = shelters.reduce((sum: number, s: any) => sum + (s.capacity ?? 0), 0);
+          const totalOccupied = shelters.reduce((sum: number, s: any) => sum + (s.occupied ?? 0), 0);
+          const occupancyPercent = totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
+          
+          this.stats[3].value = `${occupancyPercent}%`;
+          this.stats[3].trendLabel = `${totalOccupied.toLocaleString()} / ${totalCapacity.toLocaleString()}`;
+          this.cdr.detectChanges();
+        },
+        error: err => console.error('Error fetching shelters:', err)
+      })
+    );
 
     // 4. Inventory
-    this.inventoryService.getAllInventory().subscribe({
-      next: (inventory) => {
-        this.resourceBars = inventory.slice(0, 5).map(item => {
-          const percent = item.total > 0 ? Math.round((item.allocated / item.total) * 100) : 0;
-          let barColor = 'bg-blue-500';
-          if (percent >= 80) {
-            barColor = 'bg-rose-500';
-          } else if (percent >= 50) {
-            barColor = 'bg-amber-400';
-          }
-          return {
-            label: item.name,
-            percent,
-            barColor
-          };
-        });
-      },
-      error: err => console.error('Error fetching inventory:', err)
-    });
+    this.subscriptions.add(
+      this.inventoryService.getAllInventory().subscribe({
+        next: (inventory) => {
+          this.resourceBars = inventory.slice(0, 5).map(item => {
+            const percent = item.total > 0 ? Math.round((item.allocated / item.total) * 100) : 0;
+            let barColor = 'bg-blue-500';
+            if (percent >= 80) {
+              barColor = 'bg-rose-500';
+            } else if (percent >= 50) {
+              barColor = 'bg-amber-400';
+            }
+            return {
+              label: item.name,
+              percent,
+              barColor
+            };
+          });
+          this.cdr.detectChanges();
+        },
+        error: err => console.error('Error fetching inventory:', err)
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   readonly today = new Date();

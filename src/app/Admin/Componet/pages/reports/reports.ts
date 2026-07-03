@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -176,9 +176,12 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ─────────────────────────────────────────────────────────────────────────
   private searchService = inject(SearchService);
-  private searchSub = new Subscription();
+  private subscriptions = new Subscription();
 
-  constructor(private reportsService: ReportsService) {}
+  constructor(
+    private reportsService: ReportsService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
   // LIFECYCLE HOOKS
@@ -189,7 +192,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadDataForPeriod(this.activeTab);
 
     // Sync global search with reports volunteer list search
-    this.searchSub.add(
+    this.subscriptions.add(
       this.searchService.searchQuery$.subscribe((q: string) => {
         if (this.volSearchQuery !== q) {
           this.volSearchQuery = q;
@@ -210,7 +213,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.trendsChartInstance?.destroy();
     this.breakdownChartInstance?.destroy();
     this.responseChartInstance?.destroy();
-    this.searchSub.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 
 
@@ -246,81 +249,85 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     const period = this.tabToPeriod[tab] ?? 'LAST_30_DAYS';
     this.isLoading = true;
 
-    this.reportsService.getReportsByPeriod(period).subscribe({
-      next: (data: ApiReportsPageResponse) => {
-        this.isLoading = false;
+    this.subscriptions.add(
+      this.reportsService.getReportsByPeriod(period).subscribe({
+        next: (data: ApiReportsPageResponse) => {
+          this.isLoading = false;
 
-        // ── Update dashboard label ──────────────────────────────────────
-        this.currentDashboard = data.dashboardLabel;
+          // ── Update dashboard label ──────────────────────────────────────
+          this.currentDashboard = data.dashboardLabel;
 
-        // ── Map stat cards ──────────────────────────────────────────────
-        // Backend sends: title, value, change, positive (boolean), type
-        // We add:        iconColor, bgColor  (from typeToStyle map)
-        this.stats = data.stats.map(s => {
-          const style = this.typeToStyle[s.type] ?? { iconColor: '', bgColor: '' };
-          // Jackson serializes boolean getters differently — handle both field names
-          const isPos = (s as any).positive ?? s.isPositive ?? true;
-          return {
-            title:     s.title,
-            value:     s.value,
-            change:    s.change,
-            isPositive: isPos,
-            iconColor: style.iconColor,
-            bgColor:   style.bgColor,
-            type:      s.type as StatCard['type']
+          // ── Map stat cards ──────────────────────────────────────────────
+          // Backend sends: title, value, change, positive (boolean), type
+          // We add:        iconColor, bgColor  (from typeToStyle map)
+          this.stats = data.stats.map(s => {
+            const style = this.typeToStyle[s.type] ?? { iconColor: '', bgColor: '' };
+            // Jackson serializes boolean getters differently — handle both field names
+            const isPos = (s as any).positive ?? s.isPositive ?? true;
+            return {
+              title:     s.title,
+              value:     s.value,
+              change:    s.change,
+              isPositive: isPos,
+              iconColor: style.iconColor,
+              bgColor:   style.bgColor,
+              type:      s.type as StatCard['type']
+            };
+          });
+
+          // ── Map disaster categories ─────────────────────────────────────
+          // Backend sends: name, count
+          // We add:        color (Tailwind class), widthClass (Tailwind % class)
+          this.disasters = this.mapDisasterCategories(data.disasters);
+
+          // ── Map volunteers ──────────────────────────────────────────────
+          // Backend sends: rank, name, avgResponseMinutes, tasksCompleted, rating
+          // We add:        avgResponse formatted string ("28 min avg response")
+          this.rawVolunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
+            rank:        v.rank,
+            name:        v.name,
+            avgResponse: `${v.avgResponseMinutes} min avg response`,
+            tasks:       v.tasksCompleted,
+            rating:      v.rating
+          }));
+
+          this.applyVolunteerFilter();
+
+          // ── Cache trends for chart updates ─────────────────────────────
+          this.currentTrendsData = {
+            flood:       data.trends.flood.map(Number),
+            fire:        data.trends.fire.map(Number),
+            hurricane:   data.trends.hurricane.map(Number),
+            earthquake:  data.trends.earthquake.map(Number),
+            avgResponse: data.trends.avgResponse.map(Number)
           };
-        });
 
-        // ── Map disaster categories ─────────────────────────────────────
-        // Backend sends: name, count
-        // We add:        color (Tailwind class), widthClass (Tailwind % class)
-        this.disasters = this.mapDisasterCategories(data.disasters);
+          // ── Build charts (first load) or update them (tab switch) ──────
+          if (!this.trendsChartInstance) {
+            // First time: build all three charts from scratch
+            // Use setTimeout(0) to ensure Angular has finished rendering the DOM
+            // (so the <canvas> elements are available via ViewChild)
+            setTimeout(() => {
+              this.buildTrendsChart();
+              this.buildBreakdownChart();
+              this.buildResponseChart();
+              this.cdr.detectChanges();
+            }, 0);
+          } else {
+            // Subsequent tab switches: just update the data in existing charts
+            this.updateCharts();
+            this.cdr.detectChanges();
+          }
+        },
 
-        // ── Map volunteers ──────────────────────────────────────────────
-        // Backend sends: rank, name, avgResponseMinutes, tasksCompleted, rating
-        // We add:        avgResponse formatted string ("28 min avg response")
-        this.rawVolunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
-          rank:        v.rank,
-          name:        v.name,
-          avgResponse: `${v.avgResponseMinutes} min avg response`,
-          tasks:       v.tasksCompleted,
-          rating:      v.rating
-        }));
-
-        this.applyVolunteerFilter();
-
-        // ── Cache trends for chart updates ─────────────────────────────
-        this.currentTrendsData = {
-          flood:       data.trends.flood.map(Number),
-          fire:        data.trends.fire.map(Number),
-          hurricane:   data.trends.hurricane.map(Number),
-          earthquake:  data.trends.earthquake.map(Number),
-          avgResponse: data.trends.avgResponse.map(Number)
-        };
-
-        // ── Build charts (first load) or update them (tab switch) ──────
-        if (!this.trendsChartInstance) {
-          // First time: build all three charts from scratch
-          // Use setTimeout(0) to ensure Angular has finished rendering the DOM
-          // (so the <canvas> elements are available via ViewChild)
-          setTimeout(() => {
-            this.buildTrendsChart();
-            this.buildBreakdownChart();
-            this.buildResponseChart();
-          }, 0);
-        } else {
-          // Subsequent tab switches: just update the data in existing charts
-          this.updateCharts();
+        error: (err) => {
+          this.isLoading = false;
+          console.error('[ReportsComponent] Failed to load reports data:', err);
+          // The UI stays with whatever data was previously shown
+          // In production you would show an error toast/alert here
         }
-      },
-
-      error: (err) => {
-        this.isLoading = false;
-        console.error('[ReportsComponent] Failed to load reports data:', err);
-        // The UI stays with whatever data was previously shown
-        // In production you would show an error toast/alert here
-      }
-    });
+      })
+    );
   }
 
   /**
