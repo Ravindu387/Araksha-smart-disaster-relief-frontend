@@ -229,11 +229,27 @@
         </select>
       </label>
 
-      <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
-        <span>AMENITIES (comma-separated)</span>
-        <input type="text" [(ngModel)]="newShelterAmenities" placeholder="e.g. WiFi, Power, Water, Medical"
-          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
-      </label>
+      <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
+        <span>AMENITIES</span>
+        <div class="flex flex-wrap gap-2 mt-1">
+          @for (amenity of predefinedAmenities; track amenity) {
+            <button
+              type="button"
+              (click)="toggleAmenity(amenity)"
+              class="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+              [class.bg-blue-600]="selectedAmenities.includes(amenity)"
+              [class.border-blue-600]="selectedAmenities.includes(amenity)"
+              [class.text-white]="selectedAmenities.includes(amenity)"
+              [class.bg-slate-50]="!selectedAmenities.includes(amenity)"
+              [class.border-slate-200]="!selectedAmenities.includes(amenity)"
+              [class.text-slate-600]="!selectedAmenities.includes(amenity)"
+              [class.hover:bg-slate-100]="!selectedAmenities.includes(amenity)"
+            >
+              {{ amenity }}
+            </button>
+          }
+        </div>
+      </div>
 
       <!-- Shelter Image Upload -->
       <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">

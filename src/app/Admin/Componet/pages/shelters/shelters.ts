@@ -43,7 +43,17 @@ export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
   newShelterAddress = '';
   newShelterCapacity: number | null = null;
   newShelterOccupied: number | null = null;
-  newShelterAmenities = '';
+  predefinedAmenities = ['WiFi', 'Power', 'Water', 'Medical', 'Food', 'Blankets', 'Toilets', 'Security'];
+  selectedAmenities: string[] = [];
+
+  toggleAmenity(amenity: string): void {
+    const idx = this.selectedAmenities.indexOf(amenity);
+    if (idx >= 0) {
+      this.selectedAmenities.splice(idx, 1);
+    } else {
+      this.selectedAmenities.push(amenity);
+    }
+  }
   newShelterLatitude: number | null = null;
   newShelterLongitude: number | null = null;
   newShelterRegion = 'Colombo';
@@ -275,10 +285,7 @@ export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const amenitiesArray = this.newShelterAmenities
-      .split(',')
-      .map(a => a.trim())
-      .filter(a => a.length > 0);
+    const amenitiesArray = [...this.selectedAmenities];
 
     let lat = 6.9271;
     let lng = 79.8612;
@@ -330,7 +337,7 @@ export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
     this.newShelterAddress = '';
     this.newShelterCapacity = null;
     this.newShelterOccupied = null;
-    this.newShelterAmenities = '';
+    this.selectedAmenities = [];
     this.newShelterLatitude = null;
     this.newShelterLongitude = null;
     this.newShelterRegion = 'Colombo';
