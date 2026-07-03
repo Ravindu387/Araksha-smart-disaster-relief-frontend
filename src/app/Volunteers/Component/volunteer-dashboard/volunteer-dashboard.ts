@@ -88,7 +88,8 @@ export class VolunteerDashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
-    const email = localStorage.getItem('email') || 'volunteer@araksha.com';
+    const storedEmail = localStorage.getItem('email');
+    const email = storedEmail && storedEmail.includes('volunteer') ? storedEmail : 'volunteer@araksha.com';
     this.volunteerhubService.getVolunteerByEmail(email).subscribe({
       next: (res: any) => {
         this.volunteerDetails = res;

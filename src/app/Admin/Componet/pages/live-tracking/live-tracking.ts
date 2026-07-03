@@ -60,6 +60,8 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   private isRiskHeatmapVisible: boolean = false;
   private broadcastCircle: any = null;
   private broadcastMarker: any = null;
+  private weatherMarqueeContainer: any = null;
+  private lowStockContainer: any = null;
 
   ngOnInit() {
     this.updateTime();
@@ -97,6 +99,12 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.broadcastMarker) {
       this.broadcastMarker.remove();
+    }
+    if (this.weatherMarqueeContainer) {
+      this.weatherMarqueeContainer.remove();
+    }
+    if (this.lowStockContainer) {
+      this.lowStockContainer.remove();
     }
   }
 
@@ -227,6 +235,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         });
 
         this.renderMapMarkers();
+        this.loadLowStockAndWeatherAlerts();
 
         if (this.selectedMarker) {
           const updated = this.findMarkerById(this.selectedMarker.id.replace(/^[a-z]+-/, ''), this.selectedMarker.markerType);
@@ -960,6 +969,88 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
         console.error('Failed to generate audit report:', e);
         alert('Could not compile audit report.');
       }
+    });
+  }
+
+  loadLowStockAndWeatherAlerts() {
+    this.mapsService.getNationalWeatherAlerts().subscribe({
+      next: (alerts) => {
+        if (!alerts || alerts.length === 0) {
+          if (this.weatherMarqueeContainer) this.weatherMarqueeContainer.remove();
+          return;
+        }
+        
+        if (this.weatherMarqueeContainer) this.weatherMarqueeContainer.remove();
+
+        const scrollingText = alerts.join('  •  ');
+        this.weatherMarqueeContainer = document.createElement('div');
+        this.weatherMarqueeContainer.id = 'araksha-weather-marquee';
+        this.weatherMarqueeContainer.style.position = 'fixed';
+        this.weatherMarqueeContainer.style.top = '0';
+        this.weatherMarqueeContainer.style.left = '0';
+        this.weatherMarqueeContainer.style.width = '100vw';
+        this.weatherMarqueeContainer.style.background = '#fef2f2';
+        this.weatherMarqueeContainer.style.borderBottom = '1px solid #fecaca';
+        this.weatherMarqueeContainer.style.color = '#dc2626';
+        this.weatherMarqueeContainer.style.fontFamily = 'sans-serif';
+        this.weatherMarqueeContainer.style.fontSize = '11px';
+        this.weatherMarqueeContainer.style.fontWeight = 'bold';
+        this.weatherMarqueeContainer.style.padding = '6px 0';
+        this.weatherMarqueeContainer.style.zIndex = '9999';
+
+        this.weatherMarqueeContainer.innerHTML = `
+          <marquee scrollamount="4" behavior="scroll" direction="left" style="margin:0;">
+            ${scrollingText}
+          </marquee>
+        `;
+        document.body.appendChild(this.weatherMarqueeContainer);
+      },
+      error: (err) => console.error('Failed to query national weather alerts:', err)
+    });
+
+    this.mapsService.getLowStockInventory().subscribe({
+      next: (items) => {
+        if (!items || items.length === 0) {
+          if (this.lowStockContainer) this.lowStockContainer.remove();
+          return;
+        }
+
+        if (this.lowStockContainer) this.lowStockContainer.remove();
+
+        this.lowStockContainer = document.createElement('div');
+        this.lowStockContainer.id = 'araksha-low-stock-panel';
+        this.lowStockContainer.style.position = 'fixed';
+        this.lowStockContainer.style.bottom = '20px';
+        this.lowStockContainer.style.right = '20px';
+        this.lowStockContainer.style.width = '240px';
+        this.lowStockContainer.style.background = 'white';
+        this.lowStockContainer.style.border = '2px solid #ef4444';
+        this.lowStockContainer.style.borderRadius = '8px';
+        this.lowStockContainer.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        this.lowStockContainer.style.padding = '10px';
+        this.lowStockContainer.style.fontFamily = 'sans-serif';
+        this.lowStockContainer.style.zIndex = '9999';
+
+        let listHtml = '';
+        items.forEach(item => {
+          listHtml += `
+            <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px;color:#1e293b;">
+              <span>📦 <b>${item.name}</b></span>
+              <span style="color:#ef4444;font-weight:bold;">${item.count} (Min ${item.minStock})</span>
+            </div>
+          `;
+        });
+
+        this.lowStockContainer.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fee2e2;padding-bottom:4px;margin-bottom:4px;">
+            <strong style="color:#ef4444;font-size:11px;">⚠️ LOW STOCK WARNING</strong>
+            <button onclick="document.getElementById('araksha-low-stock-panel').remove()" style="border:none;background:none;font-weight:bold;cursor:pointer;color:#94a3b8;font-size:10px;">✕</button>
+          </div>
+          ${listHtml}
+        `;
+        document.body.appendChild(this.lowStockContainer);
+      },
+      error: (err) => console.error('Failed to query low stock warehouse supply lines:', err)
     });
   }
 
