@@ -134,6 +134,8 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     fire: number[];
     hurricane: number[];
     earthquake: number[];
+    medical: number[];
+    other: number[];
     avgResponse: number[];
   } | null = null;
 
@@ -299,6 +301,8 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
             fire:        data.trends.fire.map(Number),
             hurricane:   data.trends.hurricane.map(Number),
             earthquake:  data.trends.earthquake.map(Number),
+            medical:     data.trends.medical ? data.trends.medical.map(Number) : [],
+            other:       data.trends.other ? data.trends.other.map(Number) : [],
             avgResponse: data.trends.avgResponse.map(Number)
           };
 
@@ -412,6 +416,8 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.trendsChartInstance.data.datasets[1].data = this.currentTrendsData.fire;
       this.trendsChartInstance.data.datasets[2].data = this.currentTrendsData.hurricane;
       this.trendsChartInstance.data.datasets[3].data = this.currentTrendsData.earthquake;
+      this.trendsChartInstance.data.datasets[4].data = this.currentTrendsData.medical;
+      this.trendsChartInstance.data.datasets[5].data = this.currentTrendsData.other;
       this.trendsChartInstance.update();
     }
 
@@ -449,17 +455,6 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           pointBackgroundColor: '#2563eb'
         },
         {
-          label: 'Fire',
-          data: this.currentTrendsData.fire,
-          borderColor: '#ef4444',
-          backgroundColor: 'transparent',
-          borderWidth: 2.5,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#ef4444'
-        },
-        {
           label: 'Hurricane',
           data: this.currentTrendsData.hurricane,
           borderColor: '#a855f7',
@@ -471,6 +466,17 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           pointBackgroundColor: '#a855f7'
         },
         {
+          label: 'Fire',
+          data: this.currentTrendsData.fire,
+          borderColor: '#ef4444',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#ef4444'
+        },
+        {
           label: 'Earthquake',
           data: this.currentTrendsData.earthquake,
           borderColor: '#f59e0b',
@@ -480,6 +486,28 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: '#f59e0b'
+        },
+        {
+          label: 'Medical',
+          data: this.currentTrendsData.medical,
+          borderColor: '#10b981',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Other',
+          data: this.currentTrendsData.other,
+          borderColor: '#94a3b8',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#94a3b8'
         }
       ]
     };
