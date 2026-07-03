@@ -76,7 +76,6 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
-    this.subscriptions.unsubscribe();
     if (this.timerId) clearInterval(this.timerId);
     if (this.dataIntervalId) clearInterval(this.dataIntervalId);
     this.stopSimulation();
@@ -953,7 +952,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
               </tr>
             </table>
             <div style="margin-top:8px;padding-top:6px;border-top:1px dashed #cbd5e1;font-size:8px;color:#94a3b8;text-align:center;">
-              Araksha Disaster Relief System © ${rep.timestamp.substring(0,10)}
+              Araksha Disaster Relief System ©️ ${rep.timestamp.substring(0,10)}
             </div>
             <button onclick="window.print()" style="margin-top:8px;width:100%;background:#1e293b;color:white;font-size:10px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">🖨️ Print Audit Details</button>
           </div>
