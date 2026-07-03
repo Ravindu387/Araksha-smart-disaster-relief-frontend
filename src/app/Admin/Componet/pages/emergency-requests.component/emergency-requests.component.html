@@ -180,24 +180,34 @@
                 </span>
               </td>
 
-              <td class="px-5 py-4 text-slate-500 whitespace-nowrap">{{ item.location }}</td>
+              <td class="px-5 py-4 text-slate-500 max-w-[200px] break-words">{{ item.location }}</td>
 
               <td class="px-5 py-4 text-slate-500">{{ item.volunteer }}</td>
 
               <td class="px-5 py-4 text-slate-400 whitespace-nowrap">{{ item.time }}</td>
 
               <td class="px-5 py-4 text-right whitespace-nowrap">
-                @if (item.status !== 'Resolved' && item.status !== 'Completed') {
+                <div class="flex items-center justify-end gap-2.5">
+                  @if (item.status !== 'Resolved' && item.status !== 'Completed') {
+                    <button
+                      type="button"
+                      (click)="resolveRequest(item)"
+                      class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:shadow transition cursor-pointer select-none"
+                    >
+                      Resolve
+                    </button>
+                  } @else {
+                    <span class="text-xs text-slate-400 font-bold uppercase select-none">Resolved</span>
+                  }
                   <button
                     type="button"
-                    (click)="resolveRequest(item)"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:shadow transition cursor-pointer select-none"
+                    (click)="deleteRequest(item)"
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer focus:outline-none"
+                    title="Delete Request"
                   >
-                    Resolve
+                    <app-icon name="trash" class="w-4 h-4"></app-icon>
                   </button>
-                } @else {
-                  <span class="text-xs text-slate-400 font-bold uppercase select-none">Resolved</span>
-                }
+                </div>
               </td>
             </tr>
           }
