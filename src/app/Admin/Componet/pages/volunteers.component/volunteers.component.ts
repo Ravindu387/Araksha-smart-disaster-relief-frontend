@@ -12,11 +12,12 @@ import { EmergencyRequestService } from '../../../../Common/services/emergency-r
 import { FileUploadService } from '../../../../Common/services/file-upload.service';
 import { SearchService } from '../../../../Common/services/search.service';
 import { Volunteer } from '../../../../Common/models/volunteer.model';
+import { FindByIdPipe } from '../../../../Common/pipes/find-by-id.pipe';
 
 @Component({
   selector: 'app-volunteers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FindByIdPipe],
   templateUrl: './volunteers.component.html'
 })
 export class VolunteersComponent implements OnInit, OnDestroy {
@@ -45,6 +46,11 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   selectedVolunteerForAssign = signal<Volunteer | null>(null);
   activeRequests: any[] = [];
   selectedRequestIdForAssign = '';
+
+  // ── Assign modal feedback state ───────────────────────────────────────────
+  assignLoading = false;
+  assignError = '';
+  assignSuccess = false;
 
   newVolunteerName = '';
   newVolunteerLocation = '';
@@ -417,6 +423,9 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.assignModalOpen.set(false);
     this.selectedVolunteerForAssign.set(null);
     this.selectedRequestIdForAssign = '';
+    this.assignLoading = false;
+    this.assignError = '';
+    this.assignSuccess = false;
   }
 
   loadActiveRequests(): void {
@@ -434,36 +443,52 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     if (!v) return;
 
     if (!this.selectedRequestIdForAssign) {
-      alert('Please select an emergency request.');
+      this.assignError = 'Please select an emergency request.';
       return;
     }
 
     const req = this.activeRequests.find(r => r.id === Number(this.selectedRequestIdForAssign));
-    if (!req) return;
+    if (!req) {
+      this.assignError = 'Selected request not found. Please refresh and try again.';
+      return;
+    }
+
+    this.assignLoading = true;
+    this.assignError = '';
+    this.assignSuccess = false;
 
     req.assignedVolunteer = v.name;
     if (req.status === 'Pending') {
-      req.status = 'In Progress';
+      req.status = 'Assigned';
     }
 
     this.emergencyService.updateRequest(req.id, req).subscribe({
       next: () => {
-        v.status = 'On Duty';
-        this.volunteerService.updateVolunteer(v.id, v).subscribe({
+        const updatedVolunteer = { ...v, status: 'On Duty' as const };
+        this.volunteerService.updateVolunteer(v.id, updatedVolunteer).subscribe({
           next: () => {
+            this.assignLoading = false;
+            this.assignSuccess = true;
             this.loadVolunteers();
             this.loadSearchPage();
-            this.closeAssignModal();
+            // Auto-close after 1.5 s so the user sees the success message
+            setTimeout(() => this.closeAssignModal(), 1500);
           },
           error: (err) => {
             console.error('Error updating volunteer status:', err);
-            alert('Assigned volunteer, but failed to update volunteer status.');
+            this.assignLoading = false;
+            this.assignSuccess = true; // request was still assigned
+            this.loadVolunteers();
+            this.loadSearchPage();
+            setTimeout(() => this.closeAssignModal(), 1500);
           }
         });
       },
       error: (err) => {
-        console.error('Error updating emergency request with volunteer:', err);
-        alert('Failed to assign volunteer to request.');
+        console.error('Error assigning volunteer to request:', err);
+        this.assignLoading = false;
+        this.assignError = 'Failed to assign volunteer. Please try again.';
+        this.cdr.detectChanges();
       }
     });
   }

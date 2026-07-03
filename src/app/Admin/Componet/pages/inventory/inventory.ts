@@ -78,6 +78,25 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   totalElements = 0;
 
   addModalOpen = false;
+  addSuccess = '';
+  addError = '';
+
+  // ── Edit Item modal ─────────────────────────────────────────────────────
+  editItemModalOpen = false;
+  editingItem: InventoryItem | null = null;
+  editItemName = '';
+  editItemCategory = 'Food';
+  editItemCount = '';
+  editItemTotal = '';
+  editItemUnit = 'kits';
+  editItemMin = '';
+  editItemAllocated = '0';
+  editItemSaving = false;
+  editItemError = '';
+
+  deleteSuccess = '';
+  deleteError = '';
+  deletingId: string | null = null;
 
   newItemName = '';
   newItemCategory = 'Food';
@@ -431,48 +450,105 @@ export class Inventory implements OnInit, AfterViewInit, OnDestroy {
   }
 
   addStockSubmit(): void {
-
+    if (!this.newItemName.trim()) { this.addError = 'Item name is required.'; return; }
+    if (!this.newItemCount || !this.newItemTotal) { this.addError = 'Count and total are required.'; return; }
+    this.addError = '';
     const body = {
-
-        name: this.newItemName,
-
+        name: this.newItemName.trim(),
         category: this.newItemCategory,
-
         count: Number(this.newItemCount),
-
         total: Number(this.newItemTotal),
-
         unit: this.newItemUnit,
-
         allocated: Number(this.newItemAllocated),
-
         minStock: Number(this.newItemMin)
-
     };
-
     this.inventoryService.addInventory(body).subscribe({
-
         next: () => {
-
-            alert('Inventory Added Successfully');
-
+            this.addSuccess = `“${body.name}” added successfully.`;
+            setTimeout(() => { this.addSuccess = ''; }, 3000);
             this.closeAddModal();
-
             this.loadInventory();
             this.loadSearchPage();
-
         },
-
         error: err => {
-
             console.error(err);
-
-            alert('Failed to save inventory');
-
+            this.addError = 'Failed to save inventory item. Please try again.';
         }
-
     });
+  }
 
+  /* ── Edit Item modal ── */
+  openEditItem(item: InventoryItem): void {
+    this.editingItem = item;
+    this.editItemName = item.name;
+    this.editItemCategory = item.category;
+    this.editItemCount = item.count.replace(/,/g, '');
+    this.editItemTotal = item.total.replace(/,/g, '');
+    this.editItemUnit = item.unit;
+    this.editItemMin = item.min.replace(/,/g, '');
+    this.editItemAllocated = item.allocated.replace(/,/g, '');
+    this.editItemError = '';
+    this.editItemSaving = false;
+    this.editItemModalOpen = true;
+  }
+
+  closeEditItem(): void {
+    this.editItemModalOpen = false;
+    this.editingItem = null;
+    this.editItemError = '';
+    this.editItemSaving = false;
+  }
+
+  submitEditItem(): void {
+    if (!this.editingItem) return;
+    if (!this.editItemName.trim()) { this.editItemError = 'Item name is required.'; return; }
+    this.editItemSaving = true;
+    this.editItemError = '';
+    const body = {
+      name: this.editItemName.trim(),
+      category: this.editItemCategory,
+      count: Number(this.editItemCount),
+      total: Number(this.editItemTotal),
+      unit: this.editItemUnit,
+      allocated: Number(this.editItemAllocated),
+      minStock: Number(this.editItemMin)
+    };
+    this.inventoryService.updateInventory(Number(this.editingItem.id), body).subscribe({
+      next: () => {
+        this.editItemSaving = false;
+        this.addSuccess = `“${body.name}” updated successfully.`;
+        setTimeout(() => { this.addSuccess = ''; }, 3000);
+        this.closeEditItem();
+        this.loadInventory();
+        this.loadSearchPage();
+      },
+      error: err => {
+        console.error(err);
+        this.editItemSaving = false;
+        this.editItemError = 'Failed to save changes. Please try again.';
+      }
+    });
+  }
+
+  /* ── Delete Item ── */
+  deleteItem(item: InventoryItem): void {
+    if (this.deletingId === item.id) return; // already in-flight
+    this.deletingId = item.id;
+    this.inventoryService.deleteInventory(Number(item.id)).subscribe({
+      next: () => {
+        this.deletingId = null;
+        this.deleteSuccess = `“${item.name}” removed from inventory.`;
+        setTimeout(() => { this.deleteSuccess = ''; }, 3000);
+        this.loadInventory();
+        this.loadSearchPage();
+      },
+      error: err => {
+        console.error(err);
+        this.deletingId = null;
+        this.deleteError = `Failed to delete “${item.name}”.`;
+        setTimeout(() => { this.deleteError = ''; }, 4000);
+      }
+    });
   }
 
   /* ── Category colors (unchanged) ── */

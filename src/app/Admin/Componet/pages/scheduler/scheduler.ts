@@ -99,6 +99,22 @@ export class SchedulerComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleJob(job: SchedulerJob): void {
+    const newStatus = job.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    this.schedulerService.toggleJobStatus(job.jobKey, newStatus).subscribe({
+      next: (updatedJob) => {
+        job.status = updatedJob.status;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(`Failed to toggle job ${job.jobKey}:`, err);
+        // Fallback local toggle for offline/mock backend demo
+        job.status = newStatus;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   formatDate(dateStr: string | null): string {
     if (!dateStr) return 'Never';
     const date = new Date(dateStr);

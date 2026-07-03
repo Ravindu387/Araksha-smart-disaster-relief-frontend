@@ -367,13 +367,24 @@
               </div>
               <span class="text-xs text-slate-400 font-bold">{{ v.tasks }} tasks</span>
             </div>
-            
-            <button
-              type="button"
-              (click)="viewVolunteer(v)"
-              class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
-              View Profile
-            </button>
+
+            <div class="flex items-center gap-3">
+              <!-- Assign button — only shown for Available volunteers -->
+              @if (v.status === 'Available') {
+                <button
+                  type="button"
+                  (click)="assignVolunteer(v)"
+                  class="text-xs font-bold text-emerald-600 hover:text-emerald-800 transition-colors">
+                  Assign
+                </button>
+              }
+              <button
+                type="button"
+                (click)="viewVolunteer(v)"
+                class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                View Profile
+              </button>
+            </div>
           </div>
         </div>
       }
@@ -695,57 +706,140 @@
     }
   }
 
-  <!-- Assign Volunteer to Request Modal -->
+  <!-- Assign Volunteer to Emergency Modal -->
   @if (assignModalOpen()) {
     @let v = selectedVolunteerForAssign();
     @if (v) {
-      <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in" (click)="closeAssignModal()">
-        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 relative m-4" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm" (click)="closeAssignModal()">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 relative m-4" (click)="$event.stopPropagation()">
+
           <!-- Close Button -->
           <button
             type="button"
             (click)="closeAssignModal()"
-            class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-sm bg-transparent border-0 cursor-pointer">
+            class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors font-bold text-lg bg-transparent border-0 cursor-pointer">
             ✕
           </button>
 
-          <h3 class="text-lg font-black text-slate-900 leading-tight mb-1">Assign {{ v.name }}</h3>
-          <p class="text-xs text-slate-400 mb-5 font-semibold">Select an active emergency request to assign this volunteer.</p>
+          <!-- Header -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 {{ v.avatarColor }}">
+              {{ v.initials }}
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-900 leading-tight">Assign to Emergency</h3>
+              <p class="text-xs text-slate-400 font-semibold">Volunteer: <span class="text-slate-700">{{ v.name }}</span> · {{ v.location }}</p>
+            </div>
+          </div>
 
-          <!-- Request Dropdown selection -->
-          <div class="flex flex-col gap-4 mb-6">
-            <label class="flex flex-col gap-1.5 text-xs font-bold text-slate-500">
-              <span>SELECT ACTIVE EMERGENCY REQUEST</span>
+          <!-- Request dropdown -->
+          <div class="flex flex-col gap-1.5 text-xs font-bold text-slate-500 mb-4">
+            <span>SELECT ACTIVE EMERGENCY REQUEST</span>
+            @if (activeRequests.length === 0) {
+              <div class="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs font-semibold text-amber-700">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                </svg>
+                No active emergency requests available.
+              </div>
+            } @else {
               <select
                 [(ngModel)]="selectedRequestIdForAssign"
                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition bg-white"
               >
-                <option value="" disabled selected>Select an active request...</option>
+                <option value="" disabled>Select an active request...</option>
                 @for (req of activeRequests; track req.id) {
                   <option [value]="req.id">
-                    {{ req.requestId }} - {{ req.emergencyType }} ({{ req.priority }}) at {{ req.location }}
+                    {{ req.requestId || ('ER-' + req.id) }} · {{ req.emergencyType }} · {{ req.priority }} · {{ req.location }}
                   </option>
-                } @empty {
-                  <option value="" disabled>No active requests available</option>
                 }
               </select>
-            </label>
+            }
           </div>
 
-          <!-- Buttons -->
+          <!-- Selected request preview card -->
+          @if (selectedRequestIdForAssign) {
+            @let selReq = activeRequests | findById: +selectedRequestIdForAssign;
+            @if (selReq) {
+              <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5 text-xs">
+                <p class="font-bold text-slate-400 uppercase tracking-wider mb-2">Assignment Preview</p>
+                <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                  <div>
+                    <span class="text-slate-400 block">Citizen</span>
+                    <span class="font-bold text-slate-800">{{ selReq.citizenName }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block">Type</span>
+                    <span class="font-bold text-slate-800">{{ selReq.emergencyType }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block">Priority</span>
+                    <span
+                      class="font-bold px-2 py-0.5 rounded-full"
+                      [class.text-rose-600]="selReq.priority === 'Critical'"
+                      [class.bg-rose-50]="selReq.priority === 'Critical'"
+                      [class.text-amber-600]="selReq.priority === 'High'"
+                      [class.bg-amber-50]="selReq.priority === 'High'"
+                      [class.text-yellow-700]="selReq.priority === 'Medium'"
+                      [class.bg-yellow-50]="selReq.priority === 'Medium'"
+                      [class.text-emerald-600]="selReq.priority === 'Low'"
+                      [class.bg-emerald-50]="selReq.priority === 'Low'"
+                    >{{ selReq.priority }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block">Status → After</span>
+                    <span class="font-bold text-blue-600">{{ selReq.status }} → Assigned</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="text-slate-400 block">Location</span>
+                    <span class="font-bold text-slate-800">{{ selReq.location }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- Feedback states -->
+          @if (assignError) {
+            <div class="flex items-center gap-2 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 text-xs font-semibold text-rose-700 mb-4">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              {{ assignError }}
+            </div>
+          }
+          @if (assignSuccess) {
+            <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5 text-xs font-semibold text-emerald-700 mb-4">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+              </svg>
+              Volunteer assigned successfully! Closing...
+            </div>
+          }
+
+          <!-- Action buttons -->
           <div class="flex items-center gap-3">
             <button
               type="button"
               (click)="closeAssignModal()"
-              class="flex-1 text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-250 py-2.5 rounded-xl cursor-pointer">
+              [disabled]="assignLoading"
+              class="flex-1 text-sm font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 transition-colors border border-slate-200 py-2.5 rounded-xl cursor-pointer">
               Cancel
             </button>
             <button
               type="button"
               (click)="assignVolunteerSubmit()"
-              [disabled]="!selectedRequestIdForAssign"
-              class="flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors py-2.5 rounded-xl shadow-md cursor-pointer">
-              Confirm Assignment
+              [disabled]="!selectedRequestIdForAssign || assignLoading || assignSuccess || activeRequests.length === 0"
+              class="flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors py-2.5 rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2">
+              @if (assignLoading) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Assigning...
+              } @else {
+                Confirm Assignment
+              }
             </button>
           </div>
         </div>

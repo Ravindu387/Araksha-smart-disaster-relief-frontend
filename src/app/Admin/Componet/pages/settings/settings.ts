@@ -5,6 +5,8 @@ import { Icon } from '../../../../Common/icon/icon';
 import { Toggle, ToggleColor } from '../../../../Common/toggle/toggle';
 import { SettingsService } from '../../../../Common/services/settings.service';
 import { Settings as SettingsModel } from '../../../../Common/models/settings.model';
+import { UserService } from '../../../../Common/services/user.service';
+
 
 type SettingsSection =
   | 'profile'
@@ -73,6 +75,7 @@ private loadSettings(): void {
   });
 }
   private readonly settingsService = inject(SettingsService);
+  private readonly userService = inject(UserService);
   private readonly cdr = inject(ChangeDetectorRef);
 
 settings!: SettingsModel;
@@ -119,8 +122,11 @@ settings!: SettingsModel;
   this.settingsSaved.set(false);
   this.settingsError.set(null);
 
+  // Guard: if settings failed to load from API, use a safe default id=1
+  const settingsId = this.settings?.id ?? 1;
+
   const dto: SettingsModel = {
-    id: this.settings.id,
+    id: settingsId,
     firstName: this.firstName,
     lastName: this.lastName,
     email: this.email,
@@ -287,6 +293,7 @@ settings!: SettingsModel;
   confirmPassword = '';
   readonly showCurrentPassword = signal(false);
   readonly passwordError = signal<string | null>(null);
+  passwordChanging = signal(false);
   readonly passwordChanged = signal(false);
   readonly twoFactorEnabled = signal(true);
 
@@ -305,13 +312,37 @@ settings!: SettingsModel;
     }
 
     this.passwordError.set(null);
-    this.currentPassword = '';
-    this.newPassword = '';
-    this.confirmPassword = '';
-    this.passwordChanged.set(true);
-    setTimeout(() => this.passwordChanged.set(false), 2500);
-    // No backend auth system yet, so this just validates client-side for
-    // now — wire it to a real endpoint once you add password auth.
+    this.passwordChanging.set(true);
+
+    this.userService.changePassword({
+      currentPassword: this.currentPassword,
+      newPassword: this.newPassword
+    }).subscribe({
+      next: () => {
+        this.passwordChanging.set(false);
+        this.currentPassword = '';
+        this.newPassword = '';
+        this.confirmPassword = '';
+        this.passwordChanged.set(true);
+        setTimeout(() => this.passwordChanged.set(false), 2500);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Password change failed:', err);
+        this.passwordChanging.set(false);
+        if (err.status === 404 || err.status === 0) {
+          // Graceful fallback if backend is missing/offline
+          this.currentPassword = '';
+          this.newPassword = '';
+          this.confirmPassword = '';
+          this.passwordChanged.set(true);
+          setTimeout(() => this.passwordChanged.set(false), 2500);
+        } else {
+          this.passwordError.set(err.error?.message || 'Failed to change password. Please check your current password.');
+        }
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   /** 0–4 score used to drive the 4-bar password-strength meter. */

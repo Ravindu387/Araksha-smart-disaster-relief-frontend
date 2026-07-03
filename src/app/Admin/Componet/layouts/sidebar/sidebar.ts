@@ -135,6 +135,7 @@ export class Sidebar implements OnInit, OnDestroy {
         { label: 'Emergency Requests', route: '/emergency-requests', badge: 0, icon: 'alert' },
         { label: 'Volunteers', route: '/volunteers', icon: 'users' },
         { label: 'Shelters', route: '/shelters', icon: 'pin' },
+        { label: 'Citizens', route: '/citizens', icon: 'user' },
       ],
     },
     {

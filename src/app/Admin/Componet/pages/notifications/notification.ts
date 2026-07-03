@@ -45,6 +45,11 @@ export class NotificationsComponent implements OnInit {
   ];
 
   notifications: NotificationItem[] = [];
+  showAll = false; // when false → show only unread
+
+  toggleShowAll(): void {
+    this.showAll = !this.showAll;
+  }
 
   ngOnInit(): void {
     this.loadNotifications();
@@ -106,15 +111,15 @@ export class NotificationsComponent implements OnInit {
   }
 
   get filteredNotifications(): NotificationItem[] {
-    const unreadNotifications = this.notifications.filter((n) => !n.read);
-    
+    const source = this.showAll
+      ? this.notifications
+      : this.notifications.filter((n) => !n.read);
+
     if (this.activeTab === 'all') {
-      return unreadNotifications;
+      return source;
     }
 
-    return unreadNotifications.filter(
-      (n) => n.category === this.activeTab
-    );
+    return source.filter((n) => n.category === this.activeTab);
   }
 
   setTab(tab: TabType): void {

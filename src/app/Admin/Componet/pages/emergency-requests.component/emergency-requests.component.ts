@@ -82,6 +82,35 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<void>();
   private subscriptions = new Subscription();
 
+  // ── Inline error/feedback states ─────────────────────────────────────────
+  resolveError = '';
+
+  // ── Edit Request modal ────────────────────────────────────────────────────
+  editModalOpen = false;
+  editingRequest: EmergencyRequest | null = null;
+  editCitizenName = '';
+  editEmergencyType = '';
+  editPriority: 'Critical' | 'High' | 'Medium' | 'Low' = 'Medium';
+  editStatus: 'Pending' | 'Assigned' | 'In Progress' | 'Completed' = 'Pending';
+  editLocation = '';
+  editVolunteer = '';
+  editSaving = false;
+  editError = '';
+
+  // ── Create Request modal ──────────────────────────────────────────────────
+  createModalOpen = false;
+  createCitizenName = '';
+  createEmergencyType = 'Flood';
+  createPriority: 'Critical' | 'High' | 'Medium' | 'Low' = 'Medium';
+  createLocation = '';
+  createSaving = false;
+  createError = '';
+
+  readonly emergencyTypes = ['Flood', 'Fire', 'Earthquake', 'Medical', 'Hurricane', 'Landslide'];
+  readonly priorityLevels: ('Critical' | 'High' | 'Medium' | 'Low')[] = ['Critical', 'High', 'Medium', 'Low'];
+  readonly statusOptions: ('Pending' | 'Assigned' | 'In Progress' | 'Completed')[] =
+    ['Pending', 'Assigned', 'In Progress', 'Completed'];
+
   constructor(
     private emergencyRequestService: EmergencyRequestService,
     private searchService: SearchService,
@@ -231,12 +260,14 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
 
     this.emergencyRequestService.updateRequest(item.dbId, updatedDto).subscribe({
       next: () => {
+        this.resolveError = '';
         this.loadRequests();
         this.loadSearchPage();
       },
       error: (err) => {
         console.error('Error resolving request:', err);
-        alert('Failed to resolve request.');
+        this.resolveError = `Failed to resolve ${item.id}. Please try again.`;
+        setTimeout(() => { this.resolveError = ''; }, 5000);
       }
     });
   }
@@ -259,7 +290,114 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── CSV export (unchanged) ────────────────────────────────────────────────
+  // ── Edit Request modal methods ─────────────────────────────────────────────
+
+  openEditModal(item: EmergencyRequest): void {
+    this.editingRequest = item;
+    this.editCitizenName = item.citizen;
+    this.editEmergencyType = item.type;
+    this.editPriority = item.priority;
+    this.editStatus = (item.status === 'Resolved' ? 'Completed' : item.status) as 'Pending' | 'Assigned' | 'In Progress' | 'Completed';
+    this.editLocation = item.location;
+    this.editVolunteer = item.volunteer === '—' ? '' : item.volunteer;
+    this.editError = '';
+    this.editSaving = false;
+    this.editModalOpen = true;
+  }
+
+  closeEditModal(): void {
+    this.editModalOpen = false;
+    this.editingRequest = null;
+    this.editError = '';
+    this.editSaving = false;
+  }
+
+  submitEdit(): void {
+    if (!this.editingRequest) return;
+    if (!this.editCitizenName.trim() || !this.editLocation.trim()) {
+      this.editError = 'Citizen name and location are required.';
+      return;
+    }
+    this.editSaving = true;
+    this.editError = '';
+    const updatedDto = {
+      id: this.editingRequest.dbId,
+      requestId: this.editingRequest.id,
+      citizenName: this.editCitizenName.trim(),
+      emergencyType: this.editEmergencyType,
+      priority: this.editPriority,
+      status: this.editStatus,
+      location: this.editLocation.trim(),
+      assignedVolunteer: this.editVolunteer.trim(),
+      requestTime: this.editingRequest.requestTime || new Date().toISOString()
+    };
+    this.emergencyRequestService.updateRequest(this.editingRequest.dbId, updatedDto as any).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.loadRequests();
+        this.loadSearchPage();
+        this.closeEditModal();
+      },
+      error: (err) => {
+        console.error('Error editing request:', err);
+        this.editSaving = false;
+        this.editError = 'Failed to save changes. Please try again.';
+      }
+    });
+  }
+
+  // ── Create Request modal methods ───────────────────────────────────────────
+
+  openCreateModal(): void {
+    this.createCitizenName = '';
+    this.createEmergencyType = 'Flood';
+    this.createPriority = 'Medium';
+    this.createLocation = '';
+    this.createError = '';
+    this.createSaving = false;
+    this.createModalOpen = true;
+  }
+
+  closeCreateModal(): void {
+    this.createModalOpen = false;
+    this.createError = '';
+    this.createSaving = false;
+  }
+
+  submitCreate(): void {
+    if (!this.createCitizenName.trim() || !this.createLocation.trim()) {
+      this.createError = 'Citizen name and location are required.';
+      return;
+    }
+    this.createSaving = true;
+    this.createError = '';
+    const nextId = `ER-${String(Date.now()).slice(-4).padStart(4, '0')}`;
+    const newRequest: any = {
+      requestId: nextId,
+      citizenName: this.createCitizenName.trim(),
+      emergencyType: this.createEmergencyType,
+      priority: this.createPriority,
+      status: 'Pending',
+      location: this.createLocation.trim(),
+      assignedVolunteer: '',
+      requestTime: new Date().toISOString()
+    };
+    this.emergencyRequestService.addRequest(newRequest).subscribe({
+      next: () => {
+        this.createSaving = false;
+        this.loadRequests();
+        this.loadSearchPage();
+        this.closeCreateModal();
+      },
+      error: (err) => {
+        console.error('Error creating request:', err);
+        this.createSaving = false;
+        this.createError = 'Failed to create request. Please try again.';
+      }
+    });
+  }
+
+  // ── CSV export ────────────────────────────────────────────────────────────
 
   exportCsv(): void {
     const headers = ['ID', 'Citizen', 'Type', 'Priority', 'Status', 'Location', 'Volunteer', 'Time'];

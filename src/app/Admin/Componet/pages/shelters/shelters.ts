@@ -64,6 +64,33 @@ export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
     'Vavuniya', 'Mannar', 'Mullaitivu', 'Kilinochchi', 'Ampara'
   ];
 
+  // ── Edit Shelter modal ──────────────────────────────────────────────────────
+  editModalOpen = false;
+  editingShelter: Shelter | null = null;
+  editShelterName = '';
+  editShelterAddress = '';
+  editShelterCapacity: number | null = null;
+  editShelterOccupied: number | null = null;
+  editSelectedAmenities: string[] = [];
+  editShelterLatitude: number | null = null;
+  editShelterLongitude: number | null = null;
+  editShelterRegion = 'Colombo';
+  editShelterSaving = false;
+  editShelterError = '';
+
+  shelterActionSuccess = '';
+  shelterActionError = '';
+  deletingShelterId: number | null = null;
+
+  toggleEditAmenity(amenity: string): void {
+    const idx = this.editSelectedAmenities.indexOf(amenity);
+    if (idx >= 0) {
+      this.editSelectedAmenities.splice(idx, 1);
+    } else {
+      this.editSelectedAmenities.push(amenity);
+    }
+  }
+
   // ── File Upload state ─────────────────────────────────────────────────────
   shelterImageFile: File | null = null;
   shelterImageUrl = '';
@@ -341,6 +368,91 @@ export class SheltersComponent implements OnInit, AfterViewInit, OnDestroy {
     this.newShelterLatitude = null;
     this.newShelterLongitude = null;
     this.newShelterRegion = 'Colombo';
+  }
+
+  // ── Edit Shelter modal methods ────────────────────────────────────────────
+
+  openEditShelter(shelter: Shelter): void {
+    this.editingShelter = shelter;
+    this.editShelterName = shelter.name;
+    this.editShelterAddress = shelter.address;
+    this.editShelterCapacity = shelter.capacity;
+    this.editShelterOccupied = shelter.occupied;
+    this.editSelectedAmenities = [...(shelter.amenities || [])];
+    this.editShelterLatitude = shelter.latitude ?? null;
+    this.editShelterLongitude = shelter.longitude ?? null;
+    this.editShelterRegion = 'Colombo';
+    this.editShelterError = '';
+    this.editShelterSaving = false;
+    this.editModalOpen = true;
+  }
+
+  closeEditShelter(): void {
+    this.editModalOpen = false;
+    this.editingShelter = null;
+    this.editShelterError = '';
+    this.editShelterSaving = false;
+  }
+
+  submitEditShelter(): void {
+    if (!this.editingShelter) return;
+    if (!this.editShelterName.trim() || !this.editShelterAddress.trim() || !this.editShelterCapacity) {
+      this.editShelterError = 'Name, address, and capacity are required.';
+      return;
+    }
+    this.editShelterSaving = true;
+    this.editShelterError = '';
+
+    let lat = this.editShelterLatitude ?? this.editingShelter.latitude ?? 6.9271;
+    let lng = this.editShelterLongitude ?? this.editingShelter.longitude ?? 79.8612;
+
+    const payload: Partial<Shelter> = {
+      name: this.editShelterName.trim(),
+      address: this.editShelterAddress.trim(),
+      capacity: this.editShelterCapacity,
+      occupied: this.editShelterOccupied ?? 0,
+      amenities: [...this.editSelectedAmenities],
+      latitude: lat,
+      longitude: lng
+    };
+
+    this.shelterService.update(this.editingShelter.id!, payload).subscribe({
+      next: (updated) => {
+        this.editShelterSaving = false;
+        this.shelterActionSuccess = `“${updated.name}” updated successfully.`;
+        setTimeout(() => { this.shelterActionSuccess = ''; }, 3000);
+        this.closeEditShelter();
+        this.loadShelters();
+        this.loadSearchPage();
+      },
+      error: (err: any) => {
+        console.error(err);
+        this.editShelterSaving = false;
+        this.editShelterError = 'Failed to update shelter. Please try again.';
+      }
+    });
+  }
+
+  // ── Delete Shelter ─────────────────────────────────────────────────────────
+
+  deleteShelter(shelter: Shelter): void {
+    if (!shelter.id || this.deletingShelterId === shelter.id) return;
+    this.deletingShelterId = shelter.id;
+    this.shelterService.delete(shelter.id).subscribe({
+      next: () => {
+        this.deletingShelterId = null;
+        this.shelterActionSuccess = `“${shelter.name}” removed.`;
+        setTimeout(() => { this.shelterActionSuccess = ''; }, 3000);
+        this.loadShelters();
+        this.loadSearchPage();
+      },
+      error: (err: any) => {
+        console.error(err);
+        this.deletingShelterId = null;
+        this.shelterActionError = `Failed to delete “${shelter.name}”.`;
+        setTimeout(() => { this.shelterActionError = ''; }, 4000);
+      }
+    });
   }
 
   private getCoordsFromAddress(address: string): { lat: number, lng: number } {

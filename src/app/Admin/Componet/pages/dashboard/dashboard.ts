@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { Icon } from '../../../../Common/icon/icon';
@@ -35,6 +35,7 @@ interface ResourceBar {
 
 interface ActivityItem {
   id: string;
+  rawId: number;
   name: string;
   type: string;
   location: string;
@@ -44,17 +45,34 @@ interface ActivityItem {
   statusClass: string;
   statusDot: string;
   time: string;
+  requestTime: string;
 }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, Icon],
+  imports: [CommonModule, Icon, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit, OnDestroy {
   private subscriptions = new Subscription();
+
+  // ── Loading / error state ─────────────────────────────────────────────────
+  loadingStats = true;
+  loadingVolunteers = true;
+  loadingShelters = true;
+  loadingInventory = true;
+  errorStats = false;
+  errorVolunteers = false;
+  errorShelters = false;
+  errorInventory = false;
+
+  // ── All raw requests cached for range filtering ───────────────────────────
+  private allRequests: any[] = [];
+
+  // ── Critical alert count ──────────────────────────────────────────────────
+  criticalCount = 0;
 
   constructor(
     private emergencyRequestService: EmergencyRequestService,
@@ -65,8 +83,66 @@ export class Dashboard implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
+  // ── Navigation helpers ────────────────────────────────────────────────────
   goToEmergencyRequests(): void {
     this.router.navigate(['/emergency-requests']);
+  }
+
+  viewRequest(rawId: number): void {
+    this.router.navigate(['/emergency-requests'], { queryParams: { id: rawId } });
+  }
+
+  goToInventory(): void {
+    this.router.navigate(['/inventory']);
+  }
+
+  goToNewEmergency(): void {
+    this.router.navigate(['/emergency-requests'], { queryParams: { action: 'new' } });
+  }
+
+  goToAssignVolunteer(): void {
+    this.router.navigate(['/volunteers']);
+  }
+
+  goToAddInventory(): void {
+    this.router.navigate(['/inventory'], { queryParams: { action: 'add' } });
+  }
+
+  // ── Refresh ───────────────────────────────────────────────────────────────
+  refresh(): void {
+    this.loadingStats = true;
+    this.loadingVolunteers = true;
+    this.loadingShelters = true;
+    this.loadingInventory = true;
+    this.errorStats = false;
+    this.errorVolunteers = false;
+    this.errorShelters = false;
+    this.errorInventory = false;
+    this.subscriptions.unsubscribe();
+    this.subscriptions = new Subscription();
+    this.loadAllData();
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
+  exportCsv(): void {
+    const header = ['ID', 'Name', 'Type', 'Location', 'Priority', 'Status', 'Time'];
+    const rows = this.activity.map(a => [
+      a.id,
+      `"${a.name}"`,
+      a.type,
+      `"${a.location}"`,
+      a.priority,
+      a.status,
+      a.time,
+    ]);
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `emergency-activity-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   ngOnInit(): void {
@@ -78,8 +154,11 @@ export class Dashboard implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.emergencyRequestService.getAllRequests().subscribe({
         next: (requests) => {
+          this.allRequests = requests;
+          this.loadingStats = false;
+
           this.stats[0].value = requests.length.toLocaleString();
-          
+
           const activeCount = requests.filter(r => r.status !== 'Completed').length;
           this.stats[1].value = activeCount.toString();
 
@@ -90,12 +169,20 @@ export class Dashboard implements OnInit, OnDestroy {
           const pendingCount = requests.filter(r => r.status === 'Pending').length;
           this.stats[1].trendLabel = `${pendingCount} pending`;
 
-          this.updateChartData(requests);
-          this.updateStatusSlices(requests);
-          this.updateRecentActivity(requests);
+          // Critical count for alert banner
+          this.criticalCount = requests.filter(
+            r => r.priority === 'Critical' && r.status !== 'Completed'
+          ).length;
+
+          this.applyRangeFilter();
           this.cdr.detectChanges();
         },
-        error: err => console.error('Error fetching emergency requests:', err)
+        error: err => {
+          console.error('Error fetching emergency requests:', err);
+          this.loadingStats = false;
+          this.errorStats = true;
+          this.cdr.detectChanges();
+        }
       })
     );
 
@@ -103,13 +190,19 @@ export class Dashboard implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.volunteerService.getAllVolunteers().subscribe({
         next: (volunteers) => {
+          this.loadingVolunteers = false;
           const onlineCount = volunteers.filter(v => v.status === 'Available' || v.status === 'On Duty').length;
           const totalCount = volunteers.length;
           this.stats[2].value = onlineCount.toLocaleString();
           this.stats[2].trendLabel = `${onlineCount} on duty / ${totalCount} total`;
           this.cdr.detectChanges();
         },
-        error: err => console.error('Error fetching volunteers:', err)
+        error: err => {
+          console.error('Error fetching volunteers:', err);
+          this.loadingVolunteers = false;
+          this.errorVolunteers = true;
+          this.cdr.detectChanges();
+        }
       })
     );
 
@@ -117,15 +210,21 @@ export class Dashboard implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.shelterService.getShelters().subscribe({
         next: (shelters) => {
+          this.loadingShelters = false;
           const totalCapacity = shelters.reduce((sum: number, s: any) => sum + (s.capacity ?? 0), 0);
           const totalOccupied = shelters.reduce((sum: number, s: any) => sum + (s.occupied ?? 0), 0);
           const occupancyPercent = totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
-          
+
           this.stats[3].value = `${occupancyPercent}%`;
           this.stats[3].trendLabel = `${totalOccupied.toLocaleString()} / ${totalCapacity.toLocaleString()}`;
           this.cdr.detectChanges();
         },
-        error: err => console.error('Error fetching shelters:', err)
+        error: err => {
+          console.error('Error fetching shelters:', err);
+          this.loadingShelters = false;
+          this.errorShelters = true;
+          this.cdr.detectChanges();
+        }
       })
     );
 
@@ -133,6 +232,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.inventoryService.getAllInventory().subscribe({
         next: (inventory) => {
+          this.loadingInventory = false;
           this.resourceBars = inventory.slice(0, 5).map(item => {
             const percent = item.total > 0 ? Math.round((item.allocated / item.total) * 100) : 0;
             let barColor = 'bg-blue-500';
@@ -149,9 +249,41 @@ export class Dashboard implements OnInit, OnDestroy {
           });
           this.cdr.detectChanges();
         },
-        error: err => console.error('Error fetching inventory:', err)
+        error: err => {
+          console.error('Error fetching inventory:', err);
+          this.loadingInventory = false;
+          this.errorInventory = true;
+          this.cdr.detectChanges();
+        }
       })
     );
+  }
+
+  /**
+   * Filters chart data and recent activity based on the selected time range,
+   * using the cached `allRequests` array so no extra API calls are needed.
+   */
+  private applyRangeFilter(): void {
+    const now = new Date();
+    let cutoff: Date;
+
+    switch (this.activeRange) {
+      case '24h': cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+      case '7d':  cutoff = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000); break;
+      case '30d': cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+      case '90d': cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
+      default:    cutoff = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000);
+    }
+
+    const filtered = this.allRequests.filter(r => {
+      if (!r.requestTime) return false;
+      return new Date(r.requestTime) >= cutoff;
+    });
+
+    this.updateChartData(filtered);
+    this.updateStatusSlices(filtered);
+    this.updateRecentActivity(filtered);
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy(): void {
@@ -165,6 +297,9 @@ export class Dashboard implements OnInit, OnDestroy {
 
   setRange(range: string): void {
     this.activeRange = range;
+    if (this.allRequests.length > 0) {
+      this.applyRangeFilter();
+    }
   }
 
   stats: StatCard[] = [
@@ -319,6 +454,16 @@ export class Dashboard implements OnInit, OnDestroy {
     return this.statusSlices.reduce((sum, s) => sum + s.value, 0);
   }
 
+  /** Label shown in donut centre: hovered slice label or 'Total' */
+  get donutCentreLabel(): string {
+    return this.hoveredSlice ? this.hoveredSlice.label : 'Total';
+  }
+
+  /** Value shown in donut centre: hovered slice count or total */
+  get donutCentreValue(): number {
+    return this.hoveredSlice ? this.hoveredSlice.value : this.totalRequests;
+  }
+
   get donutSegments(): { slice: StatusSlice; dashArray: string; dashOffset: number }[] {
     const c = this.donutCircumference;
     const total = this.totalRequests;
@@ -380,7 +525,7 @@ export class Dashboard implements OnInit, OnDestroy {
     const maxVal = Math.max(...rData, ...resData, 10);
     const roundedMax = Math.ceil(maxVal / 10) * 10;
     this.chartMax = roundedMax;
-    
+
     const step = roundedMax / 4;
     this.yAxisTicks = [
       roundedMax,
@@ -449,6 +594,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
     return {
       id: `ER-${r.id.toString().padStart(4, '0')}`,
+      rawId: r.id,
       name: r.citizenName || 'Unknown',
       type: r.emergencyType || 'General',
       location: r.location || 'Unknown',
@@ -458,6 +604,7 @@ export class Dashboard implements OnInit, OnDestroy {
       statusClass: statusClassMap[r.status] || 'bg-gray-100 text-gray-600',
       statusDot: statusDotMap[r.status] || 'bg-gray-400',
       time: this.getRelativeTime(r.requestTime),
+      requestTime: r.requestTime,
     };
   }
 

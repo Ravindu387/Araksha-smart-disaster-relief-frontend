@@ -1,0 +1,300 @@
+<div class="min-h-screen bg-slate-50 p-6 md:p-8">
+
+  <!-- Action feedback banners -->
+  @if (actionSuccess) {
+    <div class="flex items-center gap-3 p-3.5 mb-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm font-semibold">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      {{ actionSuccess }}
+    </div>
+  }
+  @if (actionError) {
+    <div class="flex items-center gap-3 p-3.5 mb-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-semibold">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      {{ actionError }}
+    </div>
+  }
+
+  <!-- Page Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Citizens Directory</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        {{ filteredCitizens.length }} of {{ allCitizens.length }} citizens registered
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="openCreate()"
+        class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+        Add Citizen
+      </button>
+      <button
+        type="button"
+        (click)="exportCsv()"
+        class="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-slate-700 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Search/Filter Toolbar -->
+  <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4">
+    <div class="relative flex-1">
+      <input
+        type="text"
+        (input)="onSearchChange($any($event.target).value)"
+        [value]="searchQuery"
+        placeholder="Search citizens by name, email, phone or address..."
+        class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition"
+      />
+      <svg class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Citizens Grid / Table -->
+  <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    @if (isLoading) {
+      <div class="p-12 text-center text-slate-500">
+        <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-sm font-semibold">Loading citizens data...</p>
+      </div>
+    } @else if (pagedCitizens.length === 0) {
+      <div class="p-12 text-center text-slate-400">
+        <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <p class="text-sm">No citizens found matching your criteria.</p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50/75 border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider">
+              <th class="px-6 py-4">Citizen</th>
+              <th class="px-6 py-4">Email</th>
+              <th class="px-6 py-4">Phone Number</th>
+              <th class="px-6 py-4">Address</th>
+              <th class="px-6 py-4">Registered Date</th>
+              <th class="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (citizen of pagedCitizens; track citizen.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0" [class]="getAvatarColor(citizen.fullName)">
+                      {{ getInitials(citizen.fullName) }}
+                    </div>
+                    <span class="font-semibold text-slate-800">{{ citizen.fullName }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-slate-600 text-sm">{{ citizen.email }}</td>
+                <td class="px-6 py-4 text-slate-600 text-sm whitespace-nowrap">{{ citizen.phoneNumber || '—' }}</td>
+                <td class="px-6 py-4 text-slate-500 text-sm max-w-[200px] truncate" [title]="citizen.address || ''">{{ citizen.address || '—' }}</td>
+                <td class="px-6 py-4 text-slate-400 text-sm whitespace-nowrap">{{ formatDate(citizen.createdAt) }}</td>
+                <td class="px-6 py-4 text-right whitespace-nowrap">
+                  <div class="flex items-center justify-end gap-2">
+                    <button type="button" (click)="openView(citizen)" title="View Details"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                    <button type="button" (click)="openEdit(citizen)" title="Edit Citizen"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button type="button" (click)="deleteCitizen(citizen)" title="Delete Citizen" [disabled]="deletingId === citizen.id"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40">
+                      @if (deletingId === citizen.id) {
+                        <span class="w-3.5 h-3.5 border-2 border-rose-300 border-t-rose-500 rounded-full animate-spin"></span>
+                      } @else {
+                        <app-icon name="trash" class="w-4 h-4"></app-icon>
+                      }
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      @if (totalPages > 1) {
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+          <p class="text-sm text-slate-500">
+            Page {{ currentPage }} of {{ totalPages }}
+          </p>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              (click)="setPage(currentPage - 1)"
+              [disabled]="currentPage === 1"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed transition-colors">
+              Prev
+            </button>
+            @for (p of getPageNumbers(); track p) {
+              <button
+                type="button"
+                (click)="setPage(p)"
+                class="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+                [class.bg-blue-600]="currentPage === p"
+                [class.text-white]="currentPage === p"
+                [class.bg-white]="currentPage !== p"
+                [class.border]="currentPage !== p"
+                [class.border-slate-200]="currentPage !== p"
+                [class.text-slate-600]="currentPage !== p"
+                [class.hover:bg-slate-50]="currentPage !== p"
+              >{{ p }}</button>
+            }
+            <button
+              type="button"
+              (click)="setPage(currentPage + 1)"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed transition-colors">
+              Next
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<!-- VIEW CITIZEN MODAL -->
+@if (viewModalOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" (click)="closeView()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900">Citizen Details</h2>
+        <button type="button" (click)="closeView()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div class="flex items-center gap-4 pb-4 border-b border-slate-100">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center text-lg font-black" [class]="getAvatarColor(viewingCitizen?.fullName || '')">
+            {{ getInitials(viewingCitizen?.fullName || '') }}
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">{{ viewingCitizen?.fullName }}</h3>
+            <p class="text-xs text-slate-400 mt-0.5">ID: #{{ viewingCitizen?.id }}</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">EMAIL ADDRESS</span>
+            <span class="text-sm font-semibold text-slate-800">{{ viewingCitizen?.email }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">PHONE NUMBER</span>
+            <span class="text-sm font-semibold text-slate-800">{{ viewingCitizen?.phoneNumber || '—' }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">RESIDENTIAL ADDRESS</span>
+            <span class="text-sm font-semibold text-slate-800">{{ viewingCitizen?.address || '—' }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">REGISTRATION DATE</span>
+            <span class="text-sm font-semibold text-slate-800">{{ formatDate(viewingCitizen?.createdAt || '') }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end">
+        <button type="button" (click)="closeView()" class="px-5 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-700 transition-colors">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- CREATE CITIZEN MODAL -->
+@if (createModalOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" (click)="closeCreate()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900">Add New Citizen</h2>
+        <button type="button" (click)="closeCreate()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        @if (createError) {
+          <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm font-medium">{{ createError }}</div>
+        }
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">FULL NAME *</label>
+          <input [(ngModel)]="createFullName" type="text" placeholder="John Doe" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">EMAIL ADDRESS *</label>
+          <input [(ngModel)]="createEmail" type="email" placeholder="john@example.com" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">PHONE NUMBER</label>
+          <input [(ngModel)]="createPhone" type="text" placeholder="+94 77 123 4567" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">ADDRESS</label>
+          <input [(ngModel)]="createAddress" type="text" placeholder="123 Galle Road, Colombo" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" (click)="closeCreate()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button type="button" (click)="submitCreate()" [disabled]="createSaving" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors flex items-center gap-2">
+          @if (createSaving) { <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span> }
+          Add Citizen
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- EDIT CITIZEN MODAL -->
+@if (editModalOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" (click)="closeEdit()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900">Edit Citizen</h2>
+        <button type="button" (click)="closeEdit()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        @if (editError) {
+          <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm font-medium">{{ editError }}</div>
+        }
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">FULL NAME *</label>
+          <input [(ngModel)]="editFullName" type="text" placeholder="John Doe" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">EMAIL ADDRESS *</label>
+          <input [(ngModel)]="editEmail" type="email" placeholder="john@example.com" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">PHONE NUMBER</label>
+          <input [(ngModel)]="editPhone" type="text" placeholder="+94 77 123 4567" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">ADDRESS</label>
+          <input [(ngModel)]="editAddress" type="text" placeholder="123 Galle Road, Colombo" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition" />
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" (click)="closeEdit()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+        <button type="button" (click)="submitEdit()" [disabled]="editSaving" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors flex items-center gap-2">
+          @if (editSaving) { <span class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span> }
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+}

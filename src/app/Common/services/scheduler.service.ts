@@ -42,4 +42,8 @@ export class SchedulerService {
   runJob(jobKey: string): Observable<string> {
     return this.http.post(`${this.baseUrl}/run/${jobKey}`, {}, { responseType: 'text' });
   }
+
+  toggleJobStatus(jobKey: string, status: 'ACTIVE' | 'PAUSED'): Observable<SchedulerJob> {
+    return this.http.post<SchedulerJob>(`${this.baseUrl}/jobs/${jobKey}/toggle`, { status });
+  }
 }

@@ -413,8 +413,8 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.trendsChartInstance) {
       this.trendsChartInstance.data.datasets[0].data = this.currentTrendsData.flood;
-      this.trendsChartInstance.data.datasets[1].data = this.currentTrendsData.fire;
-      this.trendsChartInstance.data.datasets[2].data = this.currentTrendsData.hurricane;
+      this.trendsChartInstance.data.datasets[1].data = this.currentTrendsData.hurricane;  // index 1 = Hurricane
+      this.trendsChartInstance.data.datasets[2].data = this.currentTrendsData.fire;        // index 2 = Fire
       this.trendsChartInstance.data.datasets[3].data = this.currentTrendsData.earthquake;
       this.trendsChartInstance.data.datasets[4].data = this.currentTrendsData.medical;
       this.trendsChartInstance.data.datasets[5].data = this.currentTrendsData.other;

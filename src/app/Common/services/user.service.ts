@@ -55,4 +55,8 @@ export class UserService {
       .put<CurrentUser>(`${this.apiBase}/api/users/me`, payload)
       .pipe(tap((updated) => this.currentUser.set(updated)));
   }
+
+  changePassword(payload: any) {
+    return this.http.post(`${this.apiBase}/api/users/change-password`, payload);
+  }
 }

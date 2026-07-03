@@ -61,6 +61,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
   assigned = false;
   matching = false;
   assignSuccess = '';
+  assignError = ''; // inline error displayed in UI instead of alert()
 
   emergencies: Emergency[] = [];
   volunteers: Volunteer[] = [];
@@ -443,6 +444,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
   selectEmergency(id: string): void {
     this.selectedEmergencyId = id;
     this.assignSuccess = '';
+    this.assignError = '';
     this.assigned = false;
   }
 
@@ -568,7 +570,8 @@ export class AllocationComponent implements OnInit, AfterViewInit {
     if (!emergency || !originalShelter) return;
 
     if (originalShelter.occupied >= originalShelter.capacity) {
-      alert('This shelter is already full!');
+      this.assignError = 'This shelter is already at full capacity.';
+      setTimeout(() => { this.assignError = ''; }, 4000);
       return;
     }
 
@@ -601,7 +604,8 @@ export class AllocationComponent implements OnInit, AfterViewInit {
 
     const dispatchAmt = originalItem.count > 500 ? 200 : 50;
     if (originalItem.count < dispatchAmt) {
-      alert('Insufficient stock to dispatch!');
+      this.assignError = 'Insufficient stock to dispatch!';
+      setTimeout(() => { this.assignError = ''; }, 4000);
       return;
     }
 

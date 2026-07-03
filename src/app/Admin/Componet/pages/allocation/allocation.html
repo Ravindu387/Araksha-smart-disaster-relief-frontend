@@ -37,7 +37,20 @@
     </div>
   }
 
-  <!-- Main Three-Column Grid -->
+  <!-- Error Notification Toast -->
+  @if (assignError) {
+    <div class="fixed top-6 right-6 z-50 max-w-sm bg-white border border-rose-200 shadow-2xl rounded-2xl p-4 flex items-start gap-3" role="alert">
+      <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-slate-900">Allocation Error</h4>
+        <p class="text-xs text-rose-600 mt-1 font-medium leading-relaxed">{{ assignError }}</p>
+      </div>
+    </div>
+  }
+
+
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- COLUMN 1: EMERGENCY QUEUE -->
