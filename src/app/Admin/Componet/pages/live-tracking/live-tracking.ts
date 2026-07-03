@@ -74,6 +74,7 @@ export class LiveTracking implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
+    this.subscriptions.unsubscribe();
     if (this.timerId) clearInterval(this.timerId);
     if (this.dataIntervalId) clearInterval(this.dataIntervalId);
     this.stopSimulation();

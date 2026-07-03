@@ -38,6 +38,8 @@ export interface ApiTrendsData {
   fire: number[];
   hurricane: number[];
   earthquake: number[];
+  medical?: number[];
+  other?: number[];
   avgResponse: number[]; // 6 monthly average response times in minutes
 }
 
