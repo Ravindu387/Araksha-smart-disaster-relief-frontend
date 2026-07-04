@@ -9,6 +9,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   role: string; // must match backend Role enum constant, e.g. "CITIZEN" | "VOLUNTEER"
+  phone?: string;
 }
 
 export interface LoginPayload {

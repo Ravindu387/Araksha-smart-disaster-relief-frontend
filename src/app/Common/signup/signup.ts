@@ -132,7 +132,8 @@ export class SignupComponent {
         lastName: this.user.lastName,
         email: this.user.email,
         password: this.user.password,
-        role: this.selectedRole.toUpperCase() // must match backend Role enum names
+        role: this.selectedRole.toUpperCase(), // must match backend Role enum names
+        phone: this.user.phone
       })
       .subscribe({
         next: (message: any) => {
