@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { VolunteerHubService, TaskResponse } from '../../../Common/services/volunteerhub.service';
 import { EmergencyRequest } from '../../../Common/models/emergency-request.model';
 import { ShelterService } from '../../../services/shelter';
@@ -9,7 +10,7 @@ declare const L: any;
 @Component({
   selector: 'app-volunteer-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './volunteer-dashboard.html'
 })
 export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -17,6 +18,7 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
   private volunteerhubService = inject(VolunteerHubService);
   private shelterService = inject(ShelterService);
   private location = inject(Location);
+  private cdr = inject(ChangeDetectorRef);
 
   private map: any;
   private markersGroup: any;
@@ -520,6 +522,70 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
       default:
         return 'text-blue-500 border border-blue-200 bg-blue-50/30';
     }
+  }
+
+  // Task Status Tracking Enhancements
+  markTaskEnRoute(task: any): void {
+    const raw = task.rawRequest;
+    raw.status = 'In Progress';
+    raw.trackingMessage = `Assigned volunteer ${this.volunteer.name} is now en route to your location.`;
+    
+    this.volunteerhubService.updateEmergencyRequest(raw.id, raw).subscribe({
+      next: () => {
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.warn('Failed to update request on server, updating locally', err);
+        raw.status = 'In Progress';
+        raw.trackingMessage = `Assigned volunteer ${this.volunteer.name} is now en route to your location.`;
+        this.loadDashboard();
+      }
+    });
+  }
+
+  showResolveModal = false;
+  resolveTaskId = 0;
+  resolveNotes = '';
+  resolveLoading = false;
+
+  openResolveModal(taskId: number): void {
+    this.resolveTaskId = taskId;
+    this.resolveNotes = '';
+    this.showResolveModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeResolveModal(): void {
+    this.showResolveModal = false;
+    this.cdr.detectChanges();
+  }
+
+  submitResolve(): void {
+    const task = this.tasks.find(t => t.id === this.resolveTaskId);
+    if (!task) return;
+
+    const raw = task.rawRequest;
+    raw.status = 'Resolved';
+    raw.trackingMessage = `Emergency assistance has been resolved. Completion notes: ${this.resolveNotes}`;
+    
+    this.resolveLoading = true;
+    this.cdr.detectChanges();
+
+    this.volunteerhubService.updateEmergencyRequest(raw.id, raw).subscribe({
+      next: () => {
+        this.resolveLoading = false;
+        this.showResolveModal = false;
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.warn('Failed to update request on server, updating locally', err);
+        raw.status = 'Resolved';
+        raw.trackingMessage = `Emergency assistance has been resolved. Completion notes: ${this.resolveNotes}`;
+        this.resolveLoading = false;
+        this.showResolveModal = false;
+        this.loadDashboard();
+      }
+    });
   }
 }
 

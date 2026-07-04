@@ -89,9 +89,22 @@
                 <h3 class="text-base font-bold text-slate-800">{{task.name}}</h3>
                 <p class="text-slate-400 text-xs font-medium">📍 {{task.location}}</p>
                 <p class="text-slate-400 text-xs font-medium">✈ {{task.distance}} &nbsp; ⏱ {{task.eta}}</p>
-                <div class="flex gap-3 mt-4">
-                  <button (click)="selectTask(task)" class="flex-1 bg-[#2563eb] hover:bg-blue-600 text-white rounded-xl py-2 text-sm font-bold shadow-md shadow-blue-500/10 transition cursor-pointer">✈ Navigate</button>
-                  <button (click)="completeTask(task.id)" class="flex-1 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl py-2 text-sm font-bold shadow-md shadow-emerald-500/10 transition cursor-pointer">✓ Complete</button>
+                <div class="flex gap-2 mt-4 flex-wrap">
+                  <button (click)="selectTask(task)" class="flex-grow bg-[#2563eb] hover:bg-blue-600 text-white rounded-xl py-2 px-3 text-xs font-bold shadow-md shadow-blue-500/10 transition cursor-pointer">
+                    ✈ Navigate
+                  </button>
+                  
+                  @if (task.rawRequest.status === 'Pending' || !task.rawRequest.status || task.rawRequest.status === 'Assigned') {
+                    <button (click)="markTaskEnRoute(task)" class="flex-grow bg-amber-500 hover:bg-amber-600 text-white rounded-xl py-2 px-3 text-xs font-bold transition cursor-pointer">
+                      🚨 En Route
+                    </button>
+                  }
+                  
+                  @if (task.rawRequest.status === 'In Progress') {
+                    <button (click)="openResolveModal(task.id)" class="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2 px-3 text-xs font-bold transition cursor-pointer">
+                      ✓ Resolve Task
+                    </button>
+                  }
                 </div>
               </div>
             </div>
@@ -216,4 +229,47 @@
       </div>
     </div>
   </main>
+
+  <!-- Resolve Task Modal Overlay -->
+  <div *ngIf="showResolveModal" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+    <!-- Backdrop Overlay -->
+    <div (click)="closeResolveModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"></div>
+
+    <!-- Modal Box -->
+    <div class="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-fade-in z-10 border border-slate-100 font-sans text-slate-800">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-150">
+        <div>
+          <h3 class="text-base md:text-lg font-extrabold text-slate-800">Resolve Assistance Task</h3>
+          <span class="text-xs text-slate-400 font-medium">Verify completion details for central dispatch</span>
+        </div>
+        <button (click)="closeResolveModal()" class="p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-650 transition cursor-pointer select-none">
+          ✕
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="py-4 space-y-3">
+        <div class="space-y-1">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase">Resolution Completion Notes</span>
+          <textarea [(ngModel)]="resolveNotes" rows="4" placeholder="e.g. Cleared debris, distributed rations to the household, and confirmed citizen safety."
+            class="w-full p-3 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 resize-none"></textarea>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="flex items-center gap-3 pt-4 border-t border-slate-100 mt-4">
+        <button (click)="closeResolveModal()" class="flex-grow py-3 border border-slate-200 text-slate-500 font-bold text-xs rounded-xl hover:bg-slate-50 transition cursor-pointer">
+          Cancel
+        </button>
+        <button (click)="submitResolve()" [disabled]="resolveLoading || !resolveNotes.trim()"
+          class="flex-grow py-3 text-white font-bold text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition flex items-center justify-center gap-2 cursor-pointer">
+          <span *ngIf="resolveLoading" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          {{ resolveLoading ? 'Submitting...' : 'Complete Task' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
 </div>
