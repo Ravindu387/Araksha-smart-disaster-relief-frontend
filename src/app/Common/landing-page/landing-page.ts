@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { LandingService } from '../services/landing.service';
 import { LandingStats } from '../models/landing-stats.model';
 import { ShelterService } from '../../services/shelter';
+import { DonationService, Campaign, Contribution } from '../services/donation.service';
 
 @Component({
   selector: 'app-landing-page',
@@ -16,6 +17,7 @@ import { ShelterService } from '../../services/shelter';
 export class LandingPage implements OnInit, OnDestroy {
   private landingService = inject(LandingService);
   private shelterService = inject(ShelterService);
+  private donationService = inject(DonationService);
   private cdr = inject(ChangeDetectorRef);
 
   stats: LandingStats | null = null;
@@ -49,12 +51,9 @@ export class LandingPage implements OnInit, OnDestroy {
   ];
   selectedPoint: any = this.mapPoints[0];
 
-  // 4. Donation / Relief Campaigns
-  donationCampaigns = [
-    { title: 'Western Province Flood Relief', description: 'Providing urgent food packets, dry rations, and clean drinking water to over 1,500 displaced families.', raised: 7200, goal: 10000, percentage: 72, items: ['Rice & Dhal', 'Water bottles', 'Dry rations'] },
-    { title: 'Emergency Medical Dispatch Fund', description: 'Procuring and transporting essential first-aid kits, life-saving medicines, and saline packets to medical camps.', raised: 4500, goal: 8000, percentage: 56, items: ['First-aid kits', 'Bandages', 'Antibiotics'] },
-    { title: 'Shelter Bedding & Warm Clothes', description: 'Sponsoring warm blankets, mattresses, and hygiene kits for children and the elderly housed in relief shelters.', raised: 9100, goal: 12000, percentage: 75, items: ['Blankets', 'Mattresses', 'Hygiene kits'] }
-  ];
+  // 4. Donation Campaigns & Contributions List (Loaded from service)
+  donationCampaigns: Campaign[] = [];
+  contributions: Contribution[] = [];
 
   // 5. Safety & Preparedness Guides
   activeGuide = 'floods';
@@ -107,10 +106,12 @@ export class LandingPage implements OnInit, OnDestroy {
     console.log('LandingPage ngOnInit called!');
     this.fetchStats();
     this.fetchShelters();
+    this.loadCampaignsAndContributions();
     // Poll every 5 seconds for real-time dashboard stats update
     this.pollInterval = setInterval(() => {
       this.fetchStats();
       this.fetchShelters();
+      this.loadCampaignsAndContributions();
     }, 5000);
   }
 
@@ -234,6 +235,12 @@ export class LandingPage implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  loadCampaignsAndContributions(): void {
+    this.donationCampaigns = this.donationService.getCampaigns();
+    this.contributions = this.donationService.getContributions();
+    this.cdr.detectChanges();
+  }
+
   submitDonation(): void {
     if (!this.donorName.trim() || !this.donorEmail.trim()) {
       alert('Please enter your name and email address.');
@@ -253,16 +260,18 @@ export class LandingPage implements OnInit, OnDestroy {
 
     // Mock API transaction delay
     setTimeout(() => {
+      const donationValue = this.donationType === 'money' ? this.donationAmount : this.selectedSupplies;
+      this.donationService.addContribution(
+        this.selectedCampaign.title,
+        this.donationType,
+        this.donorName,
+        this.donorEmail,
+        donationValue
+      );
+
       this.donationLoading = false;
       this.donationSuccess = true;
-      
-      // Update raised statistics dynamically for the local session
-      if (this.donationType === 'money') {
-        this.selectedCampaign.raised += this.donationAmount;
-        const newPct = Math.round((this.selectedCampaign.raised / this.selectedCampaign.goal) * 100);
-        this.selectedCampaign.percentage = Math.min(newPct, 100);
-      }
-      
+      this.loadCampaignsAndContributions();
       this.cdr.detectChanges();
     }, 1500);
   }

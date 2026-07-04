@@ -451,6 +451,38 @@
           </div>
         </div>
       </div>
+
+      <!-- Recent Contributions Feed -->
+      <div class="mt-16 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto shadow-sm">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="text-xl">🤝</span>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">Recent Contributions Feed</h3>
+            <p class="text-xs text-slate-400 font-medium">Live logs of donations and supplies coordinated by the community</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+          <div *ngFor="let item of contributions" class="p-4 border border-slate-100 rounded-2xl bg-slate-50 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+                {{ item.donorName.charAt(0) }}
+              </div>
+              <div>
+                <p class="text-xs font-bold text-slate-850 leading-tight">
+                  {{ item.donorName }}
+                  <span class="text-slate-500 font-normal">
+                    {{ item.donationType === 'money' ? 'contributed $' + item.amount : 'offered ' + (item.supplies ? item.supplies.join(', ') : 'supplies') }}
+                  </span>
+                </p>
+                <span class="text-[10px] text-slate-400 font-semibold block mt-0.5">{{ item.campaignTitle }}</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold shrink-0">{{ item.time }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
