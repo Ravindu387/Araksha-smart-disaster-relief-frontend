@@ -1228,4 +1228,72 @@ export class Citizen implements OnInit, OnDestroy {
     const element = document.getElementById(id);
     if (element) element.scrollIntoView({ behavior: 'smooth' });
   }
+
+  // ── Citizen Dashboard Enhancements logic ──────────────────────────────────
+  neighborActiveTab: 'view' | 'create' = 'view';
+  newAidType: 'NEED' | 'OFFER' = 'NEED';
+  newAidItem = '';
+  newAidDescription = '';
+  newAidContact = '';
+  aidSubmitting = false;
+
+  getSafetyIndex(): { rating: string; color: string; bgClass: string; description: string } {
+    if (!this.weatherInfo) {
+      return { rating: 'Unknown', color: 'text-slate-500', bgClass: 'bg-slate-50 border-slate-200', description: 'Weather information not available.' };
+    }
+    const temp = this.weatherInfo.main?.temp || 28;
+    const desc = (this.weatherInfo.weather?.[0]?.description || '').toLowerCase();
+    
+    if (desc.includes('storm') || desc.includes('cyclone') || desc.includes('heavy rain')) {
+      return { rating: 'EVACUATE / PREPARE', color: 'text-rose-600', bgClass: 'bg-rose-50 border-rose-200', description: 'Severe warning active. Secure valuables and seek higher ground.' };
+    } else if (desc.includes('rain') || desc.includes('drizzle') || temp > 35) {
+      return { rating: 'MONITOR ALERTS', color: 'text-amber-600', bgClass: 'bg-amber-50 border-amber-200', description: 'Light precipitation or high temp. Monitor official channels.' };
+    }
+    return { rating: 'SAFE STATUS', color: 'text-emerald-600', bgClass: 'bg-emerald-50 border-emerald-200', description: 'No extreme atmospheric warnings active in your region.' };
+  }
+
+  getStepIndex(status: string): number {
+    const s = status.toLowerCase();
+    if (s === 'pending') return 1;
+    if (s === 'assigned') return 2;
+    if (s === 'in progress') return 3;
+    if (s === 'resolved' || s === 'completed') return 4;
+    return 1;
+  }
+
+  postNeighborAid(): void {
+    if (!this.newAidItem.trim() || !this.newAidContact.trim()) {
+      alert('Please fill out the item name and contact phone.');
+      return;
+    }
+
+    this.aidSubmitting = true;
+    
+    // Construct local mock match to update UI immediately
+    const userAddr = this.mapAddressBuilt || this.citizen?.address || this.location || 'Colombo, Sri Lanka';
+    const coords = this.geocodeAddress(userAddr);
+
+    const newMatch = {
+      id: Math.floor(1000 + Math.random() * 9000),
+      matchType: this.newAidType,
+      itemType: this.newAidItem,
+      description: this.newAidDescription,
+      contactPhone: this.newAidContact,
+      latitude: coords.lat,
+      longitude: coords.lng,
+      distanceKm: 0.1
+    };
+
+    // Simulate service latency
+    setTimeout(() => {
+      this.neighborAidMatches.unshift(newMatch);
+      this.plotNeighborAidOnMap();
+      this.newAidItem = '';
+      this.newAidDescription = '';
+      this.newAidContact = this.citizen?.phoneNumber || '';
+      this.neighborActiveTab = 'view';
+      this.aidSubmitting = false;
+      this.cdr.detectChanges();
+    }, 600);
+  }
 }
