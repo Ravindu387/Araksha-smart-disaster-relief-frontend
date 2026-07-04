@@ -32,8 +32,11 @@ export class AuthService {
   }
 
   login(payload: LoginPayload): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload, { withCredentials: true });
-  }
+  return this.http.post<LoginResponse>(
+    `${this.baseUrl}/login`,
+    payload
+  );
+}
 
   logout(): Observable<string> {
     localStorage.removeItem('token');
