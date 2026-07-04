@@ -133,6 +133,14 @@
               {{ job.status === 'ACTIVE' ? '⏸ Pause' : '▶ Resume' }}
             </button>
 
+            <!-- Edit configuration -->
+            <button
+              (click)="openEditModal(job)"
+              class="px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold uppercase border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition cursor-pointer"
+            >
+              ⚙ Edit
+            </button>
+
             <button
               (click)="runJobNow(job.jobKey)"
               [disabled]="runningJobs[job.jobKey]"
@@ -210,7 +218,7 @@
 
           </tr>
           
-          <tr *ngIf="logs.length === 0">
+          <tr class="text-slate-400" *ngIf="logs.length === 0">
             <td colspan="5" class="py-8 text-center text-slate-400 font-bold">
               No executions logged yet. Try triggering a job above!
             </td>
@@ -220,4 +228,57 @@
     </div>
   </div>
 
+</div>
+
+<!-- Edit Scheduler Job Modal -->
+<div *ngIf="showEditModal" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+  <div (click)="closeEditModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"></div>
+  
+  <div class="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl z-10 border border-slate-100 font-sans text-slate-800">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-150">
+      <div>
+        <h3 class="text-base md:text-lg font-extrabold text-slate-800">Configure Scheduler Job</h3>
+        <span class="text-xs text-slate-400 font-medium">Update execution interval and job status</span>
+      </div>
+      <button (click)="closeEditModal()" class="p-1 rounded-full text-slate-450 hover:bg-slate-100 hover:text-red-500 transition cursor-pointer select-none">
+        ✕
+      </button>
+    </div>
+
+    <div class="py-4 space-y-4">
+      <div>
+        <span class="block text-[10px] font-bold text-slate-400 uppercase">Job Name</span>
+        <input [value]="selectedJob?.name" disabled class="w-full mt-1 p-3 border border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-500 font-semibold" />
+      </div>
+
+      <div>
+        <span class="block text-[10px] font-bold text-slate-400 uppercase">Cron Expression</span>
+        <input [(ngModel)]="editCron" class="w-full mt-1 p-3 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/20" />
+        <span class="text-[10px] text-slate-400 mt-1 block">Format: [Second] [Minute] [Hour] [Day] [Month] [Day of Week] (e.g. <code>0 0 12 * * ?</code>)</span>
+      </div>
+
+      <div>
+        <span class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Job Status</span>
+        <div class="flex gap-2">
+          <button (click)="editStatus = 'ACTIVE'" class="flex-grow py-2 px-3 text-xs font-bold border rounded-lg transition cursor-pointer"
+            [ngClass]="editStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-slate-500 border-slate-200'">
+            Active
+          </button>
+          <button (click)="editStatus = 'PAUSED'" class="flex-grow py-2 px-3 text-xs font-bold border rounded-lg transition cursor-pointer"
+            [ngClass]="editStatus === 'PAUSED' ? 'bg-slate-100 text-slate-700 border-slate-350' : 'bg-white text-slate-500 border-slate-200'">
+            Paused
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 pt-4 border-t border-slate-100 mt-4">
+      <button (click)="closeEditModal()" class="flex-grow py-3 border border-slate-200 text-slate-500 font-bold text-xs rounded-xl hover:bg-slate-50 transition cursor-pointer">
+        Cancel
+      </button>
+      <button (click)="saveJob()" class="flex-grow py-3 text-white font-bold text-xs rounded-xl bg-slate-900 hover:bg-slate-800 transition cursor-pointer">
+        Save Configuration
+      </button>
+    </div>
+  </div>
 </div>

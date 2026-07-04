@@ -32,8 +32,19 @@
         </div>
       </div>
       <div class="flex items-center gap-4 relative">
-        <div class="px-5 py-2 rounded-full border border-blue-300 text-blue-600 font-bold text-xs md:text-sm shadow-sm">
-          🔵 {{volunteer.status}}
+        <button
+          (click)="triggerVolunteerSOS()"
+          [disabled]="sosLoading || volunteer.status === 'SOS / Danger'"
+          class="px-4 py-2 bg-red-600 hover:bg-red-750 text-white font-extrabold text-xs rounded-full shadow-lg shadow-red-500/25 transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+        >
+          🚨 SOS PANIC
+        </button>
+        <div class="px-5 py-2 rounded-full border text-xs md:text-sm font-bold shadow-sm"
+          [ngClass]="{
+            'border-red-300 text-red-600 bg-red-50': volunteer.status === 'SOS / Danger',
+            'border-blue-300 text-blue-600 bg-blue-50': volunteer.status !== 'SOS / Danger'
+          }">
+          {{ volunteer.status === 'SOS / Danger' ? '🔺 SOS / Danger' : '🔵 ' + volunteer.status }}
         </div>
         <div class="h-6 w-px bg-slate-200 mx-1"></div>
         <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500 shadow-sm cursor-pointer hover:scale-105 transition" (click)="openProfile()">
@@ -55,6 +66,14 @@
               <div class="flex justify-between border-b pb-2"><span class="font-semibold">Phone</span><span>{{ volunteerDetails?.phone }}</span></div>
               <div class="flex justify-between border-b pb-2"><span class="font-semibold">Address</span><span>{{ volunteerDetails?.address }}</span></div>
               <div class="flex justify-between border-b pb-2"><span class="font-semibold">District</span><span>{{ volunteerDetails?.district }}</span></div>
+              <div class="flex flex-col gap-1 border-b pb-2">
+                <span class="font-semibold">Skills</span>
+                <div class="flex gap-1.5 flex-wrap mt-1">
+                  <span *ngFor="let skill of volunteerDetails?.skills" class="px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md text-[10px] font-bold">
+                    {{ skill }}
+                  </span>
+                </div>
+              </div>
             </div>
             <button (click)="closeProfile()" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition cursor-pointer">Close</button>
           </div>
@@ -115,7 +134,12 @@
             <div class="space-y-4">
               <div *ngFor="let req of openRequests" class="p-5 border border-slate-100 rounded-2xl bg-white space-y-3 hover:border-slate-200 transition">
                 <div class="flex justify-between items-center">
-                  <span class="text-sm font-bold text-[#2563eb]">{{req.requestCode}}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-[#2563eb]">{{req.requestCode}}</span>
+                    <span *ngIf="req.skillMatch" class="px-2 py-0.5 bg-emerald-500 text-white rounded-md text-[9px] font-extrabold uppercase tracking-wide">
+                      Skill Match
+                    </span>
+                  </div>
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" [ngClass]="req.priorityClass">{{req.priority}}</span>
                 </div>
                 <p class="text-sm mt-2 text-slate-600 font-medium">{{req.description}}</p>
@@ -171,6 +195,55 @@
                 <span *ngFor="let need of needs" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl text-xs font-bold">
                   {{need}}
                 </span>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 space-y-3">
+              <div class="flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tracking Status Message</h3>
+                <button
+                  (click)="showQuickMsgDropdown = !showQuickMsgDropdown"
+                  class="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                >
+                  💬 Update Message
+                </button>
+              </div>
+              
+              @if (selectedTask.rawRequest.trackingMessage) {
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-medium text-blue-700 flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping shrink-0"></span>
+                  <span>{{ selectedTask.rawRequest.trackingMessage }}</span>
+                </div>
+              } @else {
+                <p class="text-xs text-slate-400 italic">No custom tracking message set for this task.</p>
+              }
+
+              <!-- Status message selector drawer -->
+              <div *ngIf="showQuickMsgDropdown" class="p-4 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 mt-2">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase">Select Quick Status Update</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    *ngFor="let option of statusMsgOptions"
+                    (click)="sendQuickStatusMessage(option)"
+                    class="p-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-[10px] text-slate-700 font-bold text-left transition cursor-pointer"
+                  >
+                    {{ option }}
+                  </button>
+                </div>
+                <div class="flex gap-2 items-center border-t border-slate-100 pt-3">
+                  <input
+                    [(ngModel)]="customStatusMsg"
+                    placeholder="Or type a custom tracking update message..."
+                    class="flex-1 p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800"
+                  />
+                  <button
+                    (click)="sendQuickStatusMessage(customStatusMsg)"
+                    [disabled]="!customStatusMsg.trim()"
+                    class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
           </div>

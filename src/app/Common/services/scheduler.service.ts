@@ -46,4 +46,8 @@ export class SchedulerService {
   toggleJobStatus(jobKey: string, status: 'ACTIVE' | 'PAUSED'): Observable<SchedulerJob> {
     return this.http.post<SchedulerJob>(`${this.baseUrl}/jobs/${jobKey}/toggle`, { status });
   }
+
+  updateJob(jobKey: string, cronExpression: string, status: 'ACTIVE' | 'PAUSED'): Observable<SchedulerJob> {
+    return this.http.put<SchedulerJob>(`${this.baseUrl}/jobs/${jobKey}`, { cronExpression, status });
+  }
 }
