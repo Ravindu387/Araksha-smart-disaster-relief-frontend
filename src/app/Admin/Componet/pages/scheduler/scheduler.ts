@@ -28,6 +28,11 @@ export class SchedulerComponent implements OnInit, OnDestroy {
   // Track run status of individual jobs to display local spinner
   runningJobs: { [key: string]: boolean } = {};
 
+  showEditModal = false;
+  selectedJob: SchedulerJob | null = null;
+  editCron = '';
+  editStatus: 'ACTIVE' | 'PAUSED' = 'ACTIVE';
+
   ngOnInit(): void {
     this.loadData();
 
@@ -131,5 +136,35 @@ export class SchedulerComponent implements OnInit, OnDestroy {
       case 'daily-summary': return 'chart';
       default: return 'grid';
     }
+  }
+
+  openEditModal(job: SchedulerJob): void {
+    this.selectedJob = job;
+    this.editCron = job.cronExpression;
+    this.editStatus = job.status;
+    this.showEditModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.selectedJob = null;
+    this.cdr.detectChanges();
+  }
+
+  saveJob(): void {
+    if (!this.selectedJob) return;
+
+    this.schedulerService.updateJob(this.selectedJob.jobKey, this.editCron, this.editStatus).subscribe({
+      next: (updated) => {
+        console.log('Job updated:', updated);
+        this.closeEditModal();
+        this.loadData(true);
+      },
+      error: (err) => {
+        console.error('Failed to update job:', err);
+        alert(err.error || 'Failed to update job. Please verify the cron expression.');
+      }
+    });
   }
 }

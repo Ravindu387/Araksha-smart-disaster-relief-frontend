@@ -11,10 +11,12 @@ import { FileUploadService } from '../Common/services/file-upload.service';
 import { Shelter } from '../Common/models/shelter.model';
 import { NotificationService, NotificationItem } from '../Common/services/notification.service';
 import { OnInit } from '@angular/core';
+import { MutualAidService, MutualAidItem } from '../Common/services/mutual-aid.service';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
 import { WeatherService } from '../services/weather.service';
 import { MapsService } from '../services/maps.service';
+import { jsPDF } from 'jspdf';
 
 declare const L: any;
 
@@ -227,6 +229,8 @@ export class Citizen implements OnInit, OnDestroy {
     if (!this.shelterMapInstance || !this.mapAddressBuilt) return;
     this.plotCitizenLocation(this.shelterMapInstance, this.mapAddressBuilt);
     this.updateShelterDistances(this.mapAddressBuilt);
+    const coords = this.geocodeAddress(this.mapAddressBuilt);
+    this.loadNeighborAidMatches(coords.lat, coords.lng);
   }
 
   private updateShelterDistances(centerAddress: string): void {
@@ -641,6 +645,7 @@ export class Citizen implements OnInit, OnDestroy {
     private shelterService: ShelterService,
     private notificationService: NotificationService,
     private fileUploadService: FileUploadService,
+    private mutualAidService: MutualAidService,
     private cdr: ChangeDetectorRef,
     private weatherService: WeatherService,
     private mapsService: MapsService
@@ -817,6 +822,9 @@ export class Citizen implements OnInit, OnDestroy {
           this.loadRequests();
           this.loadNotifications();
           this.loadWeatherForCitizen();
+          const userAddr = data.address || 'Colombo, Sri Lanka';
+          const coords = this.geocodeAddress(userAddr);
+          this.loadNeighborAidMatches(coords.lat, coords.lng);
           this.cdr.detectChanges();
         },
         error: (error: HttpErrorResponse) => {
@@ -837,6 +845,9 @@ export class Citizen implements OnInit, OnDestroy {
         this.loadRequests();
         this.loadNotifications();
         this.loadWeatherForCitizen();
+        const userAddr = data.address || 'Colombo, Sri Lanka';
+        const coords = this.geocodeAddress(userAddr);
+        this.loadNeighborAidMatches(coords.lat, coords.lng);
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
@@ -1269,31 +1280,172 @@ export class Citizen implements OnInit, OnDestroy {
 
     this.aidSubmitting = true;
     
-    // Construct local mock match to update UI immediately
     const userAddr = this.mapAddressBuilt || this.citizen?.address || this.location || 'Colombo, Sri Lanka';
     const coords = this.geocodeAddress(userAddr);
 
-    const newMatch = {
-      id: Math.floor(1000 + Math.random() * 9000),
-      matchType: this.newAidType,
+    const item = {
+      citizenName: this.citizen?.fullName || 'Alice Smith',
       itemType: this.newAidItem,
       description: this.newAidDescription,
       contactPhone: this.newAidContact,
       latitude: coords.lat,
       longitude: coords.lng,
-      distanceKm: 0.1
+      type: this.newAidType
     };
 
-    // Simulate service latency
+    this.mapsService.registerAidItem(item).subscribe({
+      next: (res) => {
+        console.log('Registered P2P Aid Item:', res);
+        this.loadNeighborAidMatches(coords.lat, coords.lng);
+        this.newAidItem = '';
+        this.newAidDescription = '';
+        this.newAidContact = this.citizen?.phoneNumber || '';
+        this.neighborActiveTab = 'view';
+        this.aidSubmitting = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error registering P2P Aid Item:', err);
+        this.aidSubmitting = false;
+        alert('Failed to post to mutual aid board. Please try again.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // Siren tone synthesizer & Voice synthesizer warning TTS
+  playSirenAndSpeak(alertItem: { title: string; description: string }): void {
+    // 1. Play Synthesized Beep Siren Tone (Web Audio API)
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.type = 'sawtooth';
+      // Emergency Sweep frequency (440Hz -> 880Hz -> 440Hz)
+      oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+      oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.35);
+      oscillator.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.7);
+
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 1.1);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 1.1);
+    } catch (e) {
+      console.warn('Web Audio blocked or not supported:', e);
+    }
+
+    // 2. Speak Alert Message (SpeechSynthesis TTS)
     setTimeout(() => {
-      this.neighborAidMatches.unshift(newMatch);
-      this.plotNeighborAidOnMap();
-      this.newAidItem = '';
-      this.newAidDescription = '';
-      this.newAidContact = this.citizen?.phoneNumber || '';
-      this.neighborActiveTab = 'view';
-      this.aidSubmitting = false;
-      this.cdr.detectChanges();
-    }, 600);
+      if ('speechSynthesis' in window) {
+        // Cancel ongoing speak queries to prevent queuing overlaps
+        window.speechSynthesis.cancel();
+        
+        const announceText = `Attention: ${alertItem.title}. ${alertItem.description}. Please coordinate with local emergency shelters immediately.`;
+        const utterance = new SpeechSynthesisUtterance(announceText);
+        utterance.rate = 0.85; // Speak clearly
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert('Text-to-speech is not supported in this browser.');
+      }
+    }, 1100);
+  }
+
+  // Certified Emergency PDF Receipt Exporter
+  downloadRequestReceipt(req: EmergencyRequest): void {
+    const doc = new jsPDF();
+
+    // Top Header Banner
+    doc.setFillColor(30, 41, 59); // Slate-800
+    doc.rect(0, 0, 210, 8, 'F');
+
+    // Official Government DMC Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('GOVERNMENT OF SRI LANKA', 105, 20, { align: 'center' });
+
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text('DISASTER MANAGEMENT CENTER (DMC) - EMERGENCY RESPONSE AGENCY', 105, 26, { align: 'center' });
+
+    // Divider line
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, 32, 195, 32);
+
+    // Title
+    doc.setFontSize(15);
+    doc.setTextColor(185, 28, 28); // Emergency Red
+    doc.text('CERTIFIED EMERGENCY REQUEST RECEIPT', 105, 42, { align: 'center' });
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Request Reference ID: ${req.id}`, 15, 52);
+    doc.text(`Submission Date: ${req.date}`, 15, 58);
+    doc.text(`Citizen Name: ${this.citizen?.fullName || 'Registered Citizen'}`, 15, 64);
+    doc.text(`Primary Contact: ${this.contactPhone || this.citizen?.phoneNumber || 'N/A'}`, 15, 70);
+
+    // Double line divider
+    doc.line(15, 76, 195, 76);
+    doc.line(15, 77, 195, 77);
+
+    // Case Details
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text('REPORT DETAILS:', 15, 86);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+    doc.text(`Disaster Type: ${req.type}`, 15, 94);
+    doc.text(`Incident Location: ${req.location || 'Not Specified'}`, 15, 100);
+
+    doc.text('Description of Situation:', 15, 108);
+    const descLines = doc.splitTextToSize(req.description || 'No additional details provided.', 180);
+    doc.text(descLines, 15, 114);
+
+    let nextY = 124 + (descLines.length * 5);
+
+    // Status Timeline Box
+    doc.setFillColor(248, 250, 252);
+    doc.rect(15, nextY, 180, 24, 'F');
+    doc.setDrawColor(203, 213, 225);
+    doc.rect(15, nextY, 180, 24);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`ACTIVE ESCALATION STATUS: ${req.status.toUpperCase()}`, 20, nextY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Assigned Agency / Responder: ${req.responder || 'DMC General Dispatch Unit'}`, 20, nextY + 13);
+    doc.text(`escalation Tracker Message: ${req.trackingMessage || 'Awaiting dispatch confirmation.'}`, 20, nextY + 19);
+
+    nextY += 38;
+
+    // Warning / Legal Footnote
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    const footerText = 'This receipt serves as official proof of an emergency request filed under Section 15 of the Disaster Management Act of 2005. It is verified by civil protection services and may be presented for local relief claims.';
+    const footerLines = doc.splitTextToSize(footerText, 180);
+    doc.text(footerLines, 15, nextY);
+
+    // Signature Block
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100, 116, 139);
+    doc.text('DMC EMERGENCY DISPATCH CENTER - ELECTRONICALLY SIGNED & REGISTERED', 105, nextY + 16, { align: 'center' });
+
+    // Trigger Download
+    doc.save(`emergency_receipt_${req.id}.pdf`);
   }
 }

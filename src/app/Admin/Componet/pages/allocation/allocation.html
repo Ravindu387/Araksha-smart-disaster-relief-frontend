@@ -169,7 +169,7 @@
               <span>{{ selectedEmergency.location }}</span>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex flex-col gap-2">
               <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required Resources</h4>
               <div class="flex flex-wrap gap-1.5 mt-2">
                 @for (r of selectedEmergency.resources; track r) {
@@ -178,6 +178,14 @@
                   </span>
                 }
               </div>
+              <button
+                type="button"
+                (click)="smartMatch()"
+                [disabled]="matching"
+                class="w-full py-2.5 bg-blue-600 hover:bg-blue-750 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 mt-4 cursor-pointer disabled:opacity-50"
+              >
+                ⚡ Auto-Assign Best Responder (AI Smart Match)
+              </button>
             </div>
           </div>
         </div>

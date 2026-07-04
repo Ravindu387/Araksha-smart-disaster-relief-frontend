@@ -9,6 +9,11 @@ export interface VolunteerHubResponse {
   name: string;
   status: string;
   available: boolean;
+  email?: string;
+  phone?: string;
+  address?: string;
+  district?: string;
+  skills?: string[];
 }
 
 export interface TaskResponse {
@@ -70,5 +75,15 @@ export class VolunteerHubService {
   // UPDATE EMERGENCY REQUEST
   updateEmergencyRequest(id: number, request: EmergencyRequest): Observable<EmergencyRequest> {
     return this.http.put<EmergencyRequest>(`${this.requestsApiUrl}/${id}`, request);
+  }
+
+  // UPDATE LOCATION
+  updateLocation(id: number, latitude: number, longitude: number): Observable<VolunteerHubResponse> {
+    return this.http.put<VolunteerHubResponse>(`${this.hubApiUrl}/${id}/location?latitude=${latitude}&longitude=${longitude}`, {});
+  }
+
+  // UPDATE STATUS
+  updateStatus(id: number, status: string): Observable<VolunteerHubResponse> {
+    return this.http.put<VolunteerHubResponse>(`${this.hubApiUrl}/${id}/status?status=${status}`, {});
   }
 }

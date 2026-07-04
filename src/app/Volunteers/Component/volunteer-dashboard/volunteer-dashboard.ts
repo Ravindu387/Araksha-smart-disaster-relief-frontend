@@ -1,15 +1,17 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { VolunteerHubService, TaskResponse } from '../../../Common/services/volunteerhub.service';
 import { EmergencyRequest } from '../../../Common/models/emergency-request.model';
 import { ShelterService } from '../../../services/shelter';
+import { NotificationService } from '../../../Common/services/notification.service';
 
 declare const L: any;
 
 @Component({
   selector: 'app-volunteer-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './volunteer-dashboard.html'
 })
 export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -17,10 +19,17 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
   private volunteerhubService = inject(VolunteerHubService);
   private shelterService = inject(ShelterService);
   private location = inject(Location);
+  private notificationService = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
 
   private map: any;
   private markersGroup: any;
   private coordsMap = new Map<string, { lat: number, lng: number }>();
+  private userMarker: any;
+  private routeLine: any;
+  private watchId: any;
+  currentLat: number | null = null;
+  currentLng: number | null = null;
 
   volunteerDetails: any = null;
 
@@ -100,6 +109,9 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
   }
 
   ngOnDestroy(): void {
+    if (this.watchId) {
+      navigator.geolocation.clearWatch(this.watchId);
+    }
     if (this.map) {
       this.map.remove();
     }
@@ -129,47 +141,93 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
 
   getUserLocation(): void {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      this.watchId = navigator.geolocation.watchPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+          this.currentLat = lat;
+          this.currentLng = lng;
 
-          const youIcon = L.divIcon({
-            className: 'custom-leaflet-marker',
-            html: `
-              <div class="relative w-8 h-8 flex items-center justify-center">
-                <span class="absolute inline-flex h-6 w-6 rounded-full bg-blue-400 opacity-40 animate-ping"></span>
-                <div class="relative w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow"></div>
-              </div>
-            `,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-
-          L.marker([lat, lng], { icon: youIcon })
-            .addTo(this.map)
-            .bindPopup('<b>Your Current Location</b>')
-            .openPopup();
-
-          this.map.setView([lat, lng], 13);
+          this.updateUserMarker(lat, lng);
+          this.syncLocationWithServer(lat, lng);
+          this.drawRouteLine();
         },
         (error) => {
           console.warn('Error obtaining device location, using default Colombo coordinates:', error);
-          const colomboIcon = L.divIcon({
-            className: 'custom-leaflet-marker',
-            html: `
-              <div class="relative w-8 h-8 flex items-center justify-center">
-                <div class="relative w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow"></div>
-              </div>
-            `,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          L.marker([6.9271, 79.8612], { icon: colomboIcon })
-            .addTo(this.map)
-            .bindPopup('<b>Araksha Center (Colombo)</b>');
+          this.currentLat = 6.9271;
+          this.currentLng = 79.8612;
+          this.updateUserMarker(6.9271, 79.8612);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
+    }
+  }
+
+  updateUserMarker(lat: number, lng: number): void {
+    if (!this.map) return;
+
+    const youIcon = L.divIcon({
+      className: 'custom-leaflet-marker',
+      html: `
+        <div class="relative w-8 h-8 flex items-center justify-center">
+          <span class="absolute inline-flex h-6 w-6 rounded-full bg-blue-400 opacity-40 animate-ping"></span>
+          <div class="relative w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow"></div>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+
+    if (this.userMarker) {
+      this.userMarker.setLatLng([lat, lng]);
+    } else {
+      this.userMarker = L.marker([lat, lng], { icon: youIcon })
+        .addTo(this.map)
+        .bindPopup('<b>Your Current Location</b>')
+        .openPopup();
+      this.map.setView([lat, lng], 13);
+    }
+  }
+
+  syncLocationWithServer(lat: number, lng: number): void {
+    if (this.volunteerDetails && this.volunteerDetails.id) {
+      this.volunteerhubService.updateLocation(this.volunteerDetails.id, lat, lng).subscribe({
+        next: (res) => {
+          console.log('Location synchronized with server:', lat, lng);
+        },
+        error: (err) => console.warn('Failed to sync location with server:', err)
+      });
+    }
+  }
+
+  drawRouteLine(): void {
+    if (!this.map || !this.currentLat || !this.currentLng) return;
+
+    if (this.routeLine) {
+      this.map.removeLayer(this.routeLine);
+      this.routeLine = null;
+    }
+
+    if (this.selectedTask && this.selectedTask.rawRequest) {
+      const id = 'req-' + this.selectedTask.rawRequest.id;
+      const taskCoords = this.getOrCreateCoords(id, this.selectedTask.rawRequest.emergencyType + ' ' + (this.selectedTask.rawRequest.location || ''));
+      
+      const points = [
+        [this.currentLat, this.currentLng],
+        [taskCoords.lat, taskCoords.lng]
+      ];
+
+      this.routeLine = L.polyline(points, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '8, 8',
+        lineCap: 'round'
+      }).addTo(this.map);
     }
   }
 
@@ -422,15 +480,30 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
           (!r.assignedVolunteer || r.assignedVolunteer.trim() === '')
         );
 
-        this.openRequests = open.map(r => ({
-          id: r.id,
-          requestCode: r.requestId,
-          priority: r.priority || 'Medium',
-          priorityClass: this.getPriorityClass(r.priority),
-          description: `${r.emergencyType || 'General'} assistance requested at ${r.location}.`,
-          distance: (1.5 + Math.random() * 4.0).toFixed(1) + ' mi away',
-          rawRequest: r
-        }));
+        const volunteerSkills: string[] = this.volunteerDetails?.skills || [];
+        this.openRequests = open.map(r => {
+          const type = (r.emergencyType || '').toLowerCase();
+          const hasMatchingSkill = volunteerSkills.some(skill => {
+            const s = skill.toLowerCase();
+            if (s.includes('water') && type.includes('flood')) return true;
+            if (s.includes('fire') && type.includes('fire')) return true;
+            if (s.includes('medical') && type.includes('medical')) return true;
+            if (s.includes('aid') && type.includes('medical')) return true;
+            if (s.includes('rescue') && (type.includes('earthquake') || type.includes('hurricane') || type.includes('flood'))) return true;
+            return false;
+          });
+
+          return {
+            id: r.id,
+            requestCode: r.requestId,
+            priority: r.priority || 'Medium',
+            priorityClass: this.getPriorityClass(r.priority),
+            description: `${r.emergencyType || 'General'} assistance requested at ${r.location}.`,
+            distance: (1.5 + Math.random() * 4.0).toFixed(1) + ' mi away',
+            rawRequest: r,
+            skillMatch: hasMatchingSkill
+          };
+        });
       },
       error: (err: any) => {
         console.error('Error fetching open emergency requests:', err);
@@ -455,6 +528,7 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
       const coords = this.getOrCreateCoords(id, task.rawRequest.emergencyType + ' ' + (task.rawRequest.location || ''));
       this.map.setView([coords.lat, coords.lng], 14, { animate: true });
     }
+    this.drawRouteLine();
   }
 
   acceptRequest(request: any): void {
@@ -520,6 +594,144 @@ export class VolunteerDashboardComponent implements OnInit, OnDestroy, AfterView
       default:
         return 'text-blue-500 border border-blue-200 bg-blue-50/30';
     }
+  }
+
+  // Task Status Tracking Enhancements
+  markTaskEnRoute(task: any): void {
+    const raw = task.rawRequest;
+    raw.status = 'In Progress';
+    raw.trackingMessage = `Assigned volunteer ${this.volunteer.name} is now en route to your location.`;
+    
+    this.volunteerhubService.updateEmergencyRequest(raw.id, raw).subscribe({
+      next: () => {
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.warn('Failed to update request on server, updating locally', err);
+        raw.status = 'In Progress';
+        raw.trackingMessage = `Assigned volunteer ${this.volunteer.name} is now en route to your location.`;
+        this.loadDashboard();
+      }
+    });
+  }
+
+  showResolveModal = false;
+  resolveTaskId = 0;
+  resolveNotes = '';
+  resolveLoading = false;
+
+  openResolveModal(taskId: number): void {
+    this.resolveTaskId = taskId;
+    this.resolveNotes = '';
+    this.showResolveModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeResolveModal(): void {
+    this.showResolveModal = false;
+    this.cdr.detectChanges();
+  }
+
+  submitResolve(): void {
+    const task = this.tasks.find(t => t.id === this.resolveTaskId);
+    if (!task) return;
+
+    const raw = task.rawRequest;
+    raw.status = 'Resolved';
+    raw.trackingMessage = `Emergency assistance has been resolved. Completion notes: ${this.resolveNotes}`;
+    
+    this.resolveLoading = true;
+    this.cdr.detectChanges();
+
+    this.volunteerhubService.updateEmergencyRequest(raw.id, raw).subscribe({
+      next: () => {
+        this.resolveLoading = false;
+        this.showResolveModal = false;
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.warn('Failed to update request on server, updating locally', err);
+        raw.status = 'Resolved';
+        raw.trackingMessage = `Emergency assistance has been resolved. Completion notes: ${this.resolveNotes}`;
+        this.resolveLoading = false;
+        this.showResolveModal = false;
+        this.loadDashboard();
+      }
+    });
+  }
+
+  sosLoading = false;
+
+  triggerVolunteerSOS(): void {
+    if (!this.volunteerDetails) return;
+
+    this.sosLoading = true;
+    this.cdr.detectChanges();
+
+    this.volunteer.status = 'SOS / Danger';
+    this.volunteerDetails.status = 'SOS / Danger';
+
+    this.volunteerhubService.updateStatus(this.volunteerDetails.id, 'SOS / Danger').subscribe({
+      next: () => {
+        const sosNotif = {
+          category: 'alerts',
+          severity: 'critical',
+          title: `VOLUNTEER SOS PANIC ALERT: ${this.volunteer.name}`,
+          badge: 'Critical',
+          description: `Volunteer ${this.volunteer.name} (${this.volunteer.volunteerCode}) has triggered a field SOS alert! Current Location: lat: ${this.currentLat ?? '6.9271'}, lng: ${this.currentLng ?? '79.8612'}. Immediate response required!`,
+          time: 'Just now',
+          read: false
+        };
+
+        this.notificationService.addNotification(sosNotif).subscribe({
+          next: () => {
+            this.sosLoading = false;
+            this.cdr.detectChanges();
+            alert('🚨 SOS alert broadcasted to dispatchers! Seek immediate shelter.');
+          },
+          error: (err) => {
+            console.error('Failed to post SOS notification:', err);
+            this.sosLoading = false;
+            this.cdr.detectChanges();
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Failed to update volunteer status to SOS:', err);
+        this.sosLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  showQuickMsgDropdown = false;
+  customStatusMsg = '';
+  statusMsgOptions = [
+    'Arrived at emergency scene.',
+    'Assisting citizen(s) to temporary safety.',
+    'Delayed due to extreme road blockage.',
+    'Navigating past high flood waters.',
+    'Administering first-aid and medical supplies.',
+    'Awaiting further equipment support.'
+  ];
+
+  sendQuickStatusMessage(msg: string): void {
+    if (!this.selectedTask || !msg.trim()) return;
+
+    const raw = this.selectedTask.rawRequest;
+    raw.trackingMessage = msg.trim();
+
+    this.volunteerhubService.updateEmergencyRequest(raw.id, raw).subscribe({
+      next: () => {
+        console.log('Tracking message updated:', msg);
+        this.showQuickMsgDropdown = false;
+        this.customStatusMsg = '';
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.error('Failed to update tracking message:', err);
+      }
+    });
   }
 }
 
