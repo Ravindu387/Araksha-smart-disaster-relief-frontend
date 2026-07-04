@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ForgotPasswordService } from '../../core/service/forgot-password.service';
+import { ForgotPasswordService } from '../../services/forgot-password.service';
 
 /**
  * VerifyOtpComponent — Step 2 of the password reset flow.
@@ -58,7 +58,7 @@ export class VerifyOtpComponent implements OnInit {
     this.forgotPasswordService.verifyOtp(this.email, this.otp.trim()).subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.successMessage = res.message;
+        this.successMessage = res;
         setTimeout(() => {
           this.router.navigate(['/reset-password'], {
             queryParams: { email: this.email, otp: this.otp.trim() }
