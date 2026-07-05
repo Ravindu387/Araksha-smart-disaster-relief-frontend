@@ -16,8 +16,8 @@ export interface UploadFileResponse {
 })
 export class FileUploadService {
   private http = inject(HttpClient);
-  private readonly uploadUrl = 'http://localhost:8080/api/files/upload';
-  private readonly filesUrl = 'http://localhost:8080/api/files';
+  private readonly uploadUrl = 'http://3.7.133.86:8080/api/files/upload';
+  private readonly filesUrl = 'http://3.7.133.86:8080/api/files';
 
   /**
    * Upload file to backend, tracking progress.

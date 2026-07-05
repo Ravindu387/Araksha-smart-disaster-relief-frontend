@@ -29,8 +29,8 @@ export interface UpdateUserPayload {
 export class UserService {
   private readonly http = inject(HttpClient);
 
-  /** Change this if your backend runs somewhere other than localhost:8080. */
-  private readonly apiBase = 'http://localhost:8080';
+  /** Change this if your backend runs somewhere other than 3.7.133.86:8080. */
+  private readonly apiBase = 'http://3.7.133.86:8080';
 
   readonly currentUser = signal<CurrentUser | null>(null);
   readonly loadError = signal<string | null>(null);

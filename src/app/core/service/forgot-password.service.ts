@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class ForgotPasswordService {
 
-  private readonly baseUrl = 'http://localhost:8080/api/auth';
+  private readonly baseUrl = 'http://3.7.133.86:8080/api/auth';
 
   constructor(private http: HttpClient) {}
 

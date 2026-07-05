@@ -48,7 +48,7 @@ export interface InventorySearchParams {
 })
 export class InventoryService {
 
-  private apiUrl = 'http://localhost:8080/api/inventory';
+  private apiUrl = 'http://3.7.133.86:8080/api/inventory';
 
 
   constructor(private http: HttpClient) {}

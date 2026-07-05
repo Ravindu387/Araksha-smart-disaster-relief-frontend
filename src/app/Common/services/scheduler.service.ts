@@ -29,7 +29,7 @@ export interface SchedulerLog {
 })
 export class SchedulerService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080/api/scheduler';
+  private baseUrl = 'http://3.7.133.86:8080/api/scheduler';
 
   getJobs(): Observable<SchedulerJob[]> {
     return this.http.get<SchedulerJob[]>(`${this.baseUrl}/jobs`);

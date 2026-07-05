@@ -30,7 +30,7 @@ export interface ShelterSearchParams {
 })
 export class ShelterService {
 
-  private baseUrl = 'http://localhost:8080/api/shelters';
+  private baseUrl = 'http://3.7.133.86:8080/api/shelters';
 
   constructor(private http: HttpClient) {}
 

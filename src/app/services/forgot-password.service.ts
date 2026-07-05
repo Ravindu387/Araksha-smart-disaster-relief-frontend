@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class ForgotPasswordService {
 
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = 'http://3.7.133.86:8080/api/auth';
 
   constructor(private http: HttpClient) {}
 

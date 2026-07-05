@@ -33,9 +33,9 @@ export interface TaskResponse {
 export class VolunteerHubService {
   private http = inject(HttpClient);
 
-  private readonly hubApiUrl = 'http://localhost:8080/api/volunteerhub';
-  private readonly tasksApiUrl = 'http://localhost:8080/api/tasks';
-  private readonly requestsApiUrl = 'http://localhost:8080/api/emergency-requests';
+  private readonly hubApiUrl = 'http://3.7.133.86:8080/api/volunteerhub';
+  private readonly tasksApiUrl = 'http://3.7.133.86:8080/api/tasks';
+  private readonly requestsApiUrl = 'http://3.7.133.86:8080/api/emergency-requests';
 
   // GET VOLUNTEER BY EMAIL
   getVolunteerByEmail(email: string): Observable<VolunteerHubResponse> {
