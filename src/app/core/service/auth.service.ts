@@ -33,11 +33,19 @@ export class AuthService {
   }
 
   login(payload: LoginPayload): Observable<LoginResponse> {
-  return this.http.post<LoginResponse>(
-    `${this.baseUrl}/login`,
-    payload
-  );
-}
+    return this.http.post<LoginResponse>(
+      `${this.baseUrl}/login`,
+      payload
+    );
+  }
+
+  googleLogin(token: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/google`, { token });
+  }
+
+  googleRegister(token: string, role: string, phone?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/google/register`, { token, role, phone });
+  }
 
   logout(): Observable<string> {
     localStorage.removeItem('token');
