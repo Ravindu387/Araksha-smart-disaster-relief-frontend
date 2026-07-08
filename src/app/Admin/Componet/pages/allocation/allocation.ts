@@ -109,14 +109,14 @@ export class AllocationComponent implements OnInit, AfterViewInit {
         this.originalShelters = res.shelters;
         this.originalInventory = res.inventory;
 
-        // 1. Map Emergencies
+      
         this.emergencies = res.emergencies.map((req: any) => {
           let status = 'Awaiting Assignment';
           if (req.status === 'Completed' || req.status === 'Resolved' || req.status === 'Assigned' || req.assignedVolunteer) {
             status = 'Assigned';
           }
           
-          // Connect database needs (resources list) to emergency
+        
           let resources = (req.resources || []).length > 0 ? req.resources : ['Supplies', 'Food Kits'];
           if ((req.resources || []).length === 0) {
             const type = (req.emergencyType || '').toLowerCase();
@@ -143,12 +143,12 @@ export class AllocationComponent implements OnInit, AfterViewInit {
           };
         });
 
-        // Auto-select first emergency if none selected
+    
         if (this.emergencies.length > 0 && !this.selectedEmergencyId) {
           this.selectedEmergencyId = this.emergencies[0].id;
         }
 
-        // 2. Map Volunteers
+    
         this.volunteers = res.volunteers.map((v: any) => {
           const coords = this.getOrCreateCoords('vol-' + v.id, v.name + ' ' + (v.location || ''));
           return {
@@ -163,7 +163,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
           };
         });
 
-        // 3. Map Shelters
+  
         this.shelters = res.shelters.map((s: any) => {
           let lat = s.latitude;
           let lng = s.longitude;
@@ -184,20 +184,19 @@ export class AllocationComponent implements OnInit, AfterViewInit {
           };
         });
 
-        // 4. Map Inventory Resources
         this.resources = res.inventory.map((item: any) => ({
           id: item.id,
           label: `${item.name} (${item.unit})`,
           count: item.count.toLocaleString()
         }));
 
-        // 5. Map Recent Allocations
+    
         this.recentAllocations = [...res.allocations].reverse();
 
-        // Render Map markers
+      
         this.renderMapMarkers();
 
-        // Force Angular change detection
+       
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Error fetching allocation dashboard data:', err)
@@ -288,7 +287,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
 
     this.markersGroup.clearLayers();
 
-    // 1. Render Emergencies (Red circles)
+    
     this.emergencies.forEach(e => {
       if (e.status !== 'Awaiting Assignment' && e.status !== 'Pending') return;
       if (!e.lat || !e.lng) return;
@@ -330,7 +329,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       this.markersGroup.addLayer(marker);
     });
 
-    // 2. Render Volunteers (Blue circles)
+    
     this.volunteers.forEach(vol => {
       if (!vol.lat || !vol.lng) return;
 
@@ -362,7 +361,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       this.markersGroup.addLayer(marker);
     });
 
-    // 3. Render Shelters (Green circle icon badges)
+    
     this.shelters.forEach(sh => {
       if (!sh.lat || !sh.lng) return;
 
@@ -432,7 +431,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
       .map((v, index) => ({
         ...v,
-        // Mark top 2 highest matches with positive score as 'Best'
+        
         isBest: (v.matchScore || 0) > 0 && index < 2
       }));
   }
@@ -461,7 +460,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
 
     this.matching = true;
     
-    // Assign available volunteers to each emergency request
+    
     const updateObservables = unassigned.map((e: any, index: number) => {
       const vol = this.originalVolunteers[index % this.originalVolunteers.length];
       e.status = 'Assigned';
@@ -503,7 +502,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
 
     this.matching = true;
     setTimeout(() => {
-      // Find the best volunteer based on rating or skills matching
+      
       const recommended = this.recommendedVolunteers;
       const bestVol = recommended.length > 0 ? recommended[0] : null;
 
@@ -575,7 +574,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Increment occupied beds in the database
+    
     originalShelter.occupied++;
 
     this.shelterService.update(originalShelter.id, originalShelter).subscribe({
@@ -609,7 +608,7 @@ export class AllocationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Decrement count and increment allocated
+
     originalItem.count -= dispatchAmt;
     originalItem.allocated += dispatchAmt;
 
