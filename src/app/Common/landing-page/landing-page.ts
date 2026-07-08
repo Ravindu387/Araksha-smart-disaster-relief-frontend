@@ -26,11 +26,11 @@ export class LandingPage implements OnInit, OnDestroy {
   error = false;
   private pollInterval: any;
 
-  // 1. Ticker Banner
+  
   showTicker = true;
   tickerMessage = '🚨 RED ALERT: Heavy rainfall exceeding 150mm expected in Western & Sabaragamuwa provinces. Flash flood warnings active.';
 
-  // 2. Shelter Search Widget
+  
   searchQuery = '';
   allShelters = [
     { name: 'Colombo Central Relief Center', city: 'Colombo', capacity: '150/200 spaces', status: 'Open', contact: '0112 345 678', supplies: 'High food, low medical supplies' },
@@ -41,7 +41,7 @@ export class LandingPage implements OnInit, OnDestroy {
   ];
   filteredShelters = [...this.allShelters];
 
-  // 3. Interactive SVG Map Points
+ 
   mapPoints = [
     { id: 1, name: 'Active Flood Area', type: 'incident', x: 30, y: 70, status: 'Critical', details: 'Severe flooding near Kelani River. Water levels rising. Evacuations in progress.' },
     { id: 2, name: 'Colombo Central Relief Center', type: 'shelter', x: 25, y: 65, status: 'Open (150/200)', details: 'Providing hot meals, clean water, first aid services. Medical personnel on standby.' },
@@ -52,11 +52,11 @@ export class LandingPage implements OnInit, OnDestroy {
   ];
   selectedPoint: any = this.mapPoints[0];
 
-  // 4. Donation Campaigns & Contributions List (Loaded from service)
+ 
   donationCampaigns: Campaign[] = [];
   contributions: Contribution[] = [];
 
-  // 5. Safety & Preparedness Guides
+ 
   activeGuide = 'floods';
   preparednessGuides: { [key: string]: { title: string, description: string, steps: string[], emergencyContacts: string } } = {
     floods: {
@@ -94,7 +94,6 @@ export class LandingPage implements OnInit, OnDestroy {
     }
   };
 
-  // 6. FAQs
   openFaqIndex: number | null = null;
   faqs = [
     { question: 'How do I report an active emergency?', answer: 'You can report an emergency by clicking the "🚨 Report Emergency" button on the landing page, registering a citizen account, and submitting the location and details of the incident. It is instantly dispatched to emergency services.' },
@@ -108,7 +107,7 @@ export class LandingPage implements OnInit, OnDestroy {
     this.fetchStats();
     this.fetchShelters();
     this.loadCampaignsAndContributions();
-    // Poll every 5 seconds for real-time dashboard stats update
+    
     this.pollInterval = setInterval(() => {
       this.fetchStats();
       this.fetchShelters();
@@ -162,7 +161,7 @@ export class LandingPage implements OnInit, OnDestroy {
     });
   }
 
-  // Interactivity Methods
+  
   filterShelters(): void {
     if (!this.searchQuery.trim()) {
       this.filteredShelters = [...this.allShelters];
@@ -196,7 +195,7 @@ export class LandingPage implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Donation Modal Interactivity
+ 
   showDonationModal = false;
   selectedCampaign: any = null;
   donationType: 'money' | 'supplies' = 'money';
@@ -259,7 +258,6 @@ export class LandingPage implements OnInit, OnDestroy {
     this.donationLoading = true;
     this.cdr.detectChanges();
 
-    // Mock API transaction delay
     setTimeout(() => {
       const donationValue = this.donationType === 'money' ? this.donationAmount : this.selectedSupplies;
       this.donationService.addContribution(
@@ -277,7 +275,7 @@ export class LandingPage implements OnInit, OnDestroy {
     }, 1500);
   }
 
-  // Show Shelter Route On Map
+ 
   showShelterOnMap(shelterName: string): void {
     const point = this.mapPoints.find(p => 
       p.name.toLowerCase().includes(shelterName.toLowerCase()) || 
@@ -293,18 +291,18 @@ export class LandingPage implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Safety Guide PDF Compiler & Downloader
+  
   downloadGuide(): void {
     const guide = this.currentPreparednessGuide;
     if (!guide) return;
     
     const doc = new jsPDF();
     
-    // Top border slate banner
+   
     doc.setFillColor(30, 41, 59); // Slate-800
     doc.rect(0, 0, 210, 8, 'F');
 
-    // Official Gov Header Info
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);
@@ -314,11 +312,11 @@ export class LandingPage implements OnInit, OnDestroy {
     doc.setTextColor(15, 23, 42);
     doc.text('DISASTER MANAGEMENT CENTER (DMC) - NATIONAL SAFETY AGENCY', 105, 26, { align: 'center' });
 
-    // Divider line
+    
     doc.setDrawColor(226, 232, 240);
     doc.line(15, 32, 195, 32);
 
-    // Document Title
+    
     doc.setFontSize(15);
     doc.setTextColor(185, 28, 28); // Dark Red
     doc.text('EMERGENCY COMPLIANCE SAFETY CHECKLIST', 105, 42, { align: 'center' });
@@ -330,47 +328,47 @@ export class LandingPage implements OnInit, OnDestroy {
     doc.text(`Issued Date: ${new Date().toLocaleDateString()}`, 15, 58);
     doc.text('Status: Official & Government Verified for Citizen Compliance', 15, 64);
 
-    // Double line divider
+    
     doc.line(15, 70, 195, 70);
     doc.line(15, 71, 195, 71);
 
-    // Description text wrapping
+    
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(71, 85, 105);
     const descLines = doc.splitTextToSize(guide.description, 180);
     doc.text(descLines, 15, 78);
 
-    // Checklist Header
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(15, 23, 42);
     doc.text('MANDATORY COMPLIANCE STEPS:', 15, 96);
 
-    // Checklist items
+   
     let currentY = 104;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(51, 65, 85);
     
     guide.steps.forEach((step) => {
-      // Draw checkbox box
+      
       doc.setDrawColor(148, 163, 184);
       doc.rect(15, currentY - 3.5, 4, 4);
 
-      // Draw text
+     
       const stepText = doc.splitTextToSize(step, 168);
       doc.text(stepText, 23, currentY);
       
       currentY += (stepText.length * 5) + 3;
     });
 
-    // Divider before Helplines
+    
     doc.setDrawColor(226, 232, 240);
     doc.line(15, currentY + 2, 195, currentY + 2);
 
     currentY += 8;
-    // Helpline Box Background
+    
     doc.setFillColor(254, 242, 242);
     doc.rect(15, currentY, 180, 18, 'F');
     doc.setDrawColor(248, 113, 113);
@@ -385,7 +383,7 @@ export class LandingPage implements OnInit, OnDestroy {
     doc.text(guide.emergencyContacts, 20, currentY + 12);
 
     currentY += 28;
-    // Authority Footer
+    
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
@@ -393,16 +391,16 @@ export class LandingPage implements OnInit, OnDestroy {
     const authLines = doc.splitTextToSize(authText, 180);
     doc.text(authLines, 15, currentY);
 
-    // Seal / Signature Text
+   
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(100, 116, 139);
     doc.text('DMC NATIONAL CONTROL UNIT - ELECTRONICALLY SIGNED & VERIFIED', 105, currentY + 16, { align: 'center' });
 
-    // Download PDF
+    
     doc.save(`${this.activeGuide}_safety_guide_dmc_verified.pdf`);
   }
 
-  // Volunteer Modal State & Logic
+  
   showVolunteerModal = false;
   volName = '';
   volEmail = '';
@@ -442,7 +440,7 @@ export class LandingPage implements OnInit, OnDestroy {
       this.volSuccess = true;
       this.localVolunteersAdded += 1;
       
-      // Increment the stats volunteers counter locally if stats is loaded
+      
       if (this.stats) {
         this.stats.volunteersActive += 1;
       }
