@@ -23,9 +23,7 @@ import {
 } from 'chart.js';
 import { ReportsService, ApiReportsPageResponse, ApiVolunteer } from '../../../../Common/services/reports.service';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Register Chart.js modules (unchanged from original)
-// ─────────────────────────────────────────────────────────────────────────────
+
 Chart.register(
   LineController,
   LineElement,
@@ -40,51 +38,35 @@ Chart.register(
   Tooltip
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UI-only interfaces (these are the shapes the HTML template uses)
-// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Shape of each stat card as the HTML template expects it.
- * The backend sends raw values; this component adds the UI-only fields
- * (iconColor, bgColor) by computing them from the "type" field.
- */
+
 interface StatCard {
   title: string;
   value: string;
   change: string;
   isPositive: boolean;
-  iconColor: string;   // UI-only — computed from type
-  bgColor: string;     // UI-only — computed from type
+  iconColor: string;   
+  bgColor: string;     
   type: 'incidents' | 'resolved' | 'volunteers' | 'response';
 }
 
-/**
- * Shape of each disaster category row as the HTML template expects it.
- * The backend sends name + count; this component computes color + widthClass.
- */
+
 interface DisasterCategory {
   name: string;
   count: number;
-  color: string;       // UI-only Tailwind class — computed from name
-  widthClass: string;  // UI-only Tailwind class — computed from count vs total
+  color: string;       
+  widthClass: string;  
 }
 
-/**
- * Shape of each volunteer row as the HTML template expects it.
- * The backend sends avgResponseMinutes (integer); this component formats it.
- */
+
 interface Volunteer {
   rank: number;
   name: string;
-  avgResponse: string; // UI-only formatted string: "28 min avg response"
+  avgResponse: string; 
   tasks: number;
   rating: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-reports',
@@ -95,40 +77,37 @@ interface Volunteer {
 })
 export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  // ── ViewChild references to the <canvas> elements in the HTML ─────────────
+  
   @ViewChild('trendsChart')   trendsCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('breakdownChart') breakdownCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('responseChart') responseCanvas!: ElementRef<HTMLCanvasElement>;
 
-  // ── Component state ───────────────────────────────────────────────────────
+  
   currentDashboard: string = 'Executive dashboard';
   adminName: string = 'Admin Kumar';
   activeTab: string = 'Last 30 Days';
 
-  /** true while an API call is in progress — prevents chart builds on empty data */
+ 
   isLoading: boolean = false;
 
-  // ── Data bound to the template ────────────────────────────────────────────
+ 
   stats: StatCard[] = [];
   disasters: DisasterCategory[] = [];
   volunteers: Volunteer[] = [];
 
-  // ── Volunteer Search & Filters ────────────────────────────────────────────
+ 
   volSearchQuery: string = '';
   volRatingFilter: number = 0;
   volTasksFilter: number = 0;
   volSortField: 'tasks' | 'rating' | 'name' = 'tasks';
   rawVolunteers: Volunteer[] = [];
 
-  // ── Chart instances (kept so we can destroy/update them) ─────────────────
+  
   private trendsChartInstance: Chart | null = null;
   private breakdownChartInstance: Chart | null = null;
   private responseChartInstance: Chart | null = null;
 
-  /**
-   * Cached raw trends data from the last API call.
-   * Used to update charts when the user switches tabs.
-   */
+ 
   private currentTrendsData: {
     flood: number[];
     fire: number[];
@@ -139,23 +118,14 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     avgResponse: number[];
   } | null = null;
 
-  // ── Tab → backend period mapping ──────────────────────────────────────────
-  /**
-   * Maps the UI tab label (what the user sees) to the backend period string.
-   * The backend switch() case reads this value.
-   */
+  
   private readonly tabToPeriod: Record<string, string> = {
     'Last 30 Days': 'LAST_30_DAYS',
     'Q2 2025':      'Q2_2025',
     'YTD 2025':     'YTD_2025'
   };
 
-  // ── UI lookup maps (computed in Angular, NOT from backend) ────────────────
-
-  /**
-   * Maps the card "type" field to Tailwind CSS icon color and background color.
-   * These are UI-only values. The backend does not send them.
-   */
+  
   private readonly typeToStyle: Record<string, { iconColor: string; bgColor: string }> = {
     incidents: { iconColor: 'text-rose-500',    bgColor: 'bg-rose-50'    },
     resolved:  { iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50' },
@@ -163,10 +133,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     response:  { iconColor: 'text-purple-500',  bgColor: 'bg-purple-50'  }
   };
 
-  /**
-   * Maps disaster category names to their Tailwind color classes.
-   * The backend sends the name (e.g. "Flood"); Angular picks the color.
-   */
+ 
   private readonly categoryColors: Record<string, string> = {
     Flood:      'bg-blue-600',
     Hurricane:  'bg-purple-500',
@@ -176,7 +143,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     Other:      'bg-slate-400'
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
+  
   private searchService = inject(SearchService);
   private subscriptions = new Subscription();
 
@@ -185,15 +152,13 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // LIFECYCLE HOOKS
-  // ─────────────────────────────────────────────────────────────────────────
+ 
 
   ngOnInit(): void {
-    // Load data for the default tab ("Last 30 Days") when the page opens
+    
     this.loadDataForPeriod(this.activeTab);
 
-    // Sync global search with reports volunteer list search
+   
     this.subscriptions.add(
       this.searchService.searchQuery$.subscribe((q: string) => {
         if (this.volSearchQuery !== q) {
@@ -205,13 +170,11 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Charts are built AFTER the view is ready and the canvases are available.
-    // We wait until the first API response arrives before building charts —
-    // see loadDataForPeriod() which calls buildAllCharts() after data arrives.
+   
   }
 
   ngOnDestroy(): void {
-    // Always destroy Chart.js instances when leaving the page to avoid memory leaks
+    
     this.trendsChartInstance?.destroy();
     this.breakdownChartInstance?.destroy();
     this.responseChartInstance?.destroy();
@@ -219,34 +182,15 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PUBLIC METHODS (called from the HTML template)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Called when the user clicks a date-filter tab button.
-   * Updates the active tab state and fetches fresh data from the backend.
-   */
+  
+  
   setActiveTab(tab: string): void {
-    if (this.activeTab === tab) return; // No-op if already on this tab
+    if (this.activeTab === tab) return; 
     this.activeTab = tab;
     this.loadDataForPeriod(tab);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PRIVATE: API + DATA MAPPING
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Calls the backend API for the selected tab period,
-   * maps the response to UI models, and updates the page.
-   *
-   * Step-by-step:
-   * 1. Convert tab label → backend period string
-   * 2. Call ReportsService.getReportsByPeriod()
-   * 3. On success: map API data → UI models → update template bindings
-   * 4. Build or update charts
-   */
+  
   private loadDataForPeriod(tab: string): void {
     const period = this.tabToPeriod[tab] ?? 'LAST_30_DAYS';
     this.isLoading = true;
@@ -256,15 +200,13 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         next: (data: ApiReportsPageResponse) => {
           this.isLoading = false;
 
-          // ── Update dashboard label ──────────────────────────────────────
+         
           this.currentDashboard = data.dashboardLabel;
 
-          // ── Map stat cards ──────────────────────────────────────────────
-          // Backend sends: title, value, change, positive (boolean), type
-          // We add:        iconColor, bgColor  (from typeToStyle map)
+         
           this.stats = data.stats.map(s => {
             const style = this.typeToStyle[s.type] ?? { iconColor: '', bgColor: '' };
-            // Jackson serializes boolean getters differently — handle both field names
+            
             const isPos = (s as any).positive ?? s.isPositive ?? true;
             return {
               title:     s.title,
@@ -277,14 +219,10 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
             };
           });
 
-          // ── Map disaster categories ─────────────────────────────────────
-          // Backend sends: name, count
-          // We add:        color (Tailwind class), widthClass (Tailwind % class)
+          
           this.disasters = this.mapDisasterCategories(data.disasters);
 
-          // ── Map volunteers ──────────────────────────────────────────────
-          // Backend sends: rank, name, avgResponseMinutes, tasksCompleted, rating
-          // We add:        avgResponse formatted string ("28 min avg response")
+         
           this.rawVolunteers = data.volunteers.map((v: ApiVolunteer): Volunteer => ({
             rank:        v.rank,
             name:        v.name,
@@ -295,7 +233,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
 
           this.applyVolunteerFilter();
 
-          // ── Cache trends for chart updates ─────────────────────────────
+          
           this.currentTrendsData = {
             flood:       data.trends.flood.map(Number),
             fire:        data.trends.fire.map(Number),
@@ -306,11 +244,9 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
             avgResponse: data.trends.avgResponse.map(Number)
           };
 
-          // ── Build charts (first load) or update them (tab switch) ──────
+          
           if (!this.trendsChartInstance) {
-            // First time: build all three charts from scratch
-            // Use setTimeout(0) to ensure Angular has finished rendering the DOM
-            // (so the <canvas> elements are available via ViewChild)
+            
             setTimeout(() => {
               this.buildTrendsChart();
               this.buildBreakdownChart();
@@ -318,7 +254,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
               this.cdr.detectChanges();
             }, 0);
           } else {
-            // Subsequent tab switches: just update the data in existing charts
+          
             this.updateCharts();
             this.cdr.detectChanges();
           }
@@ -327,44 +263,40 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         error: (err) => {
           this.isLoading = false;
           console.error('[ReportsComponent] Failed to load reports data:', err);
-          // The UI stays with whatever data was previously shown
-          // In production you would show an error toast/alert here
+          
         }
       })
     );
   }
 
-  /**
-   * Applies client-side search query, rating, and task completed filters
-   * to the top volunteers list, then sorts the resulting list.
-   */
+  
   applyVolunteerFilter(): void {
     let filtered = [...this.rawVolunteers];
 
-    // 1. Search Query (Name)
+    
     const q = this.volSearchQuery.toLowerCase().trim();
     if (q) {
       filtered = filtered.filter(v => v.name.toLowerCase().includes(q));
     }
 
-    // 2. Rating Filter
+    
     if (this.volRatingFilter > 0) {
       filtered = filtered.filter(v => v.rating >= this.volRatingFilter);
     }
 
-    // 3. Tasks Completed Filter
+  
     if (this.volTasksFilter > 0) {
       filtered = filtered.filter(v => v.tasks >= this.volTasksFilter);
     }
 
-    // 4. Sorting
+    
     filtered.sort((a, b) => {
       if (this.volSortField === 'rating') {
-        return b.rating - a.rating; // Descending
+        return b.rating - a.rating; 
       } else if (this.volSortField === 'name') {
-        return a.name.localeCompare(b.name); // Alphabetical
+        return a.name.localeCompare(b.name); 
       } else {
-        return b.tasks - a.tasks; // Tasks completed - Descending (default)
+        return b.tasks - a.tasks; 
       }
     });
 
@@ -372,17 +304,9 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
 
-  /**
-   * Maps backend disaster categories to UI model objects.
-   *
-   * The Tailwind widthClass is computed by calculating each category's
-   * percentage of the total incidents, then mapping to the nearest
-   * percentage increment in the HTML template format (w-[XX%]).
-   *
-   * This keeps the progress bars proportional to real data.
-   */
+ 
   private mapDisasterCategories(apiCategories: { name: string; count: number }[]): DisasterCategory[] {
-    // Find the maximum count to use as reference for width scaling
+    
     const maxCount = Math.max(...apiCategories.map(c => c.count), 1);
 
     return apiCategories.map(c => {
@@ -400,14 +324,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PRIVATE: CHART BUILD METHODS (logic identical to original — data source changed)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Updates all three charts with the latest cached trends data.
-   * Called on subsequent tab switches (charts already exist).
-   */
+ 
   private updateCharts(): void {
     if (!this.currentTrendsData) return;
 
@@ -432,10 +349,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /**
-   * Builds the line chart (Emergency Trends by Type).
-   * Chart configuration is identical to the original hardcoded version.
-   */
+  
   private buildTrendsChart(): void {
     const ctx = this.trendsCanvas?.nativeElement.getContext('2d');
     if (!ctx || !this.currentTrendsData) return;
@@ -566,10 +480,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Builds the donut chart (Disaster Category Breakdown).
-   * Chart configuration is identical to the original hardcoded version.
-   */
+ 
   private buildBreakdownChart(): void {
     const ctx = this.breakdownCanvas?.nativeElement.getContext('2d');
     if (!ctx) return;
@@ -615,10 +526,7 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Builds the bar chart (Avg Response Time Trend).
-   * Chart configuration is identical to the original hardcoded version.
-   */
+  
   private buildResponseChart(): void {
     const ctx = this.responseCanvas?.nativeElement.getContext('2d');
     if (!ctx || !this.currentTrendsData) return;
@@ -691,30 +599,22 @@ export class ReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // EXPORT METHODS (unchanged — they use the already-mapped arrays)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Exports the current page data as a CSV file.
-   * Uses the same stats, disasters, and volunteers arrays
-   * which are now populated from the backend.
-   */
+ 
   exportCsv(): void {
     const headers = ['Category/Dimension', 'Name/Metric', 'Value'];
     const rows: string[][] = [];
 
-    // Add Key metrics
+    
     this.stats.forEach(s => {
       rows.push(['Key Metric', s.title, `${s.value} (${s.change})`]);
     });
 
-    // Add Disaster Categories
+   
     this.disasters.forEach(d => {
       rows.push(['Disaster Category', d.name, d.count.toString()]);
     });
 
-    // Add Top Volunteers
+    
     this.volunteers.forEach(v => {
       rows.push(['Volunteer Performance', v.name, `${v.tasks} tasks | Rating ${v.rating} | ${v.avgResponse}`]);
     });
