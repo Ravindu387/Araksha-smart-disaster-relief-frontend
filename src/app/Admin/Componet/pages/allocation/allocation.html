@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-slate-50/50 p-4 md:p-8">
 
-  <!-- Page Header -->
+
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
     <div>
       <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Resource Allocation</h1>
@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  <!-- Success Notification Toast (Floating) -->
+  
   @if (assignSuccess) {
     <div class="fixed top-6 right-6 z-50 max-w-sm bg-white border border-slate-100 shadow-2xl rounded-2xl p-4 flex items-start gap-3 animate-slide-in" role="status">
       <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
@@ -37,7 +37,7 @@
     </div>
   }
 
-  <!-- Error Notification Toast -->
+
   @if (assignError) {
     <div class="fixed top-6 right-6 z-50 max-w-sm bg-white border border-rose-200 shadow-2xl rounded-2xl p-4 flex items-start gap-3" role="alert">
       <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
@@ -53,7 +53,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- COLUMN 1: EMERGENCY QUEUE -->
+
     <div class="flex flex-col gap-4">
       <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Emergency Queue</h2>
       <div class="flex flex-col gap-4">
@@ -67,7 +67,7 @@
             [class.ring-blue-500/10]="selectedEmergencyId === emergency.id"
             [class.border-slate-200/60]="selectedEmergencyId !== emergency.id"
           >
-            <!-- Card Header -->
+        
             <div class="flex justify-between items-center mb-2">
               <span class="text-xs font-bold tracking-wide text-blue-600">{{ emergency.id }}</span>
               <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase" [class]="getPriorityClass(emergency.priority)">
@@ -75,7 +75,7 @@
               </span>
             </div>
             
-            <!-- Title & Location -->
+          
             <h3 class="font-extrabold text-slate-900 text-[15px] group-hover:text-blue-600 transition-colors">
               {{ emergency.title }}
             </h3>
@@ -87,7 +87,7 @@
               <span>{{ emergency.location }}</span>
             </div>
 
-            <!-- Resource Tags -->
+          
             <div class="flex flex-wrap gap-1.5 mt-3">
               @for (r of emergency.resources; track r) {
                 <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md">
@@ -96,7 +96,7 @@
               }
             </div>
 
-            <!-- Assignment Status -->
+    
             <div class="flex items-center gap-1.5 mt-4 pt-3 border-t border-slate-100 text-[11px] font-bold">
               @if (emergency.status === 'Awaiting Assignment') {
                 <span class="text-amber-600 flex items-center gap-1">
@@ -119,7 +119,6 @@
       </div>
     </div>
 
-    <!-- COLUMN 2: AI RECOMMENDATIONS -->
     <div class="flex flex-col gap-4">
       <div class="flex justify-between items-center">
         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Recommendations</h2>
@@ -143,11 +142,11 @@
         </button>
       </div>
 
-      <!-- Recommendation Display -->
+    
       @if (selectedEmergency) {
-        <!-- Gradient Premium AI Card -->
+      
         <div class="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] rounded-3xl p-6 shadow-xl relative overflow-hidden border border-slate-800">
-          <!-- Ambient Glow effects -->
+        
           <div class="absolute -right-16 -top-16 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
           <div class="absolute -left-16 -bottom-16 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -190,7 +189,7 @@
           </div>
         </div>
 
-        <!-- Best Match Volunteers Section -->
+        
         <div class="mt-4 flex flex-col gap-3">
           <div class="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -206,7 +205,7 @@
                 (click)="assignVolunteer(v)"
                 class="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-2xl shadow-sm transition-all hover:scale-[1.01] active:scale-100 text-left">
                 <div class="flex items-center gap-3">
-                  <!-- Avatar -->
+              
                   <div
                     class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm text-white shrink-0 bg-indigo-500"
                     [class.bg-[#3b82f6]]="v.name === 'Lisa Chen'"
@@ -238,7 +237,7 @@
           </div>
         </div>
 
-        <!-- Nearest Shelters Section -->
+      
         <div class="mt-4 flex flex-col gap-3">
           <div class="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase tracking-wider">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -270,10 +269,10 @@
       }
     </div>
 
-    <!-- COLUMN 3: MAP & DISPATCH & LOGS -->
+    
     <div class="flex flex-col gap-6">
 
-      <!-- Live Operations Map -->
+  
       <div class="flex flex-col gap-3 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
         <div class="flex justify-between items-center">
           <h2 class="text-sm font-extrabold text-slate-800 tracking-tight">Live Operations Map</h2>
@@ -286,11 +285,11 @@
           </div>
         </div>
 
-        <!-- Interactive Leaflet Map Container -->
+      
         <div class="relative w-full h-72 bg-[#0b1329] rounded-xl overflow-hidden border border-slate-200/60 shadow-inner z-0">
           <div id="allocationMap" class="w-full h-full"></div>
 
-          <!-- Legend -->
+      
           <div class="absolute top-3 right-3 bg-[#0f172a]/90 border border-slate-800/80 rounded-xl p-2.5 text-[9px] text-slate-300 font-semibold space-y-1 shadow-md z-[1000]">
             <div class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
@@ -308,7 +307,7 @@
         </div>
       </div>
 
-      <!-- Quick Resource Dispatch -->
+    
       <div class="flex flex-col gap-3 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
         <div class="flex items-center gap-2 mb-1">
           <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -339,7 +338,7 @@
         </div>
       </div>
 
-      <!-- Recent Allocations Log -->
+      
       <div class="flex flex-col gap-4 bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm">
         <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
           <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -348,11 +347,11 @@
           <h2 class="text-sm font-extrabold text-slate-800 tracking-tight">Recent Allocations</h2>
         </div>
 
-        <!-- Log List Timeline -->
+      
         <div class="relative pl-6 border-l border-slate-100 flex flex-col gap-4.5 text-left text-slate-800">
           @for (log of recentAllocations; track log.id) {
             <div class="relative">
-              <!-- Log Dot Indicator -->
+            
               <span
                 class="absolute -left-[30px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white"
                 [class.bg-blue-500]="log.type === 'volunteer'"
