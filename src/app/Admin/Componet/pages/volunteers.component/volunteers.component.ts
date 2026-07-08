@@ -32,7 +32,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   viewMode: 'list' | 'grid' = 'list';
 
   
-  currentPage = 0;          // 0-based (matches Spring)
+  currentPage = 0;          
   pageSize = 10;
   totalPages = 0;
   totalElements = 0;
@@ -107,7 +107,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   
 
   ngOnInit(): void {
-    // Wire debounced search
+    
     this.subscriptions.add(
       this.searchSubject.pipe(
         debounceTime(300),
