@@ -65,10 +65,10 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
   totalElements = 0;
 
   
-  /** Replaces the old client-side filteredRequests getter. */
+  
   filteredRequests: EmergencyRequest[] = [];
 
-  /** paginatedRequests returns filteredRequests directly (server already paged). */
+  
   get paginatedRequests(): EmergencyRequest[] {
     return this.filteredRequests;
   }
@@ -141,9 +141,9 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Load full list once for stat cards
+    
     this.loadRequests();
-    // Load first page of search results
+    
     this.loadSearchPage();
   }
 
@@ -153,7 +153,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
 
   
 
-  /** Loads ALL requests (for countByPriority stat cards). */
+  
   private loadRequests(): void {
     this.emergencyRequestService.getAllRequests().subscribe({
       next: (data: any[]) => {
@@ -164,7 +164,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Loads the current search page from the server. */
+  
   private loadSearchPage(): void {
     const sort = `${this.sortField},${this.sortDir}`;
 
