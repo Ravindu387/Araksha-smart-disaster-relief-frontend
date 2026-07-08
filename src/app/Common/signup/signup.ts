@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/service/auth.service';
+import { FileUploadService } from '../../Common/services/file-upload.service';
+import { HttpEventType } from '@angular/common/http';
 
 type Role = 'Citizen' | 'Volunteer';
 
@@ -30,6 +32,24 @@ export class SignupComponent {
   confirmPassword = '';
   passwordMismatch = false;
 
+  // Volunteer specific properties
+  volunteerLocation = '';
+  predefinedSkills = [
+    'Medical', 'First Aid', 'Water Rescue', 'Search & Rescue', 
+    'Construction', 'Logistics', 'Communications', 'Firefighting', 'General Support'
+  ];
+  selectedSkills: string[] = [];
+
+  profilePhotoFile: File | null = null;
+  profilePhotoUrl = '';
+  profilePhotoProgress = 0;
+  profilePhotoError = '';
+
+  idVerificationDocFile: File | null = null;
+  idVerificationDocUrl = '';
+  idVerificationDocProgress = 0;
+  idVerificationDocError = '';
+
   user: SignupModel = {
     firstName: '',
     lastName: '',
@@ -39,7 +59,11 @@ export class SignupComponent {
     agree: false
   };
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private fileUploadService: FileUploadService
+  ) { }
 
   get hasMinLength(): boolean {
     return (this.user.password || '').length >= 8;
@@ -71,6 +95,87 @@ export class SignupComponent {
     this.emailInvalid = false;
     this.passwordMismatch = false;
     this.confirmPassword = '';
+  }
+
+  toggleSkill(skill: string): void {
+    const idx = this.selectedSkills.indexOf(skill);
+    if (idx >= 0) {
+      this.selectedSkills.splice(idx, 1);
+    } else {
+      this.selectedSkills.push(skill);
+    }
+  }
+
+  onProfilePhotoSelected(event: any): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.profilePhotoFile = files[0];
+      this.profilePhotoError = '';
+      this.profilePhotoProgress = 0;
+      this.uploadProfilePhoto();
+    }
+  }
+
+  uploadProfilePhoto(): void {
+    if (!this.profilePhotoFile) return;
+
+    this.fileUploadService.uploadFile(this.profilePhotoFile, 'VOLUNTEER').subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          this.profilePhotoProgress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          this.profilePhotoUrl = event.body.fileUrl;
+          this.profilePhotoProgress = 100;
+        }
+      },
+      error: (err) => {
+        this.profilePhotoProgress = 0;
+        this.profilePhotoError = err.error?.error || 'Failed to upload photo';
+      }
+    });
+  }
+
+  removeProfilePhoto(): void {
+    this.profilePhotoFile = null;
+    this.profilePhotoUrl = '';
+    this.profilePhotoProgress = 0;
+    this.profilePhotoError = '';
+  }
+
+  onIdVerificationDocSelected(event: any): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.idVerificationDocFile = files[0];
+      this.idVerificationDocError = '';
+      this.idVerificationDocProgress = 0;
+      this.uploadIdVerificationDoc();
+    }
+  }
+
+  uploadIdVerificationDoc(): void {
+    if (!this.idVerificationDocFile) return;
+
+    this.fileUploadService.uploadFile(this.idVerificationDocFile, 'VOLUNTEER').subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress) {
+          this.idVerificationDocProgress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          this.idVerificationDocUrl = event.body.fileUrl;
+          this.idVerificationDocProgress = 100;
+        }
+      },
+      error: (err) => {
+        this.idVerificationDocProgress = 0;
+        this.idVerificationDocError = err.error?.error || 'Failed to upload document';
+      }
+    });
+  }
+
+  removeIdVerificationDoc(): void {
+    this.idVerificationDocFile = null;
+    this.idVerificationDocUrl = '';
+    this.idVerificationDocProgress = 0;
+    this.idVerificationDocError = '';
   }
 
   nextStep() {
@@ -123,17 +228,18 @@ export class SignupComponent {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    // NOTE: backend RegisterRequest/User currently have no "phone" field,
-    // so it isn't sent. Add a `phone` column to User + RegisterRequest
-    // on the backend if you want to persist it.
     this.authService
       .register({
         firstName: this.user.firstName,
         lastName: this.user.lastName,
         email: this.user.email,
         password: this.user.password,
-        role: this.selectedRole.toUpperCase(), // must match backend Role enum names
-        phone: this.user.phone
+        role: this.selectedRole.toUpperCase(),
+        phone: this.user.phone,
+        location: this.selectedRole === 'Volunteer' ? this.volunteerLocation : undefined,
+        skills: this.selectedRole === 'Volunteer' ? this.selectedSkills : undefined,
+        profilePhotoUrl: this.selectedRole === 'Volunteer' ? this.profilePhotoUrl : undefined,
+        idVerificationDocUrl: this.selectedRole === 'Volunteer' ? this.idVerificationDocUrl : undefined
       })
       .subscribe({
         next: (message: any) => {

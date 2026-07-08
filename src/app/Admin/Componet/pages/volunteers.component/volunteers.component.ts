@@ -38,7 +38,6 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   totalElements = 0;
 
   // ── Modal state (unchanged) ───────────────────────────────────────────────
-  inviteModalOpen = signal(false);
   viewModalOpen = signal(false);
   assignModalOpen = signal(false);
 
@@ -52,34 +51,6 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   assignError = '';
   assignSuccess = false;
 
-  newVolunteerName = '';
-  newVolunteerLocation = '';
-  newVolunteerPhone = '';
-  predefinedSkills = [
-    'Medical', 'First Aid', 'Water Rescue', 'Search & Rescue', 
-    'Construction', 'Logistics', 'Communications', 'Firefighting', 'General Support'
-  ];
-  selectedSkillsForNewVolunteer: string[] = [];
-
-  toggleNewVolunteerSkill(skill: string): void {
-    const idx = this.selectedSkillsForNewVolunteer.indexOf(skill);
-    if (idx >= 0) {
-      this.selectedSkillsForNewVolunteer.splice(idx, 1);
-    } else {
-      this.selectedSkillsForNewVolunteer.push(skill);
-    }
-  }
-
-  // ── File Upload state ─────────────────────────────────────────────────────
-  profilePhotoFile: File | null = null;
-  profilePhotoUrl = '';
-  profilePhotoProgress = 0;
-  profilePhotoError = '';
-
-  idVerificationDocFile: File | null = null;
-  idVerificationDocUrl = '';
-  idVerificationDocProgress = 0;
-  idVerificationDocError = '';
 
   // ── Data arrays ───────────────────────────────────────────────────────────
   /** All volunteers (used for summary counts: total/available/onDuty/offDuty) */
@@ -189,83 +160,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── File Selection & Upload Handlers ──────────────────────────────────────
 
-  onProfilePhotoSelected(event: any): void {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      this.profilePhotoFile = files[0];
-      this.profilePhotoError = '';
-      this.profilePhotoProgress = 0;
-      this.uploadProfilePhoto();
-    }
-  }
-
-  uploadProfilePhoto(): void {
-    if (!this.profilePhotoFile) return;
-
-    this.fileUploadService.uploadFile(this.profilePhotoFile, 'ADMIN').subscribe({
-      next: (event: any) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          this.profilePhotoProgress = Math.round((100 * event.loaded) / event.total);
-        } else if (event.type === HttpEventType.Response) {
-          this.profilePhotoUrl = event.body.fileUrl;
-          this.profilePhotoProgress = 100;
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        this.profilePhotoProgress = 0;
-        this.profilePhotoError = err.error?.error || 'Failed to upload photo';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  removeProfilePhoto(): void {
-    this.profilePhotoFile = null;
-    this.profilePhotoUrl = '';
-    this.profilePhotoProgress = 0;
-    this.profilePhotoError = '';
-  }
-
-  onIdVerificationDocSelected(event: any): void {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      this.idVerificationDocFile = files[0];
-      this.idVerificationDocError = '';
-      this.idVerificationDocProgress = 0;
-      this.uploadIdVerificationDoc();
-    }
-  }
-
-  uploadIdVerificationDoc(): void {
-    if (!this.idVerificationDocFile) return;
-
-    this.fileUploadService.uploadFile(this.idVerificationDocFile, 'ADMIN').subscribe({
-      next: (event: any) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          this.idVerificationDocProgress = Math.round((100 * event.loaded) / event.total);
-        } else if (event.type === HttpEventType.Response) {
-          this.idVerificationDocUrl = event.body.fileUrl;
-          this.idVerificationDocProgress = 100;
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        this.idVerificationDocProgress = 0;
-        this.idVerificationDocError = err.error?.error || 'Failed to upload document';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  removeIdVerificationDoc(): void {
-    this.idVerificationDocFile = null;
-    this.idVerificationDocUrl = '';
-    this.idVerificationDocProgress = 0;
-    this.idVerificationDocError = '';
-  }
 
   // ── Search / filter triggers ──────────────────────────────────────────────
 
@@ -327,80 +222,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.viewMode = mode;
   }
 
-  // ── Modal logic (unchanged) ───────────────────────────────────────────────
 
-  openInviteModal(): void {
-    this.inviteModalOpen.set(true);
-    this.removeProfilePhoto();
-    this.removeIdVerificationDoc();
-  }
-
-  closeInviteModal(): void {
-    this.inviteModalOpen.set(false);
-    this.newVolunteerName = '';
-    this.newVolunteerLocation = '';
-    this.newVolunteerPhone = '';
-    this.selectedSkillsForNewVolunteer = [];
-    this.removeProfilePhoto();
-    this.removeIdVerificationDoc();
-  }
-
-  inviteVolunteerSubmit(): void {
-
-    if (!this.newVolunteerName.trim()) {
-      alert('Please enter a full name.');
-      return;
-    }
-
-    if (!this.newVolunteerPhone.trim()) {
-      alert('Please enter a phone number.');
-      return;
-    }
-
-    const volunteer: Volunteer = {
-
-      id: 0,
-
-      name: this.newVolunteerName.trim(),
-
-      location: this.newVolunteerLocation.trim() || 'Unknown',
-
-      skills: [...this.selectedSkillsForNewVolunteer],
-
-      status: 'Available',
-
-      rating: 5,
-
-      tasks: 0,
-
-      phone: this.newVolunteerPhone.trim(),
-
-      profilePhotoUrl: this.profilePhotoUrl || undefined,
-
-      idVerificationDocUrl: this.idVerificationDocUrl || undefined,
-
-      initials: '',
-
-      avatarColor: ''
-
-    };
-
-    this.volunteerService.addVolunteer(volunteer).subscribe({
-
-      next: () => {
-        this.loadVolunteers();
-        this.loadSearchPage();
-        this.closeInviteModal();
-      },
-
-      error: err => {
-        console.error(err);
-        alert('Failed to save volunteer.');
-      }
-
-    });
-
-  }
 
   assignVolunteer(v: Volunteer): void {
     this.selectedVolunteerForAssign.set(v);

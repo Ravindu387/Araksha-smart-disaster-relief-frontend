@@ -10,6 +10,10 @@ export interface RegisterPayload {
   password: string;
   role: string; // must match backend Role enum constant, e.g. "CITIZEN" | "VOLUNTEER"
   phone?: string;
+  location?: string;
+  skills?: string[];
+  profilePhotoUrl?: string;
+  idVerificationDocUrl?: string;
 }
 
 export interface LoginPayload {
