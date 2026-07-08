@@ -29,7 +29,7 @@ export interface SchedulerLog {
 })
 export class SchedulerService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080/api/scheduler';
+  private baseUrl = 'http://3.7.133.86:8080/api/scheduler';
 
   getJobs(): Observable<SchedulerJob[]> {
     return this.http.get<SchedulerJob[]>(`${this.baseUrl}/jobs`);
@@ -45,5 +45,9 @@ export class SchedulerService {
 
   toggleJobStatus(jobKey: string, status: 'ACTIVE' | 'PAUSED'): Observable<SchedulerJob> {
     return this.http.post<SchedulerJob>(`${this.baseUrl}/jobs/${jobKey}/toggle`, { status });
+  }
+
+  updateJob(jobKey: string, cronExpression: string, status: 'ACTIVE' | 'PAUSED'): Observable<SchedulerJob> {
+    return this.http.put<SchedulerJob>(`${this.baseUrl}/jobs/${jobKey}`, { cronExpression, status });
   }
 }

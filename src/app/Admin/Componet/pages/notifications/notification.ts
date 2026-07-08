@@ -45,7 +45,7 @@ export class NotificationsComponent implements OnInit {
   ];
 
   notifications: NotificationItem[] = [];
-  showAll = false; // when false → show only unread
+  showAll = false; 
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
@@ -81,7 +81,7 @@ export class NotificationsComponent implements OnInit {
 
       }));
 
-      // Force Angular to refresh the view
+      
       this.cdr.detectChanges();
 
     },

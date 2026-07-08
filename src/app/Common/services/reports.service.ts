@@ -81,7 +81,7 @@ export class ReportsService {
    * Base URL of your Spring Boot backend.
    * Make sure your Spring Boot app is running on port 8080.
    */
-  private readonly baseUrl = 'http://localhost:8080/api/v1/reports';
+  private readonly baseUrl = 'http://3.7.133.86:8080/api/v1/reports';
 
   /**
    * Angular injects HttpClient automatically because we called

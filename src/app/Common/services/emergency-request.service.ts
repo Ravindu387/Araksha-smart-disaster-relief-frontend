@@ -36,7 +36,7 @@ export class EmergencyRequestService {
 
   private http = inject(HttpClient);
 
-  private readonly apiUrl = 'http://localhost:8080/api/emergency-requests';
+  private readonly apiUrl = 'http://3.7.133.86:8080/api/emergency-requests';
 
   // ── Existing methods (unchanged) ──────────────────────────────────────────
 

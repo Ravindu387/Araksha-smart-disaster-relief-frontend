@@ -16,7 +16,7 @@ export class AllocationService {
 
   private http = inject(HttpClient);
 
-  private readonly apiUrl = 'http://localhost:8080/api/allocations';
+  private readonly apiUrl = 'http://3.7.133.86:8080/api/allocations';
 
   getAllAllocations(): Observable<RecentAllocation[]> {
     return this.http.get<RecentAllocation[]>(this.apiUrl);

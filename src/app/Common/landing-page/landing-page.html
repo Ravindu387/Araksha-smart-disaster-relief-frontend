@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-500 selection:text-white">
 
-  <!-- 1. Elegant Announcement Ticker -->
+  
   <div *ngIf="showTicker"
     class="bg-slate-950 text-slate-200 border-b border-slate-800 py-3 px-6 relative z-50 shadow-sm transition-all duration-300">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -20,7 +20,7 @@
     </div>
   </div>
 
-  <!-- Main Navigation -->
+  
   <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex justify-between items-center h-20">
@@ -32,7 +32,7 @@
           </span>
         </div>
 
-        <!-- Navigation Links -->
+        
         <div class="hidden lg:flex gap-8 text-slate-500 font-semibold text-sm">
           <a href="#features" class="hover:text-blue-600 transition-colors">Features</a>
           <a href="#shelters" class="hover:text-blue-600 transition-colors">Shelters</a>
@@ -42,7 +42,7 @@
           <a href="#faq" class="hover:text-blue-600 transition-colors">FAQs</a>
         </div>
 
-        <!-- Action Buttons -->
+        
         <div class="flex items-center gap-4">
           <button routerLink="/login"
             class="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Sign In</button>
@@ -55,7 +55,7 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
+
   <section
     class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white pt-24 pb-20 relative overflow-hidden">
     <div
@@ -95,7 +95,7 @@
         </button>
       </div>
 
-      <!-- Quick Metrics Grid -->
+      
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-20">
         <div
           class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-red-500/20 transition-all duration-300">
@@ -121,7 +121,7 @@
     </div>
   </section>
 
-  <!-- 2. Quick Shelter Search Widget -->
+ 
   <section id="shelters" class="py-24 bg-white border-b border-slate-100">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center max-w-3xl mx-auto mb-16">
@@ -184,7 +184,7 @@
     </div>
   </section>
 
-  <!-- Impact Statistics Row -->
+  
   <section id="impact" class="bg-slate-50 py-16 border-b border-slate-100">
     <div class="max-w-7xl mx-auto px-6">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
@@ -208,7 +208,7 @@
     </div>
   </section>
 
-  <!-- Features Grid -->
+
   <section id="features" class="py-24 bg-white">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center max-w-3xl mx-auto mb-20">
@@ -252,7 +252,7 @@
     </div>
   </section>
 
-  <!-- 3. Interactive Disaster & Shelter Map -->
+  
   <section id="map" class="py-24 bg-slate-900 text-slate-100 relative">
     <div
       class="absolute inset-0 opacity-5 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]">
@@ -269,7 +269,7 @@
       </div>
 
       <div class="grid lg:grid-cols-3 gap-8 items-stretch">
-        <!-- SVG Map Area -->
+        
         <div
           class="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-3xl p-6 relative overflow-hidden min-h-[400px] flex items-center justify-center">
           <svg viewBox="0 0 100 100" class="w-full h-full max-w-[380px] max-h-[380px]">
@@ -286,7 +286,7 @@
             </g>
           </svg>
 
-          <!-- Legend Overlay -->
+       
           <div
             class="absolute bottom-4 left-4 bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2 z-20 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
             <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Critical
@@ -298,7 +298,6 @@
           </div>
         </div>
 
-        <!-- Detail Sidebar -->
         <div class="bg-slate-950 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col justify-between">
           <div *ngIf="selectedPoint">
             <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase border" [ngClass]="{
@@ -336,7 +335,7 @@
     </div>
   </section>
 
-  <!-- 4. Safety & Preparedness Guides -->
+  
   <section id="preparedness" class="py-24 bg-white border-b border-slate-100">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center max-w-3xl mx-auto mb-16">
@@ -372,7 +371,7 @@
           </button>
         </div>
 
-        <!-- Tab Content Display Pane -->
+      
         <div
           class="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-3xl p-6 md:p-8 flex flex-col justify-between">
           <div *ngIf="currentPreparednessGuide">
@@ -406,7 +405,7 @@
     </div>
   </section>
 
-  <!-- Volunteer Section -->
+
   <section id="volunteer" class="py-24 bg-slate-950 text-white relative">
     <div class="max-w-7xl mx-auto px-6 relative z-10">
       <div class="grid lg:grid-cols-2 gap-12 items-center">
@@ -455,7 +454,7 @@
     </div>
   </section>
 
-  <!-- 5. Donation / Supply Campaigns -->
+  
   <section id="campaigns" class="py-24 bg-slate-50 border-b border-slate-100">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center max-w-3xl mx-auto mb-16">
@@ -490,7 +489,7 @@
           </div>
 
           <div class="p-6 md:p-8 bg-slate-50 border-t border-slate-200">
-            <!-- Progress Bar -->
+            
             <div class="mb-4">
               <div class="flex justify-between text-xs font-bold text-slate-700 mb-2">
                 <span>Raised: ${{ campaign.raised }}</span>
@@ -501,7 +500,7 @@
               </div>
             </div>
 
-            <!-- Interactivity target -->
+           
             <button (click)="openDonationModal(campaign)"
               class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-center text-xs cursor-pointer shadow-xs">
               Donate / Offer Supplies
@@ -510,7 +509,7 @@
         </div>
       </div>
 
-      <!-- Recent Contributions Feed -->
+     
       <div class="mt-16 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 max-w-4xl mx-auto shadow-sm">
         <div class="flex items-center gap-3 mb-6">
           <span class="text-xl">🤝</span>
@@ -548,7 +547,7 @@
     </div>
   </section>
 
-  <!-- Testimonials Section -->
+  
   <section id="testimonials" class="bg-white py-24 border-b border-slate-100">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center max-w-3xl mx-auto mb-16">
@@ -578,7 +577,7 @@
           </div>
         </div>
 
-        <!-- Card 2 -->
+   
         <div class="bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-200">
           <div class="text-yellow-400 text-xs mb-4">★★★★★</div>
           <p class="text-slate-600 text-sm leading-relaxed font-semibold italic">
@@ -595,7 +594,7 @@
           </div>
         </div>
 
-        <!-- Card 3 -->
+        
         <div class="bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-200">
           <div class="text-yellow-400 text-xs mb-4">★★★★★</div>
           <p class="text-slate-600 text-sm leading-relaxed font-semibold italic">
@@ -615,7 +614,7 @@
     </div>
   </section>
 
-  <!-- 6. FAQ Section -->
+ 
   <section id="faq" class="py-24 bg-slate-50">
     <div class="max-w-4xl mx-auto px-6">
       <div class="text-center mb-16">
@@ -647,7 +646,7 @@
     </div>
   </section>
 
-  <!-- CTA Launch Section -->
+ 
   <section class="bg-white py-24 border-b border-slate-100">
     <div class="max-w-4xl mx-auto px-6 text-center">
       <div
@@ -675,16 +674,16 @@
     </div>
   </section>
 
-  <!-- Donation Modal -->
+
   <div *ngIf="showDonationModal" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
     <!-- Backdrop Overlay -->
     <div (click)="closeDonationModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"></div>
 
-    <!-- Modal Card Box -->
+    
     <div
       class="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-fade-in z-10 border border-slate-100 font-sans">
 
-      <!-- Modal Header -->
+     
       <div class="flex items-center justify-between pb-3 border-b border-slate-150">
         <div>
           <h3 class="text-base md:text-lg font-extrabold text-slate-800">Coordinate Contribution</h3>
@@ -696,7 +695,7 @@
         </button>
       </div>
 
-      <!-- Success Screen -->
+     
       <div *ngIf="donationSuccess" class="py-10 text-center space-y-4">
         <div
           class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 text-3xl font-bold">
@@ -711,10 +710,10 @@
         </button>
       </div>
 
-      <!-- Donation Form Screen -->
+      
       <div *ngIf="!donationSuccess" class="py-4 space-y-4">
 
-        <!-- Toggle donation type -->
+       
         <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button (click)="donationType = 'money'"
             class="flex-grow py-2 text-xs font-bold rounded-lg transition cursor-pointer"
@@ -728,7 +727,7 @@
           </button>
         </div>
 
-        <!-- Name & Email input -->
+     
         <div class="space-y-3">
           <div class="space-y-1">
             <span class="block text-[10px] font-bold text-slate-400 uppercase">Your Name</span>
@@ -742,7 +741,7 @@
           </div>
         </div>
 
-        <!-- Option 1: Money Donation -->
+        
         <div *ngIf="donationType === 'money'" class="space-y-3">
           <span class="block text-[10px] font-bold text-slate-400 uppercase">Donation Amount ($)</span>
           <div class="grid grid-cols-4 gap-2">
@@ -756,7 +755,7 @@
           </div>
         </div>
 
-        <!-- Option 2: Supplies Offering -->
+        
         <div *ngIf="donationType === 'supplies'" class="space-y-2">
           <span class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Select Supplies You Can
             Dispatch:</span>
@@ -770,7 +769,7 @@
           </div>
         </div>
 
-        <!-- Submit Buttons -->
+        
         <div class="flex items-center gap-3 pt-4 border-t border-slate-100 mt-4">
           <button (click)="closeDonationModal()"
             class="flex-grow py-3 border border-slate-200 text-slate-500 font-bold text-xs rounded-xl hover:bg-slate-50 transition cursor-pointer">
@@ -789,15 +788,15 @@
     </div>
   </div>
 
-  <!-- Volunteer Modal -->
+  
   <div *ngIf="showVolunteerModal" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
     <!-- Backdrop Overlay -->
     <div (click)="closeVolunteerModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"></div>
 
-    <!-- Modal Card Box -->
+    
     <div class="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-fade-in z-10 border border-slate-100 font-sans text-slate-800">
       
-      <!-- Modal Header -->
+     
       <div class="flex items-center justify-between pb-3 border-b border-slate-150">
         <div>
           <h3 class="text-base md:text-lg font-extrabold text-slate-800">Volunteer Registration</h3>
@@ -808,7 +807,7 @@
         </button>
       </div>
 
-      <!-- Success Screen -->
+      
       <div *ngIf="volSuccess" class="py-10 text-center space-y-4">
         <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-600 text-3xl font-bold">✓</div>
         <h4 class="text-lg font-bold text-slate-800">Successfully Registered!</h4>
@@ -820,7 +819,7 @@
         </button>
       </div>
 
-      <!-- Registration Form Screen -->
+      
       <div *ngIf="!volSuccess" class="py-4 space-y-4">
         <div class="space-y-3">
           <div class="space-y-1">
@@ -850,7 +849,7 @@
           </div>
         </div>
 
-        <!-- Submit Buttons -->
+      
         <div class="flex items-center gap-3 pt-4 border-t border-slate-100 mt-4">
           <button (click)="closeVolunteerModal()" class="flex-grow py-3 border border-slate-200 text-slate-500 font-bold text-xs rounded-xl hover:bg-slate-50 transition cursor-pointer">
             Cancel
@@ -866,7 +865,7 @@
     </div>
   </div>
 
-  <!-- Footer -->
+ 
   <footer class="bg-[#0b1020] text-slate-400 py-10 border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -874,7 +873,7 @@
           <img src="assets/images/logo.png" alt="ADRMS Logo" class="w-10 h-10 object-contain" />
           <span class="text-white font-bold text-lg tracking-tight">ADRMS</span>
           <span class="text-xs text-slate-500 md:ml-4 font-semibold">
-            © 2025 Araksha Disaster Relief Management System
+            © 2026 Araksha Disaster Relief Management System
           </span>
         </div>
         <div class="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider">

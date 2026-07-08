@@ -9,6 +9,11 @@ export interface VolunteerHubResponse {
   name: string;
   status: string;
   available: boolean;
+  email?: string;
+  phone?: string;
+  address?: string;
+  district?: string;
+  skills?: string[];
 }
 
 export interface TaskResponse {
@@ -28,9 +33,9 @@ export interface TaskResponse {
 export class VolunteerHubService {
   private http = inject(HttpClient);
 
-  private readonly hubApiUrl = 'http://localhost:8080/api/volunteerhub';
-  private readonly tasksApiUrl = 'http://localhost:8080/api/tasks';
-  private readonly requestsApiUrl = 'http://localhost:8080/api/emergency-requests';
+  private readonly hubApiUrl = 'http://3.7.133.86:8080/api/volunteerhub';
+  private readonly tasksApiUrl = 'http://3.7.133.86:8080/api/tasks';
+  private readonly requestsApiUrl = 'http://3.7.133.86:8080/api/emergency-requests';
 
   // GET VOLUNTEER BY EMAIL
   getVolunteerByEmail(email: string): Observable<VolunteerHubResponse> {
@@ -70,5 +75,15 @@ export class VolunteerHubService {
   // UPDATE EMERGENCY REQUEST
   updateEmergencyRequest(id: number, request: EmergencyRequest): Observable<EmergencyRequest> {
     return this.http.put<EmergencyRequest>(`${this.requestsApiUrl}/${id}`, request);
+  }
+
+  // UPDATE LOCATION
+  updateLocation(id: number, latitude: number, longitude: number): Observable<VolunteerHubResponse> {
+    return this.http.put<VolunteerHubResponse>(`${this.hubApiUrl}/${id}/location?latitude=${latitude}&longitude=${longitude}`, {});
+  }
+
+  // UPDATE STATUS
+  updateStatus(id: number, status: string): Observable<VolunteerHubResponse> {
+    return this.http.put<VolunteerHubResponse>(`${this.hubApiUrl}/${id}/status?status=${status}`, {});
   }
 }

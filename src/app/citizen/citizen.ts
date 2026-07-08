@@ -11,6 +11,7 @@ import { FileUploadService } from '../Common/services/file-upload.service';
 import { Shelter } from '../Common/models/shelter.model';
 import { NotificationService, NotificationItem } from '../Common/services/notification.service';
 import { OnInit } from '@angular/core';
+import { MutualAidService, MutualAidItem } from '../Common/services/mutual-aid.service';
 import { Citizen as CitizenModel } from '../Common/models/citizen';
 import { HttpErrorResponse } from '@angular/common/http';
 import { WeatherService } from '../services/weather.service';
@@ -228,6 +229,8 @@ export class Citizen implements OnInit, OnDestroy {
     if (!this.shelterMapInstance || !this.mapAddressBuilt) return;
     this.plotCitizenLocation(this.shelterMapInstance, this.mapAddressBuilt);
     this.updateShelterDistances(this.mapAddressBuilt);
+    const coords = this.geocodeAddress(this.mapAddressBuilt);
+    this.loadNeighborAidMatches(coords.lat, coords.lng);
   }
 
   private updateShelterDistances(centerAddress: string): void {
@@ -642,6 +645,7 @@ export class Citizen implements OnInit, OnDestroy {
     private shelterService: ShelterService,
     private notificationService: NotificationService,
     private fileUploadService: FileUploadService,
+    private mutualAidService: MutualAidService,
     private cdr: ChangeDetectorRef,
     private weatherService: WeatherService,
     private mapsService: MapsService
@@ -818,6 +822,9 @@ export class Citizen implements OnInit, OnDestroy {
           this.loadRequests();
           this.loadNotifications();
           this.loadWeatherForCitizen();
+          const userAddr = data.address || 'Colombo, Sri Lanka';
+          const coords = this.geocodeAddress(userAddr);
+          this.loadNeighborAidMatches(coords.lat, coords.lng);
           this.cdr.detectChanges();
         },
         error: (error: HttpErrorResponse) => {
@@ -838,6 +845,9 @@ export class Citizen implements OnInit, OnDestroy {
         this.loadRequests();
         this.loadNotifications();
         this.loadWeatherForCitizen();
+        const userAddr = data.address || 'Colombo, Sri Lanka';
+        const coords = this.geocodeAddress(userAddr);
+        this.loadNeighborAidMatches(coords.lat, coords.lng);
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
@@ -1270,32 +1280,37 @@ export class Citizen implements OnInit, OnDestroy {
 
     this.aidSubmitting = true;
     
-    // Construct local mock match to update UI immediately
     const userAddr = this.mapAddressBuilt || this.citizen?.address || this.location || 'Colombo, Sri Lanka';
     const coords = this.geocodeAddress(userAddr);
 
-    const newMatch = {
-      id: Math.floor(1000 + Math.random() * 9000),
-      matchType: this.newAidType,
+    const item = {
+      citizenName: this.citizen?.fullName || 'Alice Smith',
       itemType: this.newAidItem,
       description: this.newAidDescription,
       contactPhone: this.newAidContact,
       latitude: coords.lat,
       longitude: coords.lng,
-      distanceKm: 0.1
+      type: this.newAidType
     };
 
-    // Simulate service latency
-    setTimeout(() => {
-      this.neighborAidMatches.unshift(newMatch);
-      this.plotNeighborAidOnMap();
-      this.newAidItem = '';
-      this.newAidDescription = '';
-      this.newAidContact = this.citizen?.phoneNumber || '';
-      this.neighborActiveTab = 'view';
-      this.aidSubmitting = false;
-      this.cdr.detectChanges();
-    }, 600);
+    this.mapsService.registerAidItem(item).subscribe({
+      next: (res) => {
+        console.log('Registered P2P Aid Item:', res);
+        this.loadNeighborAidMatches(coords.lat, coords.lng);
+        this.newAidItem = '';
+        this.newAidDescription = '';
+        this.newAidContact = this.citizen?.phoneNumber || '';
+        this.neighborActiveTab = 'view';
+        this.aidSubmitting = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error registering P2P Aid Item:', err);
+        this.aidSubmitting = false;
+        alert('Failed to post to mutual aid board. Please try again.');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // Siren tone synthesizer & Voice synthesizer warning TTS

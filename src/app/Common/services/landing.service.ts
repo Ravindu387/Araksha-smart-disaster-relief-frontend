@@ -8,7 +8,7 @@ import { LandingStats } from '../models/landing-stats.model';
 })
 export class LandingService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8080/api/landing';
+  private apiUrl = 'http://3.7.133.86:8080/api/landing';
 
   getLandingStats(): Observable<LandingStats> {
     return this.http.get<LandingStats>(`${this.apiUrl}/stats`);

@@ -11,7 +11,7 @@ export class SettingsService {
 
   private http = inject(HttpClient);
 
-  private readonly apiUrl = 'http://localhost:8080/api/settings';
+  private readonly apiUrl = 'http://3.7.133.86:8080/api/settings';
 
   getSettings(): Observable<Settings> {
     return this.http.get<Settings>(this.apiUrl);

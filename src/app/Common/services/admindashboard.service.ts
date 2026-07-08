@@ -11,7 +11,7 @@ export class DashboardService {
 
   private http = inject(HttpClient);
 
-  private apiUrl = 'http://localhost:8080/api/dashboard';
+  private apiUrl = 'http://3.7.133.86:8080/api/dashboard';
 
   getDashboardStats(): Observable<DashboardStats> {
     return this.http.get<DashboardStats>(`${this.apiUrl}/stats`);

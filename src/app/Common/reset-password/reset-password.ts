@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ForgotPasswordService } from '../../core/service/forgot-password.service';
+import { ForgotPasswordService } from '../../services/forgot-password.service';
 
 /**
  * ResetPasswordComponent — Step 3 of the password reset flow.
@@ -98,7 +98,7 @@ export class ResetPasswordComponent implements OnInit {
     this.forgotPasswordService.resetPassword(this.email, this.otp, this.newPassword).subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.successMessage = res.message;
+        this.successMessage = res;
         // Give user 1.5 seconds to see success, then redirect to login
         setTimeout(() => {
           this.router.navigate(['/login']);
