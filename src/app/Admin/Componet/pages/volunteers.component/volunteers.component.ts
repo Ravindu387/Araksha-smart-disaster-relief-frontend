@@ -22,7 +22,7 @@ import { FindByIdPipe } from '../../../../Common/pipes/find-by-id.pipe';
 })
 export class VolunteersComponent implements OnInit, OnDestroy {
 
-  // ── Search / Filter state (same names as before — template bindings intact) ──
+  
   searchQuery = '';
   statusFilter: 'All' | 'Available' | 'On Duty' | 'Off Duty' = 'All';
   districtFilter = '';
@@ -31,13 +31,13 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   sortDir: 'asc' | 'desc' = 'asc';
   viewMode: 'list' | 'grid' = 'list';
 
-  // ── Pagination state ──────────────────────────────────────────────────────
+  
   currentPage = 0;          // 0-based (matches Spring)
   pageSize = 10;
   totalPages = 0;
   totalElements = 0;
 
-  // ── Modal state (unchanged) ───────────────────────────────────────────────
+  
   inviteModalOpen = signal(false);
   viewModalOpen = signal(false);
   assignModalOpen = signal(false);
@@ -47,7 +47,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   activeRequests: any[] = [];
   selectedRequestIdForAssign = '';
 
-  // ── Assign modal feedback state ───────────────────────────────────────────
+  
   assignLoading = false;
   assignError = '';
   assignSuccess = false;
@@ -70,7 +70,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── File Upload state ─────────────────────────────────────────────────────
+  
   profilePhotoFile: File | null = null;
   profilePhotoUrl = '';
   profilePhotoProgress = 0;
@@ -81,14 +81,13 @@ export class VolunteersComponent implements OnInit, OnDestroy {
   idVerificationDocProgress = 0;
   idVerificationDocError = '';
 
-  // ── Data arrays ───────────────────────────────────────────────────────────
-  /** All volunteers (used for summary counts: total/available/onDuty/offDuty) */
+  
   volunteers: Volunteer[] = [];
 
-  /** Current page of filtered volunteers (replaces the old getter) */
+  
   filteredVolunteers: Volunteer[] = [];
 
-  // ── Internal ──────────────────────────────────────────────────────────────
+  
   private searchSubject = new Subject<void>();
   private subscriptions = new Subscription();
 
@@ -105,7 +104,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  
 
   ngOnInit(): void {
     // Wire debounced search
@@ -119,7 +118,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Wire global header search service subscription
+    
     this.subscriptions.add(
       this.searchService.searchQuery$.subscribe(q => {
         console.log('[VolunteersComponent] searchQuery$ received:', q);
@@ -131,9 +130,9 @@ export class VolunteersComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Load summary counts (unfiltered) once
+    
     this.loadVolunteers();
-    // Load first page of search results
+    
     this.loadSearchPage();
   }
 
@@ -141,9 +140,9 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  // ── Load helpers ──────────────────────────────────────────────────────────
+  
 
-  /** Loads ALL volunteers for the summary stat cards (no filters). */
+  
   private loadVolunteers(): void {
     this.volunteerService.getAllVolunteers().subscribe({
       next: (data: any[]) => {
@@ -159,7 +158,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Loads the current search page from the server. */
+  
   private loadSearchPage(): void {
     const sort = `${this.sortField},${this.sortDir}`;
 
@@ -189,7 +188,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── File Selection & Upload Handlers ──────────────────────────────────────
+  
 
   onProfilePhotoSelected(event: any): void {
     const files = event.target.files;
@@ -267,33 +266,33 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.idVerificationDocError = '';
   }
 
-  // ── Search / filter triggers ──────────────────────────────────────────────
+  
 
-  /** Called from template on search input change. */
+  
   onSearchChange(): void {
     this.searchSubject.next();
   }
 
-  /** Called from template when a status filter button is clicked. */
+  
   setStatusFilter(filter: 'All' | 'Available' | 'On Duty' | 'Off Duty'): void {
     this.statusFilter = filter;
     this.currentPage  = 0;
     this.loadSearchPage();
   }
 
-  /** Called from template when district filter changes. */
+  
   onDistrictChange(): void {
     this.currentPage = 0;
     this.searchSubject.next();
   }
 
-  /** Called from template when skill filter changes. */
+  
   onSkillChange(): void {
     this.currentPage = 0;
     this.searchSubject.next();
   }
 
-  /** Called from template when sort changes. */
+  
   setSortField(field: string, dir: 'asc' | 'desc' = 'asc'): void {
     this.sortField  = field;
     this.sortDir    = dir;
@@ -301,7 +300,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     this.loadSearchPage();
   }
 
-  // ── Pagination ────────────────────────────────────────────────────────────
+
 
   setPage(page: number): void {
     if (page >= 0 && page < this.totalPages) {
@@ -314,20 +313,20 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
-  // ── Summary counts (computed from the full unfiltered list) ───────────────
+  
 
   get totalCount(): number    { return this.volunteers.length; }
   get availableCount(): number { return this.volunteers.filter(v => v.status === 'Available').length; }
   get onDutyCount(): number   { return this.volunteers.filter(v => v.status === 'On Duty').length; }
   get offDutyCount(): number  { return this.volunteers.filter(v => v.status === 'Off Duty').length; }
 
-  // ── View mode ─────────────────────────────────────────────────────────────
+  
 
   setViewMode(mode: 'list' | 'grid'): void {
     this.viewMode = mode;
   }
 
-  // ── Modal logic (unchanged) ───────────────────────────────────────────────
+  
 
   openInviteModal(): void {
     this.inviteModalOpen.set(true);
@@ -471,7 +470,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
             this.assignSuccess = true;
             this.loadVolunteers();
             this.loadSearchPage();
-            // Auto-close after 1.5 s so the user sees the success message
+            
             setTimeout(() => this.closeAssignModal(), 1500);
           },
           error: (err) => {
@@ -493,7 +492,7 @@ export class VolunteersComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+
 
   private generateInitials(name: string): string {
     if (!name) return '??';
