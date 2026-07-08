@@ -44,10 +44,10 @@ interface EmergencyRequest {
 })
 export class EmergencyRequestsComponent implements OnInit, OnDestroy {
 
-  // ── All requests for stat cards (unfiltered) ──────────────────────────────
+  
   requests: EmergencyRequest[] = [];
 
-  // ── Search / Filter state (same names — template bindings intact) ─────────
+  
   searchQuery = '';
   typeFilter = 'All';
   statusFilter = 'All';
@@ -58,13 +58,13 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
   sortField = 'requestTime';
   sortDir: 'asc' | 'desc' = 'desc';
 
-  // ── Pagination state (server-side) ────────────────────────────────────────
+  
   currentPage = 1;         // 1-based for display; converted to 0-based for API
   readonly pageSize = 6;
   totalPages = 0;
   totalElements = 0;
 
-  // ── Filtered result (server-supplied page) ────────────────────────────────
+  
   /** Replaces the old client-side filteredRequests getter. */
   filteredRequests: EmergencyRequest[] = [];
 
@@ -73,19 +73,19 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     return this.filteredRequests;
   }
 
-  // ── Filter option lists (unchanged) ──────────────────────────────────────
+  
   readonly types      = ['All', 'Flood', 'Fire', 'Earthquake', 'Medical', 'Hurricane', 'Landslide'];
   readonly statuses   = ['All', 'Pending', 'Assigned', 'In Progress', 'Resolved'];
   readonly priorities = ['All', 'Critical', 'High', 'Medium', 'Low'];
 
-  // ── Internal ──────────────────────────────────────────────────────────────
+  
   private searchSubject = new Subject<void>();
   private subscriptions = new Subscription();
 
-  // ── Inline error/feedback states ─────────────────────────────────────────
+  
   resolveError = '';
 
-  // ── Edit Request modal ────────────────────────────────────────────────────
+  
   editModalOpen = false;
   editingRequest: EmergencyRequest | null = null;
   editCitizenName = '';
@@ -97,7 +97,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
   editSaving = false;
   editError = '';
 
-  // ── Create Request modal ──────────────────────────────────────────────────
+  
   createModalOpen = false;
   createCitizenName = '';
   createEmergencyType = 'Flood';
@@ -117,7 +117,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  
 
   ngOnInit(): void {
     // Wire debounced search
@@ -131,7 +131,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Wire global header search service subscription
+    
     this.subscriptions.add(
       this.searchService.searchQuery$.subscribe(q => {
         if (this.searchQuery !== q) {
@@ -151,7 +151,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  // ── Load helpers ──────────────────────────────────────────────────────────
+  
 
   /** Loads ALL requests (for countByPriority stat cards). */
   private loadRequests(): void {
@@ -190,7 +190,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Search / filter triggers ──────────────────────────────────────────────
+  
 
   onSearch(): void {
     this.searchSubject.next();
@@ -219,7 +219,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     this.loadSearchPage();
   }
 
-  // ── Pagination ────────────────────────────────────────────────────────────
+  
 
   setPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
@@ -232,7 +232,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  // ── Stat card counts (from full unfiltered list) ──────────────────────────
+  
 
   get countByPriority(): Record<string, number> {
     return {
@@ -243,7 +243,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     };
   }
 
-  // ── Resolve action (unchanged) ────────────────────────────────────────────
+  
 
   resolveRequest(item: EmergencyRequest): void {
     const updatedDto = {
@@ -290,7 +290,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Edit Request modal methods ─────────────────────────────────────────────
+  
 
   openEditModal(item: EmergencyRequest): void {
     this.editingRequest = item;
@@ -346,7 +346,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Create Request modal methods ───────────────────────────────────────────
+  
 
   openCreateModal(): void {
     this.createCitizenName = '';
@@ -397,7 +397,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── CSV export ────────────────────────────────────────────────────────────
+  
 
   exportCsv(): void {
     const headers = ['ID', 'Citizen', 'Type', 'Priority', 'Status', 'Location', 'Volunteer', 'Time'];
@@ -414,7 +414,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  // ── Style helpers (unchanged) ─────────────────────────────────────────────
+  
 
   getPriorityClass(priority: string): string {
     const map: Record<string, string> = {
@@ -449,7 +449,7 @@ export class EmergencyRequestsComponent implements OnInit, OnDestroy {
     return map[type] ?? 'bg-gray-100 text-gray-600';
   }
 
-  // ── Mapping helper ────────────────────────────────────────────────────────
+  
 
   private mapDto(r: any): EmergencyRequest {
     let timeFormatted = '—';

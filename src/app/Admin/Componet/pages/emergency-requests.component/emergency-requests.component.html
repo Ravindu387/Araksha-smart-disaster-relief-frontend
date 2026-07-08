@@ -27,7 +27,7 @@
     </div>
   </div>
 
-  <!-- Priority Filter Tabs -->
+  
   <div class="flex flex-wrap gap-2 mb-6">
     <button
       type="button"
@@ -82,10 +82,10 @@
     >🟢 Low {{ countByPriority['Low'] }}</button>
   </div>
 
-  <!-- Toolbar: search + filters -->
+  
   <div class="flex flex-col md:flex-row gap-3 mb-6">
 
-    <!-- Search -->
+    
     <div class="relative flex-1">
       <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -100,7 +100,7 @@
       />
     </div>
 
-    <!-- Type filter -->
+    
     <select
       [(ngModel)]="typeFilter"
       (ngModelChange)="onSearch()"
@@ -112,7 +112,7 @@
       }
     </select>
 
-    <!-- Status filter -->
+    
     <select
       [(ngModel)]="statusFilter"
       (ngModelChange)="onSearch()"
@@ -125,7 +125,7 @@
     </select>
   </div>
 
-  <!-- Table -->
+  
   <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -231,7 +231,7 @@
       </table>
     </div>
 
-    <!-- Pagination -->
+    
     @if (totalPages > 1) {
       <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between">
         <p class="text-sm text-slate-500">
@@ -257,7 +257,7 @@
     }
   </div>
 
-  <!-- Resolve Error Banner -->
+  
   @if (resolveError) {
     <div class="mt-4 flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-medium animate-pulse">
       <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -267,13 +267,11 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     EDIT REQUEST MODAL
-     ═══════════════════════════════════════════════════════════════════════ -->
+
 @if (editModalOpen) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" (click)="closeEditModal()">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" (click)="$event.stopPropagation()">
-      <!-- Modal header -->
+      
       <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold text-slate-900">Edit Emergency Request</h2>
@@ -283,7 +281,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <!-- Body -->
+      
       <div class="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
         @if (editError) {
           <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm">{{ editError }}</div>
@@ -327,7 +325,7 @@
           </div>
         </div>
       </div>
-      <!-- Footer -->
+      
       <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
         <button type="button" (click)="closeEditModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
         <button type="button" (click)="submitEdit()" [disabled]="editSaving" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors flex items-center gap-2">
@@ -339,9 +337,7 @@
   </div>
 }
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     CREATE NEW REQUEST MODAL
-     ═══════════════════════════════════════════════════════════════════════ -->
+
 @if (createModalOpen) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" (click)="closeCreateModal()">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" (click)="$event.stopPropagation()">
